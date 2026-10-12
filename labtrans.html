@@ -1,0 +1,1810 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Laboratorio virtual de transmisiones de telecomunicaciones</title>
+<style>
+:root{
+  --bg:#1b1e23; --bg2:#14171b; --panel:#242930; --edge:#3b434e; --edge2:#2e353e;
+  --txt:#d9dfe7; --dim:#8d97a5; --green:#3ddc84; --blue:#4aa3ff; --orange:#ff9f43;
+  --violet:#b88cff; --cyan:#37e6e6; --red:#ff5d5d; --yellow:#ffd54a;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font:14px/1.45 var(--sans)}
+button,select,input{font:inherit;color:var(--txt)}
+header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 12px;background:var(--bg2);border-bottom:1px solid var(--edge);position:sticky;top:0;z-index:20}
+header h1{font-size:15px;margin:0 12px 0 0;font-weight:650;letter-spacing:.2px}
+header h1 small{display:block;font-weight:400;color:var(--dim);font-size:11px}
+.btn{background:#2c333c;border:1px solid var(--edge);border-radius:4px;padding:5px 10px;cursor:pointer}
+.btn:hover{background:#364049}
+.btn:focus-visible,select:focus-visible,input:focus-visible,.tabbtn:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+.btn.on{border-color:var(--green);color:var(--green)}
+.btn.warn{border-color:var(--red);color:var(--red)}
+.btn.sm{padding:3px 7px;font-size:12px}
+.spd{display:flex;align-items:center;gap:6px;color:var(--dim);font-size:12px}
+#warnbar{padding:0 12px}
+#warnbar .w{margin:4px 0;padding:4px 8px;border-left:3px solid var(--orange);background:#2b2418;font-size:12px;color:#ffd9ae}
+#app{display:grid;grid-template-columns:330px 1fr;gap:0;min-height:calc(100vh - 52px)}
+aside{background:var(--bg2);border-right:1px solid var(--edge);padding:8px;overflow:auto;max-height:calc(100vh - 52px);position:sticky;top:52px}
+main{padding:8px 10px;min-width:0}
+details.pan{border:1px solid var(--edge);border-radius:5px;margin-bottom:8px;background:var(--panel)}
+details.pan>summary{cursor:pointer;padding:6px 10px;font-weight:650;list-style:none}
+details.pan>summary::before{content:"▸ ";color:var(--dim)}
+details.pan[open]>summary::before{content:"▾ "}
+details.pan.tx>summary{border-left:3px solid var(--violet)}
+details.pan.rx>summary{border-left:3px solid var(--green)}
+details.pan.chn>summary{border-left:3px solid var(--orange)}
+.pbody{padding:4px 10px 10px}
+.ctl{margin:7px 0}
+.ctl label{display:flex;justify-content:space-between;gap:6px;font-size:12px;color:var(--dim)}
+.ctl label output{font-family:var(--mono);color:var(--txt)}
+.ctl input[type=range]{width:100%}
+.ctl input[type=text],.ctl input[type=number],.ctl select{width:100%;background:#1a1e23;border:1px solid var(--edge);border-radius:3px;padding:4px 6px}
+.ctl.chk label{align-items:center;justify-content:flex-start;color:var(--txt)}
+.ctl[hidden]{display:none}
+.hint{font-size:11px;color:var(--dim)}
+nav#tabs{display:flex;flex-wrap:wrap;gap:2px;border-bottom:1px solid var(--edge);margin-bottom:8px}
+.tabbtn{background:transparent;border:1px solid transparent;border-bottom:none;padding:7px 11px;cursor:pointer;color:var(--dim);border-radius:5px 5px 0 0}
+.tabbtn:hover{color:var(--txt)}
+.tabbtn[aria-selected=true]{background:var(--panel);color:var(--txt);border-color:var(--edge);box-shadow:inset 0 2px 0 var(--blue)}
+section.tab{display:none}
+section.tab.act{display:block}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:8px}
+.panel{background:var(--panel);border:1px solid var(--edge);border-radius:5px;padding:8px 10px;min-width:0}
+.panel.wide{grid-column:1/-1}
+.panel h3{margin:0 0 6px;font-size:13px;font-weight:650;color:var(--txt)}
+.panel h3 .tag{font-weight:400;color:var(--dim);font-size:11px;margin-left:6px}
+canvas{display:block;width:100%;background:#0d1115;border:1px solid var(--edge2);border-radius:3px}
+.h140{height:140px}.h180{height:180px}.h220{height:220px}.h260{height:260px}.h320{height:320px}
+.meters{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px}
+.meter{background:#161a1f;border:1px solid var(--edge2);border-radius:4px;padding:5px 8px}
+.meter b{display:block;font-family:var(--mono);font-size:15px;font-weight:600}
+.meter span{font-size:11px;color:var(--dim)}
+.chip{display:inline-block;padding:1px 7px;border-radius:9px;font-size:11px;margin-right:4px;font-weight:600}
+.chip.err{background:#4a1f1f;color:#ff9a9a}.chip.warn{background:#4a3a17;color:#ffd08a}.chip.ok{background:#17402a;color:#8be6b4}.chip.info{background:#1c3550;color:#9cc9ff}
+.diagrow{margin:5px 0;font-size:13px}
+.info{background:#161a1f;border:1px solid var(--edge2);border-radius:4px;padding:8px 10px;font-size:13px;min-height:60px}
+.info h4{margin:0 0 4px;font-size:13px}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0}
+table.t{border-collapse:collapse;font-size:12px;font-family:var(--mono)}
+table.t td,table.t th{border:1px solid var(--edge2);padding:2px 5px;text-align:center}
+table.t th{background:#1b2027;color:var(--dim);font-weight:500}
+.scroll{overflow:auto;max-width:100%}
+.theory h4{margin:12px 0 4px;font-size:14px;color:var(--cyan)}
+.theory p{margin:4px 0}
+.theory code,.mono{font-family:var(--mono);background:#161a1f;border-radius:3px;padding:0 4px;color:#f3e3a8}
+.theory .ex{border-left:3px solid var(--green);padding-left:8px;color:#c9e9d6;margin:4px 0}
+.theory details{border:1px solid var(--edge2);border-radius:4px;margin:6px 0;padding:2px 8px;background:#1b2027}
+.theory summary{cursor:pointer;padding:4px 0;font-weight:600}
+.prac{border:1px solid var(--edge);border-radius:5px;margin:6px 0;background:#1b2027}
+.prac>summary{cursor:pointer;padding:7px 10px;font-weight:650}
+.prac .pb{padding:4px 12px 10px}
+.prac ol,.prac ul{margin:4px 0 4px 18px;padding:0}
+.prac .res{background:#12161a;border:1px dashed var(--edge);border-radius:4px;padding:6px 8px;margin-top:6px;font-size:12px}
+#halt{display:none;position:fixed;inset:0;background:rgba(10,12,15,.85);z-index:50;align-items:center;justify-content:center;flex-direction:column;gap:10px;text-align:center}
+#halt.on{display:flex}
+.legend{display:flex;flex-wrap:wrap;gap:10px;font-size:11px;color:var(--dim);margin:3px 0}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+@media (max-width:900px){#app{grid-template-columns:1fr}aside{position:static;max-height:none;border-right:none;border-bottom:1px solid var(--edge)}.grid{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Laboratorio virtual de transmisiones<small>cable · radio · fibra óptica — E.Serra 2026 (IA)</small></h1>
+  <button class="btn" id="bPlay" title="Iniciar / pausar la transmisión">▶ Iniciar</button>
+  <button class="btn" id="bReset" title="Volver al inicio de la trama">⟲ Reiniciar</button>
+  <button class="btn" id="bStep" title="Avanzar un símbolo (o una fracción de ciclo en analógico)">⏭ Paso</button>
+  <label class="spd">Velocidad <input type="range" id="rSpeed" min="0.1" max="4" step="0.1" value="1" aria-label="Velocidad de reproducción"><output id="oSpeed">1,0×</output></label>
+  <button class="btn" id="bFreeze" title="Congelar los gráficos para estudiarlos">❄ Congelar</button>
+  <button class="btn" id="bNewBits" title="Generar una nueva secuencia aleatoria">🎲 Nueva secuencia</button>
+  <button class="btn" id="bNewNoise" title="Nueva realización del ruido">〰 Nuevo ruido</button>
+  <button class="btn warn" id="bHalt" title="Detiene animaciones y libera recursos">⏹ Parada total</button>
+</header>
+<div id="warnbar"></div>
+<div id="app">
+<aside id="side">
+  <details class="pan tx" open><summary>EMISOR</summary><div class="pbody" id="ctl-tx"></div></details>
+  <details class="pan rx" open><summary>RECEPTOR</summary><div class="pbody"><div class="row"><button class="btn sm" id="bMatch" title="Copia al receptor los parámetros del emisor">Igualar receptor al emisor</button></div><div id="ctl-rx"></div></div></details>
+  <details class="pan chn" open><summary>CANAL (resumen)</summary><div class="pbody" id="ctl-chq"><span class="hint">Todos los efectos del canal están en la pestaña «Ruido, interferencias y errores».</span></div></details>
+</aside>
+<main>
+<nav id="tabs" role="tablist"></nav>
+
+<!-- 1. LABORATORIO GENERAL -->
+<section class="tab" id="tab-lab" data-title="1 · Laboratorio general">
+ <div class="grid">
+  <div class="panel wide"><h3>Cadena de transmisión <span class="tag">pulse un bloque para ver su función</span></h3>
+    <canvas id="cv-chain" class="h180"></canvas>
+    <div id="blockInfo" class="info" style="margin-top:6px">Seleccione un bloque de la cadena.</div></div>
+  <div class="panel"><h3>Osciloscopio <span class="tag">emisor · receptor · demodulada</span></h3><canvas id="cv-scope-lab" class="h260"></canvas><div class="legend" id="lg-lab"></div></div>
+  <div class="panel"><h3>Constelación I/Q</h3><canvas id="cv-const-lab" class="h260"></canvas></div>
+  <div class="panel wide"><h3>Datos originales, transmitidos y recuperados</h3><canvas id="cv-bits-lab" class="h180"></canvas></div>
+  <div class="panel"><h3>Indicadores</h3><div class="meters" id="meters-lab"></div></div>
+  <div class="panel"><h3>Diagnóstico de la recepción</h3><div id="diag"></div></div>
+  <div class="panel wide"><h3>Tabla de compatibilidad emisor / receptor <span class="tag">calculada simulando cada pareja con SNR = 35 dB</span></h3>
+    <div class="row"><button class="btn" id="bCompat">Calcular tabla (digital y analógica)</button><span class="hint" id="compatHint">Cada celda es una simulación real: BER (%) en digital, correlación ρ en analógico.</span></div>
+    <div id="compat" class="scroll"></div></div>
+ </div>
+</section>
+
+<!-- 2. CABLE -->
+<section class="tab" id="tab-cable" data-title="2 · Transmisión por cable">
+ <div class="grid">
+  <div class="panel wide"><h3>Línea de transmisión <span class="tag">modelo visual: onda incidente y reflejada</span></h3><canvas id="cv-cable" class="h220"></canvas>
+   <div class="legend"><span><i style="background:var(--blue)"></i>onda incidente</span><span><i style="background:var(--orange)"></i>onda reflejada</span><span><i style="background:#fff"></i>suma (tensión en la línea)</span></div></div>
+  <div class="panel"><h3>Parámetros del cable</h3><div id="ctl-cable"></div></div>
+  <div class="panel"><h3>Resultados calculados</h3><div class="meters" id="out-cable"></div><div id="note-cable" class="hint" style="margin-top:6px"></div></div>
+  <div class="panel"><h3>Osciloscopio TX / RX</h3><canvas id="cv-scope-cable" class="h220"></canvas><div class="hint" id="sel-cable"></div></div>
+  <div class="panel"><h3>Comentarios</h3><div class="theory" id="th-cable"></div></div>
+ </div>
+</section>
+
+<!-- 3. RADIO -->
+<section class="tab" id="tab-radio" data-title="3 · Radiocomunicaciones">
+ <div class="grid">
+  <div class="panel wide"><h3>Escena de propagación <span class="tag">frentes de onda animados</span></h3><canvas id="cv-radio" class="h260"></canvas></div>
+  <div class="panel"><h3>Parámetros del radioenlace</h3><div id="ctl-radio"></div></div>
+  <div class="panel"><h3>Balance de potencia</h3><div class="meters" id="out-radio"></div><div id="note-radio" class="hint" style="margin-top:6px"></div></div>
+  <div class="panel"><h3>Directa frente a multitrayecto (dos rayos)</h3><canvas id="cv-radio2" class="h220"></canvas></div>
+  <div class="panel"><h3>Osciloscopio TX / RX</h3><canvas id="cv-scope-radio" class="h220"></canvas><div class="hint" id="sel-radio"></div></div>
+  <div class="panel wide"><h3>Comentarios</h3><div class="theory" id="th-radio"></div></div>
+ </div>
+</section>
+
+<!-- 4. FIBRA -->
+<section class="tab" id="tab-fibra" data-title="4 · Fibra óptica">
+ <div class="grid">
+  <div class="panel wide"><h3>Fibra óptica <span class="tag">núcleo · revestimiento · cubierta</span></h3><canvas id="cv-fiber" class="h220"></canvas></div>
+  <div class="panel"><h3>Parámetros de la fibra</h3><div id="ctl-fiber"></div></div>
+  <div class="panel"><h3>Presupuesto óptico</h3><div class="meters" id="out-fiber"></div><div id="note-fiber" class="hint" style="margin-top:6px"></div></div>
+  <div class="panel wide"><h3>Pulsos antes y después de la fibra <span class="tag">potencia óptica normalizada</span></h3><canvas id="cv-fiber2" class="h220"></canvas></div>
+  <div class="panel"><h3>Osciloscopio TX / RX</h3><canvas id="cv-scope-fiber" class="h220"></canvas><div class="hint" id="sel-fiber"></div></div>
+  <div class="panel"><h3>Comentarios</h3><div class="theory" id="th-fiber"></div></div>
+ </div>
+</section>
+
+<!-- 5. ANALOGICAS -->
+<section class="tab" id="tab-ana" data-title="5 · Modulaciones analógicas">
+ <div class="panel"><div class="row"><b>Técnica:</b><span id="presets-ana" class="row"></span></div><div class="hint">Cada botón configura emisor y receptor con la misma técnica (use el panel lateral para romper la coincidencia).</div></div>
+ <div class="grid" style="margin-top:8px">
+  <div class="panel wide"><h3>Osciloscopio <span class="tag" id="tg-ana"></span></h3><canvas id="cv-scope-ana" class="h320"></canvas></div>
+  <div class="panel"><h3 id="aux-title">Envolvente / frecuencia instantánea</h3><canvas id="cv-aux" class="h220"></canvas></div>
+  <div class="panel"><h3>Espectro (FFT de las muestras)</h3><canvas id="cv-spec-ana" class="h220"></canvas></div>
+  <div class="panel"><h3>Resultados</h3><div class="meters" id="meters-ana"></div></div>
+  <div class="panel"><h3>Qué ocurre</h3><div class="theory" id="th-ana"></div></div>
+ </div>
+</section>
+
+<!-- 6. DIGITALES -->
+<section class="tab" id="tab-dig" data-title="6 · Modulaciones digitales">
+ <div class="panel"><div class="row"><b>Técnica:</b><span id="presets-dig" class="row"></span></div></div>
+ <div class="grid" style="margin-top:8px">
+  <div class="panel wide"><h3>Osciloscopio <span class="tag" id="tg-dig"></span></h3><canvas id="cv-scope-dig" class="h260"></canvas></div>
+  <div class="panel"><h3>Constelación I/Q</h3><canvas id="cv-const-dig" class="h260"></canvas></div>
+  <div class="panel"><h3>Espectro (FFT de las muestras)</h3><canvas id="cv-spec-dig" class="h260"></canvas></div>
+  <div class="panel wide"><h3>Bits, símbolos y errores</h3><canvas id="cv-bits-dig" class="h220"></canvas></div>
+  <div class="panel"><h3>Resultados</h3><div class="meters" id="meters-dig"></div></div>
+  <div class="panel"><h3>Qué ocurre</h3><div class="theory" id="th-dig"></div></div>
+ </div>
+</section>
+
+<!-- 7. RUIDO -->
+<section class="tab" id="tab-noise" data-title="7 · Ruido, interferencias y errores">
+ <div class="grid">
+  <div class="panel"><h3>Efectos del canal <span class="tag">cada uno modifica las muestras</span></h3><div id="ctl-ch"></div></div>
+  <div class="panel"><h3>Medidas sobre las muestras</h3><div class="meters" id="meters-noise"></div><div class="hint" id="berNote" style="margin-top:6px"></div></div>
+  <div class="panel"><h3>Osciloscopio (recibida)</h3><canvas id="cv-scope-noise" class="h220"></canvas></div>
+  <div class="panel"><h3>Constelación recibida</h3><canvas id="cv-const-noise" class="h220"></canvas></div>
+  <div class="panel"><h3>Diagrama de ojo</h3><canvas id="cv-eye-noise" class="h220"></canvas></div>
+  <div class="panel"><h3>BER frente a SNR <span class="tag">barrido Monte&nbsp;Carlo con la configuración actual</span></h3>
+    <div class="row"><label>SNR de</label><input type="number" id="swA" value="0" style="width:60px"><label>a</label><input type="number" id="swB" value="20" style="width:60px"><label>dB, paso</label><input type="number" id="swC" value="2" style="width:50px"><label>bits/punto</label><input type="number" id="swN" value="1200" style="width:70px"><button class="btn" id="bSweep">Ejecutar barrido</button></div>
+    <canvas id="cv-ber" class="h220"></canvas><div class="hint" id="berInfo"></div></div>
+  <div class="panel wide"><h3>Diagrama temporal de bits</h3><canvas id="cv-bits-noise" class="h180"></canvas></div>
+ </div>
+</section>
+
+<!-- 8. INSTRUMENTACION -->
+<section class="tab" id="tab-ins" data-title="8 · Instrumentación y análisis">
+ <div class="grid">
+  <div class="panel wide"><h3>Osciloscopio <span class="tag">un carril por canal</span></h3>
+    <div class="row" id="ctl-view"></div>
+    <canvas id="cv-scope-ins" class="h320"></canvas></div>
+  <div class="panel wide"><h3>Analizador de espectro <span class="tag">emisor frente a receptor (dB relativos a 1 V de pico)</span></h3><canvas id="cv-spec-ins" class="h260"></canvas>
+    <div class="legend"><span><i style="background:var(--violet)"></i>emisor</span><span><i style="background:var(--blue)"></i>receptor</span></div></div>
+  <div class="panel"><h3>Constelación</h3><canvas id="cv-const-ins" class="h260"></canvas></div>
+  <div class="panel"><h3>Diagrama de ojo</h3><canvas id="cv-eye-ins" class="h260"></canvas></div>
+  <div class="panel wide"><h3>Diagrama temporal de bits</h3><canvas id="cv-bits-ins" class="h180"></canvas></div>
+  <div class="panel wide"><h3>Indicadores</h3><div class="meters" id="meters-ins"></div></div>
+ </div>
+</section>
+
+<!-- 9. FUNDAMENTOS -->
+<section class="tab" id="tab-teoria" data-title="9 · Fundamentos teóricos">
+ <div class="panel"><div class="hint">Los valores numéricos de los ejemplos se recalculan con los parámetros actuales del simulador.</div><div class="theory" id="theory"></div></div>
+</section>
+
+<!-- 10. LINEA -->
+<section class="tab" id="tab-line" data-title="10 · Codificación de línea">
+ <div class="grid">
+  <div class="panel"><h3>Secuencia de prueba</h3>
+   <div class="ctl"><label>Bits (0/1)</label><input type="text" id="lineBits" value="1100001000001010"></div>
+   <div class="row"><button class="btn sm" id="lineRand">Aleatoria</button><button class="btn sm" id="lineZeros">Con ceros largos</button><button class="btn sm" id="lineOnes">Con unos largos</button></div>
+   <div class="hint">Las 8 codificaciones se calculan con exactamente la misma secuencia.</div></div>
+  <div class="panel"><h3>Comparativa numérica</h3><div class="scroll" id="lineTable"></div></div>
+  <div class="panel wide"><h3>Formas de onda <span class="tag">líneas verticales discontinuas: intervalos de bit</span></h3><canvas id="cv-line" class="h320"></canvas></div>
+  <div class="panel wide"><h3>Usos, ventajas e inconvenientes</h3><div class="theory" id="lineTheory"></div></div>
+ </div>
+</section>
+
+<!-- 11. PRACTICAS -->
+<section class="tab" id="tab-prac" data-title="11 · Prácticas guiadas">
+ <div class="panel"><div class="hint">«Cargar» restablece todos los parámetros, aplica la configuración inicial de la práctica y abre la pestaña adecuada. «Ejecutar experimento» realiza simulaciones reales y muestra los resultados medidos.</div><div id="pracList"></div></div>
+</section>
+</main>
+</div>
+<div id="halt"><div style="font-size:18px">Simulación detenida</div><div class="hint">Se han cancelado las animaciones y liberado las muestras en memoria.</div><button class="btn" id="bResume">Reactivar simulación</button></div>
+<script>
+'use strict';
+//<<CORE
+/* =====================================================================
+   NÚCLEO DE SIMULACIÓN (sin acceso al DOM)
+   Modelo: equivalente de banda base (envolvente compleja) + portadora real.
+   - El modulador genera la envolvente x[n] = I[n] + jQ[n].
+   - La señal real transmitida es s[n] = I·cos(ωc t+φ0) − Q·sin(ωc t+φ0).
+   - El canal actúa sobre la envolvente (ecos, filtrado, desvanecimiento,
+     desplazamiento de frecuencia, fase, jitter) y luego se suman ruido
+     AWGN e interferencias sobre la señal real.
+   - El receptor trabaja sobre las muestras reales con sus propios
+     parámetros (portadora, fase, tasa, sincronismo, umbral...).
+   ===================================================================== */
+const TAU=Math.PI*2, C0=299792458;
+const undb=x=>Math.pow(10,x/10), todb=x=>10*Math.log10(Math.max(x,1e-300));
+const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
+const mean=a=>{let s=0;for(let i=0;i<a.length;i++)s+=a[i];return a.length?s/a.length:0;};
+const power=a=>{let s=0;for(let i=0;i<a.length;i++)s+=a[i]*a[i];return a.length?s/a.length:0;};
+
+/* Generador pseudoaleatorio con semilla (mulberry32) + gaussiana Box-Muller */
+function mkRng(seed){
+  let a=(seed>>>0)||1;
+  const r=()=>{a=(a+0x6D2B79F5)>>>0;let t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;};
+  r.gauss=()=>{let u=0;while(u===0)u=r();const v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(TAU*v);};
+  return r;
+}
+/* erfc (aproximación de Numerical Recipes, error relativo < 1,2e-7) y función Q */
+function erfc(x){const z=Math.abs(x),t=1/(1+0.5*z);
+  const r=t*Math.exp(-z*z-1.26551223+t*(1.00002368+t*(0.37409196+t*(0.09678418+t*(-0.18628806+t*(0.27886807+t*(-1.13520398+t*(1.48851587+t*(-0.82215223+t*0.17087277)))))))));
+  return x>=0?r:2-r;}
+const Qf=x=>0.5*erfc(x/Math.SQRT2);
+
+/* FFT radix-2 propia (in situ) */
+function fftInPlace(re,im){
+  const n=re.length;
+  for(let i=1,j=0;i<n;i++){let bit=n>>1;for(;j&bit;bit>>=1)j^=bit;j^=bit;if(i<j){let t=re[i];re[i]=re[j];re[j]=t;t=im[i];im[i]=im[j];im[j]=t;}}
+  for(let len=2;len<=n;len<<=1){
+    const ang=-TAU/len,wr=Math.cos(ang),wi=Math.sin(ang),h=len>>1;
+    for(let i=0;i<n;i+=len){let cr=1,ci=0;
+      for(let k=0;k<h;k++){const a=i+k,b=a+h;const tr=re[b]*cr-im[b]*ci,ti=re[b]*ci+im[b]*cr;
+        re[b]=re[a]-tr;im[b]=im[a]-ti;re[a]+=tr;im[a]+=ti;const nc=cr*wr-ci*wi;ci=cr*wi+ci*wr;cr=nc;}}
+  }
+}
+/* Espectro de amplitud: ventana de Hann, amplitud pico de cada componente senoidal */
+function spectrum(x,fs){
+  const n=Math.min(x.length,16384);let N=1;while(N<n)N<<=1;N=Math.max(N,2048);
+  const re=new Float64Array(N),im=new Float64Array(N);let ws=0;
+  for(let i=0;i<n;i++){const w=0.5-0.5*Math.cos(TAU*i/Math.max(n-1,1));re[i]=x[i]*w;ws+=w;}
+  fftInPlace(re,im);
+  const half=N>>1,db=new Float32Array(half),lin=new Float32Array(half);
+  for(let k=0;k<half;k++){const a=2*Math.hypot(re[k],im[k])/ws;lin[k]=a;db[k]=20*Math.log10(a+1e-9);}
+  return {df:fs/N,db,lin,N};
+}
+/* Ancho de banda que contiene el 99 % de la potencia (0,5 % por cola) */
+function occupiedBw(sp){
+  let tot=0;for(let k=1;k<sp.lin.length;k++)tot+=sp.lin[k]*sp.lin[k];
+  if(tot<=0)return 0;let c=0,lo=0,hi=0,fl=false;
+  for(let k=1;k<sp.lin.length;k++){c+=sp.lin[k]*sp.lin[k];if(!fl&&c>=0.005*tot){lo=k;fl=true;}if(c>=0.995*tot){hi=k;break;}}
+  return Math.max(hi-lo,1)*sp.df;
+}
+/* Paso bajo de fase cero: pasadas adelante y atrás de un polo; 'order' repeticiones */
+function lpf(x,fs,fc,order){
+  const y=Float64Array.from(x);if(!(fc>0)||fc>=fs*0.49)return y;
+  const a=1-Math.exp(-TAU*fc/fs);
+  for(let o=0;o<(order||2);o++){
+    let s=y[0];for(let i=0;i<y.length;i++){s+=a*(y[i]-s);y[i]=s;}
+    s=y[y.length-1];for(let i=y.length-1;i>=0;i--){s+=a*(y[i]-s);y[i]=s;}
+  }
+  return y;
+}
+function mixIQ(r,fs,fc,phDeg){
+  const n=r.length,zi=new Float64Array(n),zq=new Float64Array(n),ph=phDeg*Math.PI/180;
+  for(let i=0;i<n;i++){const th=TAU*fc*i/fs+ph;zi[i]=2*r[i]*Math.cos(th);zq[i]=-2*r[i]*Math.sin(th);}
+  return {zi,zq};
+}
+function upconvert(xi,xq,fs,fc,ph0){
+  const n=xi.length,o=new Float64Array(n);
+  for(let i=0;i<n;i++){const th=TAU*fc*i/fs+ph0;o[i]=xi[i]*Math.cos(th)-xq[i]*Math.sin(th);}
+  return o;
+}
+
+/* ---------- Catálogo de modulaciones ---------- */
+const MODS={
+  AM:{fam:'analog',name:'AM (con portadora)'},DSB:{fam:'analog',name:'DSB-SC (portadora suprimida)'},
+  SSB:{fam:'analog',name:'SSB (banda lateral superior)'},FM:{fam:'analog',name:'FM'},PM:{fam:'analog',name:'PM'},
+  ASK:{fam:'digital',name:'ASK'},OOK:{fam:'digital',name:'OOK'},BFSK:{fam:'digital',name:'FSK / BFSK'},FSK4:{fam:'digital',name:'4-FSK'},
+  BPSK:{fam:'digital',name:'BPSK'},QPSK:{fam:'digital',name:'QPSK'},PSK8:{fam:'digital',name:'8-PSK'},
+  QAM16:{fam:'digital',name:'16-QAM'},QAM64:{fam:'digital',name:'64-QAM'},OFDM:{fam:'digital',name:'OFDM (QPSK/subportadora)'},
+  BB:{fam:'baseband',name:'Banda base (codificación de línea)'}
+};
+const LINES={NRZL:'NRZ-L',NRZI:'NRZ-I',RZ:'RZ',MANCH:'Manchester',DMANCH:'Manchester diferencial',AMI:'AMI',HDB3:'HDB3','4B5B':'4B/5B + NRZ-I'};
+const isLin=id=>['ASK','OOK','BPSK','QPSK','PSK8','QAM16','QAM64'].includes(id);
+const isAnalog=id=>MODS[id].fam==='analog';
+function bpsOf(id,S){const t=S.tx;
+  switch(id){case 'ASK':return Math.log2(t.levels);case 'OOK':case 'BFSK':case 'BPSK':case 'BB':return 1;
+    case 'FSK4':case 'QPSK':return 2;case 'PSK8':return 3;case 'QAM16':return 4;case 'QAM64':return 6;case 'OFDM':return 2*t.nsc;}
+  return 1;}
+const GRAY3=[0,1,3,2,6,7,5,4];
+function bitsOfInt(v,n){const b=[];for(let i=n-1;i>=0;i--)b.push((v>>i)&1);return b;}
+/* Constelaciones (codificación de Gray). Energía media unitaria salvo ASK/OOK */
+function constellation(id,levels){
+  const P=[];
+  switch(id){
+    case 'OOK':P.push({i:0,q:0,bits:[0]},{i:1,q:0,bits:[1]});break;
+    case 'ASK':{const M=levels||2;for(let k=0;k<M;k++){const g=k^(k>>1);P.push({i:0.25+0.75*k/(M-1),q:0,bits:bitsOfInt(g,Math.log2(M))});}break;}
+    case 'BPSK':P.push({i:1,q:0,bits:[0]},{i:-1,q:0,bits:[1]});break;
+    case 'QPSK':for(let b0=0;b0<2;b0++)for(let b1=0;b1<2;b1++)P.push({i:(b0?-1:1)/Math.SQRT2,q:(b1?-1:1)/Math.SQRT2,bits:[b0,b1]});break;
+    case 'PSK8':for(let k=0;k<8;k++){const a=k*Math.PI/4;P.push({i:Math.cos(a),q:Math.sin(a),bits:bitsOfInt(GRAY3[k],3)});}break;
+    case 'QAM16':{const lv={0:-3,1:-1,3:1,2:3},n=Math.sqrt(10);
+      for(let v=0;v<16;v++){const b=bitsOfInt(v,4);P.push({i:lv[b[0]*2+b[1]]/n,q:lv[b[2]*2+b[3]]/n,bits:b});}break;}
+    case 'QAM64':{const lv=[];for(let L=0;L<8;L++)lv[GRAY3[L]]=2*L-7;const n=Math.sqrt(42);
+      for(let v=0;v<64;v++){const b=bitsOfInt(v,6);P.push({i:lv[b[0]*4+b[1]*2+b[2]]/n,q:lv[b[3]*4+b[4]*2+b[5]]/n,bits:b});}break;}
+  }
+  return P;
+}
+const keyOf=b=>{let k=0;for(const x of b)k=k*2+x;return k;};
+const GRAYFSK4=[0,1,3,2]; // clave de 2 bits -> tono
+
+/* ---------- Señales de información analógicas (series armónicas) ---------- */
+function sourceHarm(kind){
+  const h=[];
+  if(kind==='square'){for(let k=1;k<=15;k+=2)h.push({m:k,a:4/(Math.PI*k),p:-Math.PI/2});}
+  else if(kind==='tri'){for(let k=1;k<=15;k+=2)h.push({m:k,a:8/(Math.PI*Math.PI*k*k)*(((k-1)/2)%2?-1:1),p:-Math.PI/2});}
+  else if(kind==='audio'){h.push({m:1,a:1,p:0},{m:2,a:0.5,p:1},{m:3,a:0.3,p:2.2});}
+  else h.push({m:1,a:1,p:0});
+  let pk=0;for(let i=0;i<256;i++){let v=0;for(const c of h)v+=c.a*Math.cos(TAU*c.m*i/256+c.p);pk=Math.max(pk,Math.abs(v));}
+  for(const c of h)c.a/=pk;
+  return h;
+}
+function evalHarm(h,u){let v=0;for(const c of h)v+=c.a*Math.cos(TAU*c.m*u+c.p);return v;}
+/* Señal de información y su transformada de Hilbert (desfase de 90° por armónico) */
+function infoSignal(kind,fm,N,fs){
+  const h=sourceHarm(kind),m=new Float64Array(N),mh=new Float64Array(N);
+  for(let n=0;n<N;n++){const u=fm*n/fs;let a=0,b=0;
+    for(const c of h){const th=TAU*c.m*u+c.p;a+=c.a*Math.cos(th);b+=c.a*Math.sin(th);}m[n]=a;mh[n]=b;}
+  return {m,mh};
+}
+
+/* ---------- Generación de bits ---------- */
+function textToBits(s){const o=[];for(const ch of s){const c=ch.charCodeAt(0)&255;for(let b=7;b>=0;b--)o.push((c>>b)&1);}return o;}
+function pcmBits(kind,count){ // cuantificación uniforme de 4 bits sobre un periodo de la señal
+  const n=Math.max(1,Math.floor(count/4)),h=sourceHarm(kind),b=[];
+  for(let i=0;i<n;i++){const q=clamp(Math.round((evalHarm(h,i/n)+1)/2*15),0,15);for(let k=3;k>=0;k--)b.push((q>>k)&1);}
+  return b;}
+function getBits(S,r,R){
+  const t=S.tx;let bits=[];
+  switch(t.src){
+    case 'manual':bits=[...t.manual].filter(c=>c==='0'||c==='1').map(Number);if(!bits.length)bits=[0];break;
+    case 'text':bits=textToBits((t.text||'A').slice(0,16));break;
+    case 'pattern':{const p=[...t.pattern].filter(c=>c==='0'||c==='1').map(Number);if(!p.length)p.push(1,0);for(let i=0;i<t.nbits;i++)bits.push(p[i%p.length]);break;}
+    case 'random':for(let i=0;i<t.nbits;i++)bits.push(r()<0.5?0:1);break;
+    default:bits=pcmBits(t.src,t.nbits);if(R)R.notes.push('Fuente analógica con modulación digital: se aplica PCM de 4 bits por muestra sobre un periodo.');
+  }
+  return bits.slice(0,t.hardMax||256);
+}
+
+/* ---------- Codificación de línea ---------- */
+const B45=['11110','01001','10100','10101','01010','01011','01110','01111','10010','10011','10110','10111','11010','11011','11100','11101'];
+const B45inv={};B45.forEach((c,i)=>B45inv[c]=i);
+/* Devuelve niveles de medio bit h[2k],h[2k+1] y los bits codificados nc */
+function lineEncode(code,bits){
+  let b=bits.slice();
+  if(code==='4B5B'){while(b.length%4)b.push(0);const c=[];
+    for(let i=0;i<b.length;i+=4){const v=b[i]*8+b[i+1]*4+b[i+2]*2+b[i+3];for(const ch of B45[v])c.push(+ch);}
+    b=c;code='NRZI';}
+  const n=b.length,h=new Float64Array(2*n);let lvl=-1,last=-1,prevEnd=-1,cnt=0;
+  const put=(k,a,c)=>{h[2*k]=a;h[2*k+1]=c;};
+  for(let k=0;k<n;k++){const v=b[k];
+    switch(code){
+      case 'NRZL':put(k,v?1:-1,v?1:-1);break;
+      case 'NRZI':if(v)lvl=-lvl;put(k,lvl,lvl);break;
+      case 'RZ':put(k,v?1:-1,0);break;
+      case 'MANCH':v?put(k,-1,1):put(k,1,-1);break;
+      case 'DMANCH':{const s=v?prevEnd:-prevEnd;put(k,s,-s);prevEnd=-s;break;}
+      case 'AMI':if(v){last=-last;put(k,last,last);cnt++;}else put(k,0,0);break;
+      case 'HDB3':
+        if(v){last=-last;put(k,last,last);cnt++;}
+        else if(k+3<n&&!b[k+1]&&!b[k+2]&&!b[k+3]){
+          if(cnt%2){put(k,0,0);put(k+1,0,0);put(k+2,0,0);put(k+3,last,last);}      // 000V
+          else{last=-last;put(k,last,last);put(k+1,0,0);put(k+2,0,0);put(k+3,last,last);} // B00V
+          cnt=0;k+=3;
+        }else put(k,0,0);
+        break;
+      default:put(k,v?1:-1,v?1:-1);
+    }}
+  return {h,nc:n,coded:b};
+}
+/* Decodifica a partir de las medias de cada medio bit (h1,h2) con umbral t0 */
+function lineDecode(code,h1,h2,t0){
+  const n=h1.length;let out=[];
+  const bitsFromNRZI=()=>{let prev=-1;const o=[];for(let k=0;k<n;k++){const l=((h1[k]+h2[k])/2)>t0?1:-1;o.push(l!==prev?1:0);prev=l;}return o;};
+  switch(code){
+    case '4B5B':{const c=bitsFromNRZI();for(let i=0;i+4<c.length;i+=5){const key=c.slice(i,i+5).join('');const v=B45inv[key];
+      if(v===undefined)out.push(0,0,0,0);else out.push((v>>3)&1,(v>>2)&1,(v>>1)&1,v&1);}break;}
+    case 'NRZI':out=bitsFromNRZI();break;
+    case 'NRZL':for(let k=0;k<n;k++)out.push((h1[k]+h2[k])/2>t0?1:0);break;
+    case 'RZ':for(let k=0;k<n;k++)out.push(h1[k]>t0?1:0);break;
+    case 'MANCH':for(let k=0;k<n;k++)out.push(h2[k]>h1[k]?1:0);break;
+    case 'DMANCH':{let pe=-1;for(let k=0;k<n;k++){const s=h1[k]>t0?1:-1;out.push(s===pe?1:0);pe=h2[k]>t0?1:-1;}break;}
+    case 'AMI':for(let k=0;k<n;k++)out.push(Math.abs((h1[k]+h2[k])/2)>0.5?1:0);break;
+    case 'HDB3':{let lp=-1;for(let k=0;k<n;k++){const a=(h1[k]+h2[k])/2;
+      if(Math.abs(a)>0.5){const p=a>0?1:-1;if(p===lp){for(let j=Math.max(0,k-3);j<=k;j++)out[j]=0;out[k]=0;}else{out.push(1);lp=p;}}else out.push(0);
+      if(out.length<k+1)out.push(0);}
+      break;}
+    default:for(let k=0;k<n;k++)out.push((h1[k]+h2[k])/2>t0?1:0);
+  }
+  return out;
+}
+/* Estadísticas de una codificación (sobre niveles de medio bit) */
+function lineStats(h){
+  let s=0,tr=0,run=0,maxRun=0,prev=null;
+  for(let i=0;i<h.length;i++){s+=h[i];const sg=Math.sign(h[i]);
+    if(prev!==null&&sg!==prev){tr++;run=0;}else run++;maxRun=Math.max(maxRun,run);prev=sg;}
+  return {dc:s/h.length,transitions:tr,maxRunBits:Math.ceil((maxRun+1)/2)};
+}
+
+/* ---------- Presupuesto de enlace por medio ---------- */
+const CABLES={
+  tp:{n:'Par trenzado (UTP)',z0:100,att:2,vf:0.65,bw100:100e6,xt:35},
+  coax:{n:'Cable coaxial',z0:50,att:1.5,vf:0.66,bw100:400e6,xt:70},
+  ideal:{n:'Línea ideal (sin pérdidas)',z0:50,att:0,vf:1,bw100:Infinity,xt:90},
+  lossy:{n:'Línea con pérdidas',z0:75,att:8,vf:0.6,bw100:20e6,xt:50},
+  wrong:{n:'Cable con impedancia incorrecta',z0:75,att:1.5,vf:0.66,bw100:400e6,xt:70}
+};
+const nth=(bw,nf)=>-174+10*Math.log10(Math.max(bw,1))+nf; // potencia de ruido térmico en dBm
+function linkBudget(S,medium){
+  medium=medium||S.ch.medium;const tx=S.tx;
+  const L={medium,loss:0,echoes:[],bw:Infinity,snrDb:60,prx:0,noise:-100,delay:0,info:{},warn:[]};
+  if(medium==='cable'){
+    const c=S.cable,T=CABLES[c.type]||CABLES.tp;
+    const g=(c.zl-c.z0)/(c.zl+c.z0),gs=(c.zs-c.z0)/(c.zs+c.z0);
+    const aDb=c.att*c.len/100,a=undb(-aDb/2);
+    const gc=clamp(g,-0.9999,0.9999),misl=-todb(1-gc*gc);
+    L.loss=aDb+misl;L.delay=c.len/(c.vf*C0);
+    const eg=g*gs*a*a;if(Math.abs(eg)>1e-4)L.echoes.push({delay:2*L.delay,gain:eg});
+    if(isFinite(T.bw100)&&c.att>0)L.bw=T.bw100*Math.pow(100/Math.max(c.len,1),2);
+    L.noise=nth(tx.bw,3)+c.noiseEx;L.prx=tx.power-L.loss;L.snrDb=L.prx-L.noise;
+    L.info={gamma:g,vswr:Math.abs(g)>=0.9999?Infinity:(1+Math.abs(g))/(1-Math.abs(g)),rl:-20*Math.log10(Math.max(Math.abs(g),1e-9)),aDb,misl,delay:L.delay,vp:c.vf*C0,echoGain:eg,gammaS:gs};
+  }else if(medium==='radio'){
+    const r=S.radio,lam=C0/r.f,d=r.dist;
+    const fspl=20*Math.log10(4*Math.PI*d/lam);
+    const pol={'V-V':0,'V-H':25,'V-CP':3,'CP-CP':0}[r.pol];
+    L.loss=fspl-r.gtx-r.grx+r.obst+pol+r.extra;L.delay=d/C0;
+    L.noise=nth(tx.bw,r.nf);L.prx=tx.power-L.loss;L.snrDb=L.prx-L.noise;
+    if(S.ch.refl){const dl=r.mpDelay*1e-9;L.echoes.push({delay:dl,gain:undb(r.mpGain/2),phase:-TAU*r.f*dl});}
+    if(d<lam*2)L.warn.push('Distancia < 2λ: la fórmula de espacio libre (campo lejano) no es válida; el valor mostrado es solo indicativo.');
+    L.info={lam,fspl,pol,prxdBm:L.prx,margin:L.prx-r.thr,dFar:2*Math.pow(r.apert||0.3,2)/lam};
+  }else{
+    const f=S.fiber,mm=f.mode==='MM',led=f.src==='LED';
+    const dl=led?40:(mm?0.5:1.0);                       // anchura espectral rms (nm)
+    const l0=1310,D=0.092/4*(f.wl-Math.pow(l0,4)/Math.pow(f.wl,3)); // ps/(nm·km)
+    const sc=Math.abs(D)*dl*f.len*1e-12;                // s
+    const sm=mm?0.187/(f.modalBW*1e6/f.len):0;           // s
+    const sg=Math.sqrt(sc*sc+sm*sm);
+    L.loss=f.att*f.len+f.nconn*f.connLoss+f.nspl*f.splLoss;L.delay=f.len*1000*1.468/C0;
+    L.noise=f.rxNoise;L.prx=tx.power-L.loss;L.snrDb=L.prx-L.noise;
+    if(sg>0)L.bw=0.187/sg;
+    const Tb=1/tx.bitrate,tp=f.pw/100*Tb;
+    L.info={D,dl,sc,sm,sg,Tb,tp,rmsOut:Math.sqrt(tp*tp/12+sg*sg),rmsIn:tp/Math.sqrt(12),margin:L.prx-f.sens,loss:L.loss,
+      isi:4*sg>Tb,bwEl:sg>0?0.187/sg:Infinity};
+  }
+  return L;
+}
+/* Banda base equivalente: semiancho de banda de la envolvente */
+function bwEnvelope(S,link,bb){const lim=bb?S.tx.bw:S.tx.bw/2;return Math.min(isFinite(link.bw)?link.bw:Infinity,lim);}
+
+/* ---------- Canal (sobre la envolvente) + ruido e interferencias ---------- */
+function applyChannel(xi,xq,fs,fc,ph0,bb,S,link,rn,ctx){
+  const ch=S.ch,N=xi.length;
+  let yi=Float64Array.from(xi),yq=Float64Array.from(xq);
+  const D={notes:[]};
+  if(!ch.ideal){
+    if(ch.dist){let pk=1e-12;for(let i=0;i<N;i++)pk=Math.max(pk,Math.hypot(yi[i],yq[i]));
+      for(let i=0;i<N;i++){const a=Math.hypot(yi[i],yq[i])/pk,g=1-ch.distK*a*a;yi[i]*=g;yq[i]*=g;}}
+    if(ch.refl&&link.echoes.length){
+      const oi=Float64Array.from(yi),oq=Float64Array.from(yq);
+      for(const e of link.echoes){
+        const dn=Math.round(e.delay*fs),ph=bb?0:(e.phase!==undefined?e.phase:-TAU*fc*e.delay),cr=e.gain*Math.cos(ph),ci=e.gain*Math.sin(ph);
+        for(let n=dn;n<N;n++){const a=yi[n-dn],b=yq[n-dn];oi[n]+=cr*a-ci*b;oq[n]+=cr*b+ci*a;}
+      }
+      yi=oi;yq=oq;
+    }
+    const bwE=bwEnvelope(S,link,bb);
+    if(ch.bwlim&&isFinite(bwE)&&bwE<fs*0.45){yi=lpf(yi,fs,bwE,1);yq=lpf(yq,fs,bwE,1);}
+    if(ch.fade){
+      const sp=Math.max(2,Math.round(ctx.sps*ch.fadeTc/3)),nn=Math.ceil(N/sp)+2,K=ch.fadeK,a=0.85,s=Math.sqrt(1-a*a);
+      const gI=new Float64Array(nn),gQ=new Float64Array(nn);gI[0]=rn.gauss()*Math.SQRT1_2;gQ[0]=rn.gauss()*Math.SQRT1_2;
+      for(let k=1;k<nn;k++){gI[k]=a*gI[k-1]+s*rn.gauss()*Math.SQRT1_2;gQ[k]=a*gQ[k-1]+s*rn.gauss()*Math.SQRT1_2;}
+      const ls=Math.sqrt(K/(K+1)),ds=Math.sqrt(1/(K+1));
+      for(let n=0;n<N;n++){const k=Math.floor(n/sp),f=n/sp-k;
+        const hr=ls+ds*(gI[k]*(1-f)+gI[k+1]*f),hi=ds*(gQ[k]*(1-f)+gQ[k+1]*f);
+        const a1=yi[n],b1=yq[n];yi[n]=a1*hr-b1*hi;yq[n]=a1*hi+b1*hr;}
+    }
+    if(!bb&&ch.cfo){const df=ch.cfoPct/100*ctx.Bref;for(let n=0;n<N;n++){const ph=TAU*df*n/fs,c=Math.cos(ph),s=Math.sin(ph);const a1=yi[n],b1=yq[n];yi[n]=a1*c-b1*s;yq[n]=a1*s+b1*c;}}
+    if(!bb&&ch.perr){const ph=ch.perrDeg*Math.PI/180,c=Math.cos(ph),s=Math.sin(ph);for(let n=0;n<N;n++){const a1=yi[n],b1=yq[n];yi[n]=a1*c-b1*s;yq[n]=a1*s+b1*c;}}
+    if(ch.jit){
+      const sd=ch.jitPct/100*ctx.sps,sp=Math.max(2,Math.round(ctx.sps/4)),nn=Math.ceil(N/sp)+2,dl=new Float64Array(nn);
+      let v=0;for(let k=0;k<nn;k++){v=0.7*v+0.714*rn.gauss();dl[k]=v*sd;}
+      const oi=new Float64Array(N),oq=new Float64Array(N);
+      for(let n=0;n<N;n++){const k=Math.floor(n/sp),f=n/sp-k;const pos=clamp(n+dl[k]*(1-f)+dl[k+1]*f,0,N-1.001);
+        const i0=Math.floor(pos),fr=pos-i0;oi[n]=yi[i0]*(1-fr)+yi[i0+1]*fr;oq[n]=yq[i0]*(1-fr)+yq[i0+1]*fr;}
+      yi=oi;yq=oq;
+    }
+  }
+  const g=(!ch.ideal&&ch.atten)?undb(-link.loss/2):1;   // amplitud = 10^(-dB/20)
+  for(let n=0;n<N;n++){yi[n]*=g;yq[n]*=g;}
+  const rs=bb?Float64Array.from(yi):upconvert(yi,yq,fs,fc,ph0);
+  const Psig=power(rs);
+  const snrDb=ch.snrMode==='enlace'?link.snrDb+10*Math.log10(S.tx.bw/ctx.Bref):ch.snr;
+  const r=Float64Array.from(rs),noise=new Float64Array(N);let Pn=0,Pint=0,sg2=0;
+  if(!ch.ideal){
+    if(ch.awgn){sg2=Psig/undb(snrDb)*fs/(2*ctx.Bref);}
+    if(ch.xtalk&&medium(S)==='cable'){sg2+=Psig*undb(-S.cable.xt)*fs/(2*ctx.Bref)*0.1;}
+    if(sg2>0){const sg=Math.sqrt(sg2);for(let n=0;n<N;n++){const v=sg*rn.gauss();noise[n]=v;r[n]+=v;}Pn=power(noise);}
+    if(ch.interf&&Psig>0){
+      const Pi=Psig/undb(ch.sir),Ai=Math.sqrt(2*Pi),fi=Math.max(fc+ch.interfOff/100*ctx.Bref,ctx.Bref*0.1),ph=rn()*TAU;
+      for(let n=0;n<N;n++)r[n]+=Ai*Math.cos(TAU*fi*n/fs+ph);Pint=Pi;
+    }
+  }
+  return {r,rs,noise,Psig,Pn,Pint,snrDb,gain:g,sigma2:sg2};
+}
+const medium=S=>S.ch.medium;
+
+/* Potencia de la señal dentro de la banda del receptor (la usa el AGC): se mezcla a banda base
+   y se filtra; así el ruido fuera de banda no domina la medida de nivel. */
+function bandPower(x,fs,fcMix,phDeg,bw,bb){
+  if(bb)return power(lpf(x,fs,bw,2));
+  const m=mixIQ(x,fs,fcMix,phDeg),zi=lpf(m.zi,fs,bw,2),zq=lpf(m.zq,fs,bw,2);
+  return (power(zi)+power(zq))/2;
+}
+function agcBandwidth(rid,S,RsRx){
+  const t=S.tx;
+  if(MODS[rid].fam==='analog')return Math.max(S.rx.ifBw/2,1);
+  if(rid==='BB')return 1.5*RsRx;
+  if(rid==='BFSK')return 0.5*t.sep+RsRx;
+  if(rid==='FSK4')return 1.5*t.sep+RsRx;
+  if(rid==='OFDM')return (t.nsc/2+0.5)*RsRx;
+  return RsRx;
+}
+/* ---------- Simulación digital ---------- */
+function theoBER(id,esn0,S){ // Es/N0 lineal -> BER teórica aproximada (receptor coherente ideal)
+  const bps=bpsOf(id,S);
+  switch(id){
+    case 'BPSK':case 'BB':return Qf(Math.sqrt(2*esn0));
+    case 'QPSK':case 'OFDM':return Qf(Math.sqrt(esn0));
+    case 'PSK8':return Math.min(0.5,2*Qf(Math.sqrt(2*esn0)*Math.sin(Math.PI/8))/3);
+    case 'QAM16':case 'QAM64':{const M=id==='QAM16'?16:64;return Math.min(0.5,(4/bps)*(1-1/Math.sqrt(M))*Qf(Math.sqrt(3*esn0/(M-1))));}
+    case 'OOK':return Qf(Math.sqrt(esn0/2));
+    case 'BFSK':return 0.5*Math.exp(-esn0/2);
+    default:return null;
+  }
+}
+function simDigital(S,seed){
+  const tx=S.tx,rx=S.rx,id=tx.mod,bb=id==='BB';
+  const R={type:'digital',mod:id,warn:[],notes:[]};
+  const rb=mkRng(seed.bits),rn=mkRng(seed.noise);
+  const bits=getBits(S,rb,R),nbits=bits.length;
+  const bps=bpsOf(id,S),lf=(bb&&tx.line==='4B5B')?1.25:1;
+  const pad=bb?(tx.line==='4B5B'?4:1):bps,bp=bits.slice();while(bp.length%pad)bp.push(0);
+  let cod=null,Ns;
+  if(bb){cod=lineEncode(tx.line,bp);Ns=cod.nc;}else Ns=bp.length/bps;
+  const Rs=bb?tx.bitrate*lf:tx.bitrate/bps,fc=bb?0:tx.fcD,ph0=tx.phase*Math.PI/180;
+  const fmax=bb?0:fc+(id==='BFSK'?2*tx.sep:id==='FSK4'?4*tx.sep:id==='OFDM'?tx.nsc*Rs:0)+2*Rs;
+  let sps=bb?64:Math.ceil(clamp(16*fmax/Rs,32,1024));
+  if(!bb&&16*fmax/Rs>1024)R.warn.push('La portadora es demasiado alta respecto a la tasa de símbolos: el muestreo interno se ha limitado y puede producir aliasing.');
+  if(sps%2)sps++;
+  const fs=sps*Rs,N=Ns*sps;
+  const xi=new Float64Array(N),xq=new Float64Array(N);
+  let txPts=null;const symTx=new Int16Array(Ns);
+  if(bb){for(let k=0;k<Ns;k++)for(let n=0;n<sps;n++)xi[k*sps+n]=tx.amp*(n<sps/2?cod.h[2*k]:cod.h[2*k+1]);}
+  else if(isLin(id)){
+    const C=constellation(id,tx.levels),map=[];C.forEach((p,i)=>map[keyOf(p.bits)]=i);txPts=[];
+    for(let k=0;k<Ns;k++){const ix=map[keyOf(bp.slice(k*bps,(k+1)*bps))],p=C[ix];symTx[k]=ix;txPts.push(p);
+      for(let n=0;n<sps;n++){xi[k*sps+n]=tx.amp*p.i;xq[k*sps+n]=tx.amp*p.q;}}
+  }else if(id==='BFSK'||id==='FSK4'){
+    const M=id==='BFSK'?2:4;let th=0;
+    for(let k=0;k<Ns;k++){const key=keyOf(bp.slice(k*bps,(k+1)*bps)),tone=M===2?key:GRAYFSK4[key];symTx[k]=tone;
+      const off=(tone-(M-1)/2)*tx.sep;
+      for(let n=0;n<sps;n++){xi[k*sps+n]=tx.amp*Math.cos(th);xq[k*sps+n]=tx.amp*Math.sin(th);th+=TAU*off/fs;}}
+  }else if(id==='OFDM'){
+    const nsc=tx.nsc,sc=tx.amp/Math.sqrt(nsc);txPts=[];
+    for(let k=0;k<Ns;k++){const cs=[];
+      for(let s=0;s<nsc;s++){const b0=bp[k*bps+2*s],b1=bp[k*bps+2*s+1];cs.push({i:(b0?-1:1)/Math.SQRT2,q:(b1?-1:1)/Math.SQRT2});txPts.push(cs[s]);}
+      for(let n=0;n<sps;n++){let a=0,b=0;
+        for(let s=0;s<nsc;s++){const th=TAU*(s-(nsc-1)/2)*Rs*n/fs,c=Math.cos(th),sn=Math.sin(th);a+=cs[s].i*c-cs[s].q*sn;b+=cs[s].i*sn+cs[s].q*c;}
+        xi[k*sps+n]=sc*a;xq[k*sps+n]=sc*b;}}
+  }
+  const txs=bb?Float64Array.from(xi):upconvert(xi,xq,fs,fc,ph0);
+  const info=new Float32Array(N);
+  for(let n=0;n<N;n++){const bi=Math.floor(n/fs*tx.bitrate);info[n]=bi<nbits?(bits[bi]?1:-1):0;}
+  /* canal */
+  const link=linkBudget(S);const Bref=id==='OFDM'?Rs*tx.nsc:Rs;
+  const ch=applyChannel(xi,xq,fs,fc,ph0,bb,S,link,rn,{sps,Bref});
+  const r=ch.r;
+  /* receptor */
+  const rid=rx.demod,rm=MODS[rid];R.rxFam=rm.fam;
+  let rxBits=[],pts=[],ideal=[],symRx=[],eyeSig=null,demodSig=new Float64Array(N),rbps=bpsOf(rid,S),kindMismatch=false;
+  const rlf=(rid==='BB'&&rx.decode==='4B5B')?1.25:1;
+  const RsRx=rid==='BB'?rx.bitrate*rlf:rx.bitrate/rbps;
+  const L=fs/RsRx,off=rx.sync/100*L;
+  let gR=undb(rx.gainDb/2);
+  if(rx.agc){const bwA=agcBandwidth(rid,S,RsRx);
+    const Pnom=bandPower(txs,fs,bb?0:tx.fcD,tx.phase,bwA,bb||rid==='BB')/(tx.amp*tx.amp||1);
+    const Pr=bandPower(r,fs,rid==='BB'?0:(MODS[rid].fam==='analog'?rx.fcA:rx.fcD),rx.phase,bwA,rid==='BB');
+    if(Pr>1e-30&&Pnom>0)gR*=clamp(Math.sqrt(Pnom/Pr),1e-3,1e3);}
+  const rr=new Float64Array(N);for(let n=0;n<N;n++)rr[n]=r[n]*gR;
+  if(rm.fam==='analog'){kindMismatch=true;}
+  else{
+    const nSym=Math.max(0,Math.floor((N-Math.max(off,0))/L));
+    const win=k=>{const a=Math.max(0,Math.round(off+k*L)),b=Math.min(N,Math.round(off+(k+1)*L));return [a,Math.max(b,a+1)];};
+    if(rid==='BB'){
+      const h1=[],h2=[],t0=rx.thr-0.5;
+      for(let k=0;k<nSym;k++){const [a,b]=win(k),m=(a+b)>>1;let s1=0,s2=0;for(let n=a;n<m;n++)s1+=rr[n];for(let n=m;n<b;n++)s2+=rr[n];
+        h1.push(s1/Math.max(m-a,1));h2.push(s2/Math.max(b-m,1));}
+      rxBits=lineDecode(rx.decode,h1,h2,t0);
+      for(let k=0;k<nSym;k++)pts.push({i:(h1[k]+h2[k])/2,q:0});
+      eyeSig=lpf(rr,fs,0.9*RsRx*(rx.decode==='MANCH'||rx.decode==='DMANCH'||rx.decode==='RZ'?2:1),2);demodSig=eyeSig;
+    }else{
+      const mx=mixIQ(rr,fs,rx.fcD,rx.phase);
+      const cut=Math.max(0.75*RsRx,1);
+      const fi=rx.filter==='lp'?lpf(mx.zi,fs,cut,2):mx.zi,fq=rx.filter==='lp'?lpf(mx.zq,fs,cut,2):mx.zq;
+      eyeSig=lpf(mx.zi,fs,1.2*RsRx,2);demodSig=eyeSig;
+      if(isLin(rid)){
+        const C=constellation(rid,tx.levels);ideal=C;const z=[];
+        for(let k=0;k<nSym;k++){const [a,b]=win(k);let si=0,sq=0;
+          if(rx.filter==='matched'){for(let n=a;n<b;n++){si+=mx.zi[n];sq+=mx.zq[n];}si/=b-a;sq/=b-a;}
+          else{const m=Math.min(N-1,(a+b)>>1);si=fi[m];sq=fq[m];}
+          z.push({i:si,q:sq});}
+        if(rx.eq==='train'&&txPts&&isLin(id)){let nu1=0,nu2=0,de=0;const T=Math.min(rx.train,z.length,txPts.length);
+          for(let k=0;k<T;k++){const c=txPts[k];nu1+=z[k].i*c.i+z[k].q*c.q;nu2+=z[k].q*c.i-z[k].i*c.q;de+=c.i*c.i+c.q*c.q;}
+          if(de>0){const hr=nu1/de,hi=nu2/de,hm=hr*hr+hi*hi;if(hm>1e-12)for(const p of z){const a=p.i,b=p.q;p.i=(a*hr+b*hi)/hm;p.q=(b*hr-a*hi)/hm;}}
+        }else if(rx.eq==='train')R.notes.push('El ecualizador de entrenamiento solo se aplica a modulaciones lineales (ASK/PSK/QAM).');
+        for(const p of z){let ix=0;
+          if(rid==='OOK'){const v=rx.detect==='nc'?Math.hypot(p.i,p.q):p.i;ix=v>=rx.thr?1:0;}
+          else if(rid==='ASK'&&C.length===2){const v=rx.detect==='nc'?Math.hypot(p.i,p.q):p.i,lo=C[0].i,hi=C[1].i;ix=v>=lo+rx.thr*(hi-lo)?1:0;}
+          else{let best=1e18;for(let j=0;j<C.length;j++){const d=(p.i-C[j].i)**2+(p.q-C[j].q)**2;if(d<best){best=d;ix=j;}}}
+          symRx.push(ix);rxBits.push(...C[ix].bits);pts.push(p);}
+      }else if(rid==='BFSK'||rid==='FSK4'){
+        const M=rid==='BFSK'?2:4;
+        for(let k=0;k<nSym;k++){const [a,b]=win(k);let best=-1,bj=0;
+          for(let j=0;j<M;j++){const f=rx.fcD+(j-(M-1)/2)*tx.sep;let cr=0,ci=0;
+            for(let n=a;n<b;n++){const th=TAU*f*n/fs;cr+=rr[n]*Math.cos(th);ci+=rr[n]*Math.sin(th);}
+            const E=cr*cr+ci*ci;if(E>best){best=E;bj=j;}}
+          symRx.push(bj);const key=M===2?bj:GRAYFSK4.indexOf(bj);rxBits.push(...bitsOfInt(key,Math.log2(M)));}
+        if(rx.detect==='coh')R.notes.push('FSK se detecta siempre por energía (no coherente) en este simulador.');
+      }else if(rid==='OFDM'){
+        const nsc=tx.nsc;ideal=constellation('QPSK');
+        for(let k=0;k<nSym;k++){const [a,b]=win(k);const zr=[];
+          for(let s=0;s<nsc;s++){let si=0,sq=0;
+            for(let n=a;n<b;n++){const th=TAU*(s-(nsc-1)/2)*RsRx*(n-a)/fs,c=Math.cos(th),sn=Math.sin(th);
+              si+=mx.zi[n]*c+mx.zq[n]*sn;sq+=mx.zq[n]*c-mx.zi[n]*sn;}
+            si=si/(b-a)*Math.sqrt(nsc);sq=sq/(b-a)*Math.sqrt(nsc);
+            const p={i:si,q:sq};pts.push(p);rxBits.push(si<0?1:0,sq<0?1:0);}}
+      }
+    }
+  }
+  /* métricas */
+  const errMask=new Uint8Array(nbits);let nErr=0;
+  if(!kindMismatch)for(let i=0;i<nbits;i++){const e=i>=rxBits.length||rxBits[i]!==bits[i];errMask[i]=e?1:0;nErr+=errMask[i];}
+  else{nErr=NaN;}
+  // marca de acierto de cada punto de constelación
+  if(pts.length&&bps===rbps&&isFinite(nErr)){for(let k=0;k<pts.length;k++){let ok=true;const base=(rid==='OFDM')?2*k:rbps*k;
+    for(let j=0;j<(rid==='OFDM'?2:rbps);j++){const idx=base+j;if(idx<nbits&&errMask[idx])ok=false;}pts[k].ok=ok;}}
+  else for(const p of pts)p.ok=null;
+  const spT=spectrum(txs,fs),spR=spectrum(rr,fs);
+  const esn0=undb(ch.snrDb);
+  const sigBands=Math.max(1,Math.round(1));
+  Object.assign(R,{fs,N,sps,Rs,RsRx,fc,bits,nbits,bps,rbps,rxBits,errMask,nErr,ber:kindMismatch?NaN:nErr/nbits,
+    tx:txs,rxg:rr,rxRaw:r,demod:demodSig,info,eyeSig,eyeL:L,eyeOff:off,link,
+    cons:{ideal:ideal.length?ideal:(isLin(id)?constellation(id,tx.levels):[]),pts,rid,txid:id},symTx,symRx,
+    snrCfg:ch.snrDb,Psig:ch.Psig,Pn:ch.Pn,Pint:ch.Pint,Bref,
+    snrMeas:ch.Pn>0?todb(ch.Psig/(ch.Pn*2*Bref/fs)):Infinity,
+    spT,spR,occBw:occupiedBw(spT),T:N/fs,Tunit:1/Rs,txPts,kindMismatch,
+    theo:kindMismatch?null:(rid===id?theoBER(id,esn0,S):null),esn0,
+    estBw:bb?Rs*2:(isLin(id)?2*Rs:id==='BFSK'?(tx.sep+2*Rs):id==='FSK4'?(3*tx.sep+2*Rs):id==='OFDM'?(tx.nsc+1)*Rs:2*Rs),
+    sigmaN:Math.sqrt(ch.sigma2),Ns,nSymRx:pts.length});
+  if(R.estBw>S.tx.bw)R.warn.push('Ancho de banda disponible insuficiente: se necesitan ≈ '+(R.estBw/1e6).toFixed(2)+' MHz y hay '+(S.tx.bw/1e6).toFixed(2)+' MHz. El canal recortará el espectro.');
+  if(link.warn.length)R.warn.push(...link.warn);
+  return R;
+}
+
+/* ---------- Simulación analógica ---------- */
+function simAnalog(S,seed){
+  const tx=S.tx,rx=S.rx,id=tx.mod;
+  const R={type:'analog',mod:id,warn:[],notes:[]};
+  const rn=mkRng(seed.noise);
+  const fm=tx.fm,fc=tx.fcA,A=tx.amp,ph0=tx.phase*Math.PI/180;
+  let src=['sine','square','tri','audio'].includes(tx.src)?tx.src:'sine';
+  if(src!==tx.src)R.notes.push('La modulación analógica necesita una fuente analógica: se usa la señal senoidal.');
+  const fmax=fc+2*fm+(id==='FM'?tx.dev:0)+(id==='PM'?tx.kp*fm:0);
+  const fs=20*fmax;
+  let periods=6;periods=Math.max(2,Math.min(6,Math.floor(30000*fm/fs)));
+  const N=Math.round(periods*fs/fm);
+  const {m,mh}=infoSignal(src,fm,N,fs);
+  const xi=new Float64Array(N),xq=new Float64Array(N),aux=new Float64Array(N);
+  let auxLabel='',auxUnit='';
+  if(id==='AM'){for(let n=0;n<N;n++){xi[n]=A*(1+tx.mu*m[n]);aux[n]=xi[n];}auxLabel='Envolvente A(1+μ·m(t))';auxUnit='V';
+    if(tx.mu>1)R.warn.push('Sobremodulación (μ > 1): la envolvente cambia de signo, se invierte la fase de la portadora y el detector de envolvente distorsiona la señal.');}
+  else if(id==='DSB'){for(let n=0;n<N;n++){xi[n]=A*m[n];aux[n]=xi[n];}auxLabel='Envolvente A·m(t) (cambia de fase al cruzar por cero)';auxUnit='V';}
+  else if(id==='SSB'){for(let n=0;n<N;n++){xi[n]=A/2*m[n];xq[n]=A/2*mh[n];aux[n]=Math.hypot(xi[n],xq[n]);}auxLabel='Módulo de la envolvente compleja';auxUnit='V';}
+  else if(id==='FM'){let th=0;for(let n=0;n<N;n++){th+=TAU*tx.dev*m[n]/fs;xi[n]=A*Math.cos(th);xq[n]=A*Math.sin(th);aux[n]=fc+tx.dev*m[n];}auxLabel='Frecuencia instantánea fi(t) = fc + Δf·m(t)';auxUnit='Hz';}
+  else{for(let n=0;n<N;n++){const th=tx.kp*m[n];xi[n]=A*Math.cos(th);xq[n]=A*Math.sin(th);aux[n]=th;}auxLabel='Desplazamiento de fase kp·m(t)';auxUnit='rad';}
+  const txs=upconvert(xi,xq,fs,fc,ph0);
+  const link=linkBudget(S),Bref=2*fm;
+  const ch=applyChannel(xi,xq,fs,fc,ph0,false,S,link,rn,{sps:fs/fm/8,Bref});
+  const r=ch.r,rid=rx.demod,kindMismatch=MODS[rid].fam!=='analog';
+  let gR=undb(rx.gainDb/2);
+  if(rx.agc){const bwA=Math.max(rx.ifBw/2,1);
+    const Pnom=bandPower(txs,fs,fc,tx.phase,bwA,false)/(A*A||1),Pr=bandPower(r,fs,rx.fcA,rx.phase,bwA,false);
+    if(Pr>1e-30&&Pnom>0)gR*=clamp(Math.sqrt(Pnom/Pr),1e-3,1e3);}
+  const rr=new Float64Array(N);for(let n=0;n<N;n++)rr[n]=r[n]*gR;
+  let y=new Float64Array(N);
+  if(!kindMismatch){
+    if(rid==='AM'){const a=new Float64Array(N);for(let n=0;n<N;n++)a[n]=Math.abs(rr[n])*Math.PI/2;const l=lpf(a,fs,rx.lpBw,2),mu=mean(l);for(let n=0;n<N;n++)y[n]=l[n]-mu;}
+    else if(rid==='DSB'||rid==='SSB'){const mx=mixIQ(rr,fs,rx.fcA,rx.phase);y=lpf(mx.zi,fs,rx.lpBw,2);}
+    else{
+      const mx=mixIQ(rr,fs,rx.fcA,rx.phase),c=Math.max(rx.ifBw/2,1),zi=lpf(mx.zi,fs,c,2),zq=lpf(mx.zq,fs,c,2),ph=new Float64Array(N);
+      let prev=Math.atan2(zq[0],zi[0]),acc=prev;ph[0]=acc;
+      for(let n=1;n<N;n++){const p=Math.atan2(zq[n],zi[n]);let d=p-prev;if(d>Math.PI)d-=TAU;else if(d<-Math.PI)d+=TAU;acc+=d;prev=p;ph[n]=acc;}
+      if(rid==='FM'){const f=new Float64Array(N);for(let n=1;n<N-1;n++)f[n]=(ph[n+1]-ph[n-1])*fs/(2*TAU);f[0]=f[1];f[N-1]=f[N-2];const mu=mean(f);for(let n=0;n<N;n++)f[n]-=mu;y=lpf(f,fs,rx.lpBw,2);}
+      else{const mu=mean(ph);for(let n=0;n<N;n++)y[n]=ph[n]-mu;y=lpf(y,fs,rx.lpBw,2);}
+    }
+    let pk=0;for(let n=0;n<N;n++)pk=Math.max(pk,Math.abs(y[n]));if(pk>0)for(let n=0;n<N;n++)y[n]/=pk;
+  }
+  let rho=NaN,snrOut=NaN;
+  if(!kindMismatch){let sxy=0,sxx=0,syy=0;const mm=mean(m),my=mean(y);
+    for(let n=0;n<N;n++){const a=m[n]-mm,b=y[n]-my;sxy+=a*b;sxx+=a*a;syy+=b*b;}
+    rho=(sxx>0&&syy>0)?sxy/Math.sqrt(sxx*syy):0;snrOut=todb(rho*rho/Math.max(1-rho*rho,1e-12));}
+  const spT=spectrum(txs,fs),spR=spectrum(rr,fs);
+  const bwEst=id==='AM'||id==='DSB'?2*fm:id==='SSB'?fm:id==='FM'?2*(tx.dev+fm):2*(tx.kp+1)*fm;
+  const info=new Float32Array(N);for(let n=0;n<N;n++)info[n]=m[n];
+  Object.assign(R,{fs,N,fc,fm,Rs:fm,Tunit:1/fm,T:N/fs,tx:txs,rxg:rr,rxRaw:r,demod:y,info,m,aux,auxLabel,auxUnit,link,
+    snrCfg:ch.snrDb,Psig:ch.Psig,Pn:ch.Pn,Pint:ch.Pint,Bref,snrMeas:ch.Pn>0?todb(ch.Psig/(ch.Pn*2*Bref/fs)):Infinity,
+    rho,snrOut,kindMismatch,spT,spR,occBw:occupiedBw(spT),estBw:bwEst,cons:{ideal:[],pts:[]},ber:NaN,nErr:NaN,
+    bits:[],rxBits:[],errMask:new Uint8Array(0),nbits:0,sps:fs/fm,RsRx:fm,eyeSig:null});
+  if(bwEst>S.tx.bw)R.warn.push('Ancho de banda disponible insuficiente para esta modulación (se necesitan ≈ '+(bwEst/1e3).toFixed(1)+' kHz).');
+  return R;
+}
+function simulate(S,seed){
+  const id=S.tx.mod;
+  return MODS[id].fam==='analog'?simAnalog(S,seed):simDigital(S,seed);
+}
+
+/* ---------- Diagnóstico: separa los tipos de fallo ---------- */
+function diagnose(S,R){
+  const tx=S.tx,rx=S.rx,out=[];const add=(type,sev,msg)=>out.push({type,sev,msg});
+  const txA=isAnalog(tx.mod),rxA=isAnalog(rx.demod);
+  if(txA!==rxA){add('Modulación','err','Tipo de señal incompatible: el emisor es '+(txA?'analógico':'digital')+' y el receptor espera '+(rxA?'analógico':'digital')+'. No se puede recuperar la información.');}
+  else if(tx.mod!==rx.demod){
+    const a=MODS[tx.mod].name,b=MODS[rx.demod].name;let why='la constelación o el algoritmo de detección no coinciden con lo transmitido';
+    if(!txA){const bt=bpsOf(tx.mod,S),br=bpsOf(rx.demod,S);if(bt!==br)why='distinto número de bits por símbolo ('+bt+' frente a '+br+'): los bits recuperados se desalinean';}
+    add('Modulación','err','Incompatibilidad de modulación: se transmite '+a+' y se demodula como '+b+'; '+why+'.');
+  }
+  if(txA){
+    const df=Math.abs(rx.fcA-tx.fcA);if(df>0.005*R.Bref)add('Sincronización','err','Error de portadora de '+fmtHz(df)+': el oscilador local no coincide con la portadora (batido/rotación continua).');
+  }else if(tx.mod!=='BB'&&rx.demod!=='BB'){
+    const df=Math.abs(rx.fcD-tx.fcD);if(df>0.002*R.Rs)add('Sincronización','err','Error de portadora de '+fmtHz(df)+': la constelación gira '+(360*df/R.Rs).toFixed(1)+'° por símbolo.');
+  }
+  const dph=Math.abs(((rx.phase-tx.phase+540)%360)-180);const dph2=Math.min(dph,360-dph);
+  if(tx.mod!=='BB'&&rx.demod!=='BB'&&['PSK8','QPSK','BPSK','QAM16','QAM64','ASK','DSB','SSB','PM'].includes(rx.demod)&&Math.abs(((rx.phase-tx.phase+180)%360)-180)>5)
+    add('Sincronización','warn','Error de fase de referencia de '+Math.abs(((rx.phase-tx.phase+180)%360)-180).toFixed(0)+'°: gira la constelación / reduce la amplitud detectada.');
+  if(!txA&&!rxA){
+    if(Math.abs(rx.bitrate-tx.bitrate)/tx.bitrate>0.005)add('Tasa de símbolos','err','Tasa de bits del receptor ('+fmtBps(rx.bitrate)+') distinta de la del emisor ('+fmtBps(tx.bitrate)+'): las ventanas de integración se desplazan símbolo a símbolo.');
+    if(Math.abs(rx.sync)>10)add('Sincronización','err','Instante de muestreo desplazado un '+rx.sync.toFixed(0)+' % de la duración del símbolo: se integra parte del símbolo vecino.');
+    if(tx.mod==='BB'&&rx.demod==='BB'&&rx.decode!==tx.line)add('Modulación','err','Decodificador de línea ('+LINES[rx.decode]+') distinto del codificador del emisor ('+LINES[tx.line]+').');
+  }
+  const hard=out.some(o=>o.sev==='err');
+  const ch=S.ch,imp=[];
+  if(!ch.ideal){if(ch.awgn)imp.push('AWGN');if(ch.atten)imp.push('atenuación');if(ch.refl&&R.link.echoes.length)imp.push('reflexiones/multitrayecto');if(ch.dist)imp.push('distorsión');if(ch.cfo)imp.push('desplazamiento de frecuencia');if(ch.perr)imp.push('error de fase');if(ch.jit)imp.push('jitter');if(ch.interf)imp.push('interferencia');if(ch.fade)imp.push('desvanecimiento');if(ch.bwlim&&isFinite(bwEnvelope(S,R.link,tx.mod==='BB')))imp.push('ancho de banda limitado');}
+  if(!txA&&!rxA&&!hard&&R.nErr>0)add('Degradación del canal','warn','Receptor coherente con el emisor, pero hay '+R.nErr+' bits erróneos causados por el canal (SNR efectiva '+R.snrCfg.toFixed(1)+' dB; efectos activos: '+(imp.join(', ')||'ninguno')+').');
+  if(txA&&rxA&&!hard&&R.rho<0.98)add('Degradación del canal','warn','Correlación de la señal recuperada ρ = '+R.rho.toFixed(3)+' (SNR efectiva '+R.snrCfg.toFixed(1)+' dB; efectos: '+(imp.join(', ')||'ninguno')+').');
+  if(!out.length)add('Receptor','ok','Receptor configurado de forma coherente con el emisor'+(imp.length?'. Efectos del canal activos: '+imp.join(', ')+'.':'.'));
+  return out;
+}
+const fmtHz=v=>{const a=Math.abs(v);return a>=1e9?(v/1e9).toPrecision(4)+' GHz':a>=1e6?(v/1e6).toPrecision(4)+' MHz':a>=1e3?(v/1e3).toPrecision(4)+' kHz':v.toPrecision(4)+' Hz';};
+const fmtBps=v=>{const a=Math.abs(v);return a>=1e9?(v/1e9).toPrecision(4)+' Gb/s':a>=1e6?(v/1e6).toPrecision(4)+' Mb/s':a>=1e3?(v/1e3).toPrecision(4)+' kb/s':v.toPrecision(4)+' b/s';};
+//>>CORE
+//<<UI
+/* =====================================================================
+   INTERFAZ: estado, controles, instrumentos (Canvas 2D)
+   ===================================================================== */
+const DEF=()=>({
+ tx:{src:'random',manual:'1011001110100110',text:'Hola',pattern:'1011',nbits:32,mod:'QPSK',fm:1000,fcA:20000,fcD:4e6,amp:1,phase:0,bitrate:1e6,levels:2,sep:1e6,nsc:8,mu:0.8,dev:5000,kp:1.5,line:'MANCH',bw:4e6,power:0},
+ rx:{demod:'QPSK',fcA:20000,fcD:4e6,phase:0,gainDb:0,agc:true,thr:0.5,bitrate:1e6,sync:0,filter:'matched',lpBw:4000,ifBw:14000,detect:'coh',decode:'MANCH',eq:'none',train:4},
+ ch:{medium:'cable',snrMode:'manual',snr:15,ideal:false,awgn:true,atten:true,bwlim:true,refl:false,dist:false,distK:0.3,cfo:false,cfoPct:5,perr:false,perrDeg:20,jit:false,jitPct:10,interf:false,sir:10,interfOff:50,fade:false,fadeK:3,fadeTc:6,xtalk:false},
+ cable:{type:'tp',len:100,z0:100,zl:100,zs:100,att:2,vf:0.65,xt:35,noiseEx:30},
+ radio:{band:'ISM2400',f:2.4e9,dist:100,gtx:3,grx:3,pol:'V-V',obst:0,extra:0,mpDelay:200,mpGain:-6,h1:10,h2:2,nf:6,thr:-90,rho:0.7},
+ fiber:{mode:'SM',src:'laser',len:20,att:0.2,wl:1550,pw:100,nconn:2,connLoss:0.5,nspl:4,splLoss:0.1,rxNoise:-45,sens:-28,modalBW:500}
+});
+let S=DEF();
+const seed={bits:20240611,noise:987654};
+let R=null,DG=[],dirty=true;
+const P={playing:false,t:0,speed:1,frozen:false,halted:false,vis:0};
+const view={span:8,spanA:3,vscale:1,traces:{info:true,carrier:false,tx:true,rx:true,demod:true}};
+const $=id=>document.getElementById(id);
+const COL={green:'#3ddc84',blue:'#4aa3ff',orange:'#ff9f43',violet:'#b88cff',cyan:'#37e6e6',red:'#ff5d5d',yellow:'#ffd54a',dim:'#8d97a5',grid:'#1e2832',axis:'#3b4655'};
+
+/* ---------- formato ---------- */
+function si(v,u,d){
+  if(v===undefined||v===null||Number.isNaN(v))return '—';if(!isFinite(v))return (v<0?'−':'')+'∞ '+u;
+  const a=Math.abs(v);if(a===0)return '0 '+u;
+  const T=[[1e9,'G'],[1e6,'M'],[1e3,'k'],[1,''],[1e-3,'m'],[1e-6,'µ'],[1e-9,'n'],[1e-12,'p']];
+  for(const [s,p] of T)if(a>=s*0.9995)return (v/s).toPrecision(d||3).replace('.',',')+' '+p+u;
+  return v.toExponential(1).replace('.',',')+' '+u;
+}
+const nf=(v,d)=>Number.isFinite(v)?v.toFixed(d===undefined?2:d).replace('.',','):(v>0?'∞':v<0?'−∞':'—');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const isDigitalSrc=s=>['random','manual','text','pattern'].includes(s);
+
+/* ---------- constructor de controles a partir de un esquema ---------- */
+const REG=[]; // registro de controles para sincronizar con el estado
+function mkCtl(host,it,obj){
+  const w=document.createElement('div');w.className='ctl'+(it.t==='check'?' chk':'');
+  const id='c_'+Math.random().toString(36).slice(2,9);
+  const lab=document.createElement('label');lab.htmlFor=id;
+  const lt=document.createElement('span');lt.textContent=it.l+(it.unit&&it.t!=='range'&&it.t!=='number'?'':'');
+  lab.appendChild(lt);let out=null;
+  if(it.t==='range'||it.t==='number'){const u=document.createElement('span');u.className='hint';u.textContent=it.unit?'['+it.unit+']':'';lab.appendChild(u);}
+  let el;
+  if(it.t==='select'){el=document.createElement('select');
+    const add=(parent,o)=>{const op=document.createElement('option');op.value=o[0];op.textContent=o[1];parent.appendChild(op);};
+    if(it.groups)for(const g of it.groups){const og=document.createElement('optgroup');og.label=g.g;g.o.forEach(o=>add(og,o));el.appendChild(og);}
+    else it.opts.forEach(o=>add(el,o));}
+  else if(it.t==='check'){el=document.createElement('input');el.type='checkbox';}
+  else if(it.t==='text'){el=document.createElement('input');el.type='text';}
+  else if(it.t==='number'){el=document.createElement('input');el.type='number';el.min=it.min;el.max=it.max;el.step=it.step||'any';}
+  else{el=document.createElement('input');el.type='range';el.min=it.min;el.max=it.max;el.step=it.step;out=document.createElement('output');out.htmlFor=id;lab.appendChild(out);}
+  el.id=id;
+  if(it.t==='check'){w.appendChild(lab);lab.prepend(el);}else{w.appendChild(lab);w.appendChild(el);}
+  if(it.tip){const h=document.createElement('div');h.className='hint';h.textContent=it.tip;w.appendChild(h);}
+  host.appendChild(w);
+  const sc=it.scale||1,o=()=>typeof obj==='function'?obj():obj;
+  const show=()=>{out&&(out.textContent=(it.fmt?it.fmt(o()[it.k]):nf(o()[it.k]/sc,it.dec===undefined?(sc>1?3:2):it.dec).replace(/,?0+$/,m=>m.includes(',')?'':m)));};
+  const sync=()=>{const v=o()[it.k];
+    if(it.t==='check')el.checked=!!v;else if(it.t==='select')el.value=String(v);else if(it.t==='text')el.value=v;
+    else el.value=String(+(v/sc).toPrecision(8));
+    show();w.hidden=it.show?!it.show(S):false;};
+  const on=()=>{const c=o();let v;
+    if(it.t==='check')v=el.checked;
+    else if(it.t==='select'){v=el.value;if(typeof c[it.k]==='number')v=Number(v);}
+    else if(it.t==='text')v=el.value;
+    else{v=parseFloat(el.value);if(!Number.isFinite(v))return;v*=sc;if(it.t==='number'){v=clamp(v,it.min*sc,it.max*sc);}}
+    c[it.k]=v;if(it.hook)it.hook(v);dirty=true;show();syncAll(true);};
+  el.addEventListener(it.t==='range'||it.t==='text'?'input':'change',on);
+  REG.push({sync});sync();
+}
+function buildCtl(hostId,items,obj){const h=$(hostId);items.forEach(it=>mkCtl(h,it,obj));}
+function syncAll(light){REG.forEach(r=>r.sync());if(!light)updatePresetButtons();}
+
+/* ---------- esquemas de controles ---------- */
+const MODGROUPS=[{g:'Analógicas',o:[['AM','AM'],['DSB','DSB-SC'],['SSB','SSB (BLU)'],['FM','FM'],['PM','PM']]},
+  {g:'Digitales',o:[['ASK','ASK'],['OOK','OOK'],['BFSK','FSK / BFSK'],['FSK4','4-FSK'],['BPSK','BPSK'],['QPSK','QPSK'],['PSK8','8-PSK'],['QAM16','16-QAM'],['QAM64','64-QAM'],['OFDM','OFDM']]},
+  {g:'Banda base',o:[['BB','Codificación de línea']]}];
+const LINEOPTS=Object.entries(LINES);
+const txA=()=>isAnalog(S.tx.mod),txBB=()=>S.tx.mod==='BB',txD=()=>!txA();
+const rxA=()=>isAnalog(S.rx.demod);
+function onTxMod(){
+  if(isAnalog(S.tx.mod)&&!['sine','square','tri','audio'].includes(S.tx.src))S.tx.src='sine';
+  else if(!isAnalog(S.tx.mod)&&!isDigitalSrc(S.tx.src)&&false)S.tx.src='random';
+}
+const TXS=[
+ {k:'src',t:'select',l:'Fuente de información',opts:[['random','Generación aleatoria de bits'],['manual','Secuencia binaria manual'],['text','Texto del usuario'],['pattern','Patrón binario repetitivo'],['sine','Onda senoidal'],['square','Onda cuadrada'],['tri','Señal triangular'],['audio','Audio sintético']]},
+ {k:'manual',t:'text',l:'Secuencia manual (0/1)',show:S=>S.tx.src==='manual'},
+ {k:'text',t:'text',l:'Texto (máx. 16 caracteres, 8 bits/carácter)',show:S=>S.tx.src==='text'},
+ {k:'pattern',t:'text',l:'Patrón que se repite (0/1)',show:S=>S.tx.src==='pattern'},
+ {k:'nbits',t:'range',l:'Número de bits transmitidos',unit:'bits',min:8,max:128,step:8,dec:0,show:S=>txD()&&['random','pattern','sine','square','tri','audio'].includes(S.tx.src)},
+ {k:'mod',t:'select',l:'Modulación',groups:MODGROUPS,hook:onTxMod},
+ {k:'line',t:'select',l:'Codificación de línea',opts:LINEOPTS,show:S=>txBB()},
+ {k:'fm',t:'number',l:'Frecuencia de la señal de información',unit:'kHz',scale:1e3,min:0.1,max:20,show:S=>txA()},
+ {k:'fcA',t:'number',l:'Frecuencia de portadora',unit:'kHz',scale:1e3,min:5,max:500,show:S=>txA()},
+ {k:'fcD',t:'number',l:'Frecuencia de portadora',unit:'MHz',scale:1e6,min:0.1,max:2000,show:S=>txD()&&!txBB()},
+ {k:'bitrate',t:'number',l:'Tasa de bits',unit:'kb/s',scale:1e3,min:1,max:1e9,show:S=>txD()},
+ {k:'amp',t:'range',l:'Amplitud',unit:'V',min:0.1,max:2,step:0.05},
+ {k:'phase',t:'range',l:'Fase inicial de la portadora',unit:'°',min:-180,max:180,step:5,dec:0,show:S=>!txBB()},
+ {k:'mu',t:'range',l:'Índice de modulación μ',min:0,max:2,step:0.05,show:S=>S.tx.mod==='AM'},
+ {k:'dev',t:'range',l:'Desviación de frecuencia Δf',unit:'kHz',scale:1e3,min:1000,max:15000,step:500,show:S=>S.tx.mod==='FM'},
+ {k:'kp',t:'range',l:'Índice de modulación de fase',unit:'rad',min:0.1,max:3,step:0.1,show:S=>S.tx.mod==='PM'},
+ {k:'levels',t:'select',l:'Número de niveles de amplitud',opts:[['2','2 (binario)'],['4','4 (4-ASK)']],show:S=>S.tx.mod==='ASK'},
+ {k:'sep',t:'number',l:'Separación entre tonos',unit:'kHz',scale:1e3,min:10,max:1e6,show:S=>S.tx.mod==='BFSK'||S.tx.mod==='FSK4'},
+ {k:'nsc',t:'select',l:'Número de subportadoras',opts:[['4','4'],['8','8'],['16','16']],show:S=>S.tx.mod==='OFDM'},
+ {k:'bw',t:'number',l:'Ancho de banda disponible',unit:'MHz',scale:1e6,min:0.001,max:5000},
+ {k:'power',t:'range',l:'Potencia de transmisión',unit:'dBm',min:-20,max:30,step:1,dec:0}
+];
+const RXS=[
+ {k:'demod',t:'select',l:'Tipo de demodulación',groups:MODGROUPS},
+ {k:'decode',t:'select',l:'Decodificación de línea',opts:LINEOPTS,show:S=>S.rx.demod==='BB'},
+ {k:'fcA',t:'number',l:'Portadora estimada (oscilador local)',unit:'kHz',scale:1e3,min:5,max:500,show:S=>rxA()},
+ {k:'fcD',t:'number',l:'Portadora estimada (oscilador local)',unit:'MHz',scale:1e6,min:0.1,max:2000,show:S=>!rxA()&&S.rx.demod!=='BB'},
+ {k:'phase',t:'range',l:'Fase de referencia',unit:'°',min:-180,max:180,step:5,dec:0,show:S=>S.rx.demod!=='BB'},
+ {k:'bitrate',t:'number',l:'Tasa de bits esperada',unit:'kb/s',scale:1e3,min:1,max:1e9,show:S=>!rxA()},
+ {k:'sync',t:'range',l:'Sincronización (desplazamiento del muestreo)',unit:'% símbolo',min:-50,max:50,step:1,dec:0,show:S=>!rxA()},
+ {k:'gainDb',t:'range',l:'Ganancia',unit:'dB',min:-20,max:40,step:1,dec:0},
+ {k:'agc',t:'check',l:'AGC (nivel nominal conocido)'},
+ {k:'thr',t:'range',l:'Umbral de decisión',min:0.05,max:0.95,step:0.01,show:S=>['OOK','ASK','BB'].includes(S.rx.demod),tip:'ASK/OOK: fracción de amplitud. Banda base: 0,5 = nivel cero.'},
+ {k:'detect',t:'select',l:'Método de detección',opts:[['coh','Coherente (I/Q)'],['nc','No coherente (módulo)']],show:S=>['OOK','ASK'].includes(S.rx.demod)},
+ {k:'filter',t:'select',l:'Filtro de recepción',opts:[['matched','Adaptado (integrar y volcar)'],['lp','Paso bajo + muestreo puntual'],['none','Sin filtro (muestreo puntual)']],show:S=>isLin(S.rx.demod)},
+ {k:'lpBw',t:'number',l:'Filtro paso bajo de audio',unit:'kHz',scale:1e3,min:0.2,max:50,show:S=>rxA()},
+ {k:'ifBw',t:'number',l:'Ancho de banda de FI',unit:'kHz',scale:1e3,min:2,max:200,show:S=>rxA()},
+ {k:'eq',t:'select',l:'Ecualización simplificada',opts:[['none','Ninguna'],['train','1 coeficiente con secuencia de entrenamiento']],show:S=>isLin(S.rx.demod)},
+ {k:'train',t:'range',l:'Símbolos de entrenamiento',min:2,max:8,step:1,dec:0,show:S=>isLin(S.rx.demod)&&S.rx.eq==='train'}
+];
+const CHQ=[
+ {k:'medium',t:'select',l:'Medio de transmisión',opts:[['cable','Cable'],['radio','Radiocomunicación'],['fibra','Fibra óptica']]},
+ {k:'snrMode',t:'select',l:'Origen de la SNR',opts:[['manual','Manual (control general)'],['enlace','Calculada con el balance del medio']]},
+ {k:'snr',t:'range',l:'SNR general',unit:'dB',min:-5,max:40,step:0.5,dec:1,show:S=>S.ch.snrMode==='manual',tip:'Definida en un ancho de banda igual a la tasa de símbolos (digital) o 2·fm (analógico).'},
+ {k:'ideal',t:'check',l:'Canal ideal (anula todas las degradaciones)'}
+];
+const CHS=[
+ {k:'ideal',t:'check',l:'Canal ideal (anula todos los efectos)'},
+ {k:'medium',t:'select',l:'Medio de transmisión',opts:[['cable','Cable'],['radio','Radiocomunicación'],['fibra','Fibra óptica']]},
+ {k:'snrMode',t:'select',l:'Origen de la SNR',opts:[['manual','Manual (control general)'],['enlace','Calculada con el balance del medio']]},
+ {k:'awgn',t:'check',l:'Ruido blanco gaussiano aditivo (AWGN)'},
+ {k:'snr',t:'range',l:'SNR general',unit:'dB',min:-5,max:40,step:0.5,dec:1,show:S=>S.ch.snrMode==='manual'},
+ {k:'atten',t:'check',l:'Atenuación del medio'},
+ {k:'bwlim',t:'check',l:'Ancho de banda limitado / dispersión'},
+ {k:'refl',t:'check',l:'Reflexiones y multitrayecto del medio'},
+ {k:'dist',t:'check',l:'Distorsión no lineal'},
+ {k:'distK',t:'range',l:'Intensidad de la distorsión',min:0.05,max:0.9,step:0.05,show:S=>S.ch.dist},
+ {k:'cfo',t:'check',l:'Desplazamiento de frecuencia'},
+ {k:'cfoPct',t:'range',l:'Desplazamiento',unit:'% del ancho de banda',min:0.5,max:50,step:0.5,dec:1,show:S=>S.ch.cfo},
+ {k:'perr',t:'check',l:'Error de fase'},
+ {k:'perrDeg',t:'range',l:'Error de fase',unit:'°',min:-180,max:180,step:5,dec:0,show:S=>S.ch.perr},
+ {k:'jit',t:'check',l:'Jitter temporal simplificado'},
+ {k:'jitPct',t:'range',l:'Jitter rms',unit:'% símbolo',min:1,max:50,step:1,dec:0,show:S=>S.ch.jit},
+ {k:'interf',t:'check',l:'Interferencia (tono de onda continua)'},
+ {k:'sir',t:'range',l:'Relación señal/interferencia',unit:'dB',min:-10,max:30,step:1,dec:0,show:S=>S.ch.interf},
+ {k:'interfOff',t:'range',l:'Posición respecto a la portadora',unit:'% del ancho de banda',min:0,max:300,step:5,dec:0,show:S=>S.ch.interf},
+ {k:'fade',t:'check',l:'Desvanecimiento (Rice/Rayleigh)'},
+ {k:'fadeK',t:'range',l:'Factor K de Rice (0 = Rayleigh)',min:0,max:20,step:0.5,dec:1,show:S=>S.ch.fade},
+ {k:'fadeTc',t:'range',l:'Tiempo de coherencia',unit:'símbolos',min:1,max:30,step:1,dec:0,show:S=>S.ch.fade},
+ {k:'xtalk',t:'check',l:'Diafonía (solo cable)',show:S=>S.ch.medium==='cable'}
+];
+function applyCable(v){const T=CABLES[v];if(!T)return;const c=S.cable;c.z0=T.z0;c.zl=T.z0;c.zs=T.z0;c.att=T.att;c.vf=T.vf;c.xt=T.xt;if(v==='wrong'){c.zl=50;c.zs=50;}}
+const BANDS=[['HF','HF · 7,1 MHz',7.1e6],['VHF','VHF (FM) · 100 MHz',100e6],['UHF','UHF · 433,92 MHz (ISM)',433.92e6],['ISM868','UHF · 868 MHz (ISM, Europa)',868e6],['ISM2400','Microondas · 2,4 GHz (ISM)',2.4e9],['ISM5800','Microondas · 5,8 GHz (ISM)',5.8e9],['MW10','Microondas · 10 GHz',10e9]];
+const CABLESH=[
+ {k:'type',t:'select',l:'Tipo de línea',opts:Object.entries(CABLES).map(([k,v])=>[k,v.n]),hook:applyCable},
+ {k:'len',t:'range',l:'Longitud',unit:'m',min:1,max:2000,step:1,dec:0},
+ {k:'z0',t:'range',l:'Impedancia característica Z0',unit:'Ω',min:20,max:300,step:1,dec:0},
+ {k:'zs',t:'range',l:'Impedancia del generador Zs',unit:'Ω',min:5,max:500,step:1,dec:0},
+ {k:'zl',t:'range',l:'Impedancia de carga ZL',unit:'Ω',min:1,max:1000,step:1,dec:0},
+ {k:'att',t:'range',l:'Atenuación por unidad de longitud',unit:'dB/100 m',min:0,max:15,step:0.1,dec:1},
+ {k:'vf',t:'range',l:'Factor de velocidad (vp/c)',min:0.3,max:1,step:0.01,dec:2},
+ {k:'xt',t:'range',l:'Aislamiento por diafonía',unit:'dB',min:15,max:90,step:1,dec:0},
+ {k:'noiseEx',t:'range',l:'Ruido del entorno sobre el térmico',unit:'dB',min:0,max:80,step:1,dec:0}
+];
+const RADIOSH=[
+ {k:'band',t:'select',l:'Banda',opts:BANDS.map(b=>[b[0],b[1]]),hook:v=>{const b=BANDS.find(x=>x[0]===v);if(b)S.radio.f=b[2];},tip:'Las frecuencias permitidas dependen de la normativa de cada país.'},
+ {k:'f',t:'number',l:'Frecuencia física del enlace',unit:'MHz',scale:1e6,min:1,max:30000},
+ {k:'dist',t:'number',l:'Distancia entre antenas',unit:'m',min:1,max:100000},
+ {k:'gtx',t:'range',l:'Ganancia antena transmisora',unit:'dBi',min:0,max:30,step:1,dec:0},
+ {k:'grx',t:'range',l:'Ganancia antena receptora',unit:'dBi',min:0,max:30,step:1,dec:0},
+ {k:'pol',t:'select',l:'Polarización (Tx-Rx)',opts:[['V-V','Vertical–Vertical (adaptada)'],['V-H','Vertical–Horizontal (cruzada)'],['V-CP','Lineal–Circular'],['CP-CP','Circular–Circular']]},
+ {k:'obst',t:'range',l:'Pérdida por obstáculo',unit:'dB',min:0,max:40,step:1,dec:0},
+ {k:'extra',t:'range',l:'Otras pérdidas de propagación',unit:'dB',min:0,max:30,step:1,dec:0},
+ {k:'nf',t:'range',l:'Figura de ruido del receptor',unit:'dB',min:1,max:15,step:0.5,dec:1},
+ {k:'thr',t:'range',l:'Umbral de recepción',unit:'dBm',min:-120,max:-40,step:1,dec:0},
+ {k:'h1',t:'range',l:'Altura de la antena transmisora (2 rayos)',unit:'m',min:1,max:100,step:1,dec:0},
+ {k:'h2',t:'range',l:'Altura de la antena receptora (2 rayos)',unit:'m',min:1,max:100,step:1,dec:0},
+ {k:'rho',t:'range',l:'Módulo del coef. de reflexión del suelo',min:0,max:1,step:0.05,dec:2},
+ {k:'mpDelay',t:'range',l:'Retardo del eco de multitrayecto',unit:'ns',min:1,max:2000,step:1,dec:0},
+ {k:'mpGain',t:'range',l:'Potencia relativa del eco',unit:'dB',min:-20,max:0,step:1,dec:0}
+];
+const RADIOCH=[
+ {k:'refl',t:'check',l:'Multitrayecto simplificado (eco en la simulación)'},
+ {k:'fade',t:'check',l:'Desvanecimiento'},
+ {k:'interf',t:'check',l:'Interferencia'}
+];
+const FIBERSH=[
+ {k:'mode',t:'select',l:'Tipo de fibra',opts:[['SM','Monomodo'],['MM','Multimodo (índice gradual)']]},
+ {k:'src',t:'select',l:'Fuente óptica',opts:[['laser','Láser (Δλ rms ≈ 1 nm)'],['LED','LED (Δλ rms ≈ 40 nm)']]},
+ {k:'len',t:'range',l:'Longitud de fibra',unit:'km',min:0.1,max:200,step:0.1,dec:1},
+ {k:'att',t:'range',l:'Atenuación',unit:'dB/km',min:0.1,max:4,step:0.05,dec:2},
+ {k:'wl',t:'range',l:'Longitud de onda óptica',unit:'nm',min:800,max:1600,step:10,dec:0},
+ {k:'pw',t:'range',l:'Ancho de pulso',unit:'% del bit',min:20,max:100,step:5,dec:0},
+ {k:'nconn',t:'range',l:'Número de conectores',min:0,max:10,step:1,dec:0},
+ {k:'connLoss',t:'range',l:'Pérdida por conector',unit:'dB',min:0.1,max:1.5,step:0.1,dec:1},
+ {k:'nspl',t:'range',l:'Número de empalmes',min:0,max:20,step:1,dec:0},
+ {k:'splLoss',t:'range',l:'Pérdida por empalme',unit:'dB',min:0.02,max:0.5,step:0.02,dec:2},
+ {k:'modalBW',t:'range',l:'Producto ancho de banda modal × longitud',unit:'MHz·km',min:100,max:4700,step:100,dec:0,show:S=>S.fiber.mode==='MM'},
+ {k:'rxNoise',t:'range',l:'Ruido equivalente del receptor',unit:'dBm',min:-70,max:-20,step:1,dec:0},
+ {k:'sens',t:'range',l:'Sensibilidad del receptor',unit:'dBm',min:-45,max:-10,step:1,dec:0}
+];
+const VIEWSH=[
+ {k:'span',t:'range',l:'Base de tiempos (digital)',unit:'símbolos',min:1,max:32,step:1,dec:0},
+ {k:'spanA',t:'range',l:'Base de tiempos (analógico)',unit:'ciclos de fm',min:1,max:6,step:0.5,dec:1},
+ {k:'vscale',t:'range',l:'Escala vertical',unit:'×',min:0.25,max:4,step:0.25,dec:2}
+];
+const TRACEDEF=[['info','Información',COL.green],['carrier','Portadora',COL.yellow],['tx','Modulada TX',COL.violet],['rx','Recibida',COL.blue],['demod','Demodulada',COL.green]];
+
+/* ---------- registro y ajuste de canvas ---------- */
+const CVS=[];
+function regCanvas(id,tab,fn){const c=$(id);if(!c)return;CVS.push({c,fn,tab,g:c.getContext('2d'),w:0,h:0,dpr:1});}
+function fitCanvas(o){const dpr=window.devicePixelRatio||1,w=o.c.clientWidth,h=o.c.clientHeight;
+  if(w!==o.w||h!==o.h||dpr!==o.dpr){o.w=w;o.h=h;o.dpr=dpr;o.c.width=Math.max(1,Math.round(w*dpr));o.c.height=Math.max(1,Math.round(h*dpr));}
+  o.g.setTransform(o.dpr,0,0,o.dpr,0,0);}
+function T(g,s,x,y,c,sz,al){g.fillStyle=c||'#d9dfe7';g.font=(sz||11)+'px ui-monospace,Menlo,Consolas,monospace';g.textAlign=al||'left';g.textBaseline='middle';g.fillText(s,x,y);}
+function msg(g,w,h,s){g.fillStyle='#0b1014';g.fillRect(0,0,w,h);const parts=String(s).split('\n');parts.forEach((p,i)=>T(g,p,w/2,h/2+(i-(parts.length-1)/2)*16,COL.dim,12,'center'));}
+function gridBg(g,x,y,w,h,nx,ny){g.strokeStyle=COL.grid;g.lineWidth=1;g.beginPath();
+  for(let i=0;i<=nx;i++){const xx=Math.round(x+w*i/nx)+0.5;g.moveTo(xx,y);g.lineTo(xx,y+h);}
+  for(let j=0;j<=ny;j++){const yy=Math.round(y+h*j/ny)+0.5;g.moveTo(x,yy);g.lineTo(x+w,yy);}g.stroke();}
+
+/* ---------- trazado de una forma de onda con ventana deslizante ---------- */
+function traceArr(g,arr,fs,ws,span,x0,wpx,yc,sc,color,lw){
+  const N=arr.length;if(!N)return;const spp=span*fs/wpx;g.strokeStyle=color;g.lineWidth=lw||1.4;g.beginPath();
+  if(spp<1.5){
+    for(let x=0;x<=wpx;x++){const idx=(((ws+x/wpx*span)*fs)%N+N)%N,i0=Math.floor(idx),f=idx-i0,v=arr[i0]*(1-f)+arr[(i0+1)%N]*f,y=yc-v*sc;x?g.lineTo(x0+x,y):g.moveTo(x0+x,y);}
+  }else{
+    const step=Math.max(1,Math.floor(spp/24));
+    for(let x=0;x<=wpx;x++){const a=Math.floor((((ws+x/wpx*span)*fs)%N+N)%N);let mn=1e30,mx=-1e30;
+      for(let k=0;k<spp;k+=step){const v=arr[(a+Math.floor(k))%N];if(v<mn)mn=v;if(v>mx)mx=v;}
+      g.moveTo(x0+x,yc-mx*sc);g.lineTo(x0+x,yc-mn*sc);}
+  }
+  g.stroke();
+}
+function traceFn(g,fn,ws,span,x0,wpx,yc,sc,color){g.strokeStyle=color;g.lineWidth=1.2;g.beginPath();
+  for(let x=0;x<=wpx;x++){const v=fn(ws+x/wpx*span),y=yc-v*sc;x?g.lineTo(x0+x,y):g.moveTo(x0+x,y);}g.stroke();}
+
+/* ---------- OSCILOSCOPIO ---------- */
+function drawScope(g,w,h,o){
+  g.fillStyle='#0b1014';g.fillRect(0,0,w,h);
+  if(!R){msg(g,w,h,'Sin simulación activa');return;}
+  const dig=R.type==='digital',span=(dig?view.span:view.spanA)*R.Tunit,ws=P.t;
+  const keys=o.traces.filter(k=>!(k==='carrier'&&R.mod==='BB')&&!(k==='demod'&&R.kindMismatch));
+  const n=keys.length,left=62,pw=w-left-6,bot=18,lh=(h-bot)/n;
+  gridBg(g,left,0,pw,h-bot,10,Math.max(2,n*2));
+  const pk=(()=>{if(R._pk)return R._pk;let m=0;for(let i=0;i<R.tx.length;i++){const a=Math.abs(R.tx[i]);if(a>m)m=a;}return R._pk=m||1;})();
+  const nameOf={info:dig?'Datos':'m(t)',carrier:'Portadora',tx:'TX',rx:'RX',demod:'Demod.'};
+  keys.forEach((k,i)=>{
+    const yc=i*lh+lh/2,col=TRACEDEF.find(t=>t[0]===k)[2];
+    g.save();g.beginPath();g.rect(left,i*lh,pw,lh);g.clip();
+    const vs=view.vscale;
+    let sc;
+    if(k==='info')sc=lh/2*0.8/1.2*vs;
+    else if(k==='demod')sc=lh/2*0.85/1.3*vs;
+    else sc=lh/2*0.88/(pk*1.05)*vs;
+    if(k==='carrier'){const fcv=R.fc,ph=S.tx.phase*Math.PI/180;traceFn(g,t=>Math.cos(TAU*fcv*t+ph)*pk,ws,span,left,pw,yc,sc,col);}
+    else{const arr={info:R.info,tx:R.tx,rx:R.rxg,demod:R.demod}[k];traceArr(g,arr,R.fs,ws,span,left,pw,yc,sc,col);}
+    g.restore();
+    g.strokeStyle=COL.axis;g.beginPath();g.moveTo(left,i*lh+lh+0.5);g.lineTo(left+pw,i*lh+lh+0.5);g.stroke();
+    T(g,nameOf[k],4,yc-6,col,11);T(g,'±'+nf(lh/2/sc,2).replace(',','.')+' V',4,yc+8,COL.dim,9);
+  });
+  T(g,'Base de tiempos: '+si(span/10,'s',3)+'/div  ·  ventana '+si(span,'s',3),left,h-8,COL.dim,10);
+  T(g,'t = '+si(ws,'s',4),left+pw,h-8,COL.dim,10,'right');
+}
+const scopeOpts=keys=>({traces:keys});
+
+/* ---------- CONSTELACIÓN ---------- */
+function drawConst(g,w,h){
+  g.fillStyle='#0b1014';g.fillRect(0,0,w,h);
+  if(!R){msg(g,w,h,'Sin simulación activa');return;}
+  if(R.type==='analog'){msg(g,w,h,'Modulación analógica:\nno hay constelación I/Q');return;}
+  const c=R.cons,ideal=c.ideal;
+  if(!ideal.length||(!c.pts.length&&c.rid!==R.mod)&&false){msg(g,w,h,'Esta modulación no tiene\nconstelación I/Q (FSK / banda base)');return;}
+  if(!ideal.length){msg(g,w,h,'Esta modulación no tiene\nconstelación I/Q (FSK / banda base)');return;}
+  const side=Math.min(w,h)-26,cx=w/2,cy=h/2,asz=['OOK','ASK'].includes(c.rid)||['OOK','ASK'].includes(c.txid)?1.25:1.6,sc=side/2/asz;
+  const X=i=>cx+(i-(['OOK','ASK'].includes(c.rid)?0.5:0))*sc,Y=q=>cy-q*sc;
+  g.strokeStyle=COL.grid;g.lineWidth=1;g.beginPath();
+  for(let k=-1;k<=1;k+=0.5){g.moveTo(X(k*1.5),cy-side/2);g.lineTo(X(k*1.5),cy+side/2);g.moveTo(cx-side/2,Y(k*1.5));g.lineTo(cx+side/2,Y(k*1.5));}g.stroke();
+  g.strokeStyle=COL.axis;g.beginPath();g.moveTo(cx-side/2,cy+0.5);g.lineTo(cx+side/2,cy+0.5);g.moveTo(X(0)+0.5,cy-side/2);g.lineTo(X(0)+0.5,cy+side/2);g.stroke();
+  T(g,'I',cx+side/2-4,cy-9,COL.dim,11,'right');T(g,'Q',X(0)+8,cy-side/2+8,COL.dim,11);
+  // regiones de decisión del receptor
+  g.strokeStyle='rgba(255,159,67,.55)';g.setLineDash([4,3]);g.lineWidth=1;g.beginPath();
+  const rid=c.rid;
+  if(rid==='PSK8'){for(let k=0;k<8;k++){const a=(k+0.5)*Math.PI/4;g.moveTo(X(0),Y(0));g.lineTo(X(Math.cos(a)*asz*1.4),Y(Math.sin(a)*asz*1.4));}}
+  else if(rid==='OOK'||(rid==='ASK'&&ideal.length===2)){const lo=ideal[0].i,hi=ideal[1].i,t=rid==='OOK'?S.rx.thr:lo+S.rx.thr*(hi-lo);g.moveTo(X(t),cy-side/2);g.lineTo(X(t),cy+side/2);}
+  else if(rid==='OFDM'||isLin(rid)){
+    const iu=[...new Set(ideal.map(p=>+p.i.toFixed(5)))].sort((a,b)=>a-b),qu=[...new Set(ideal.map(p=>+p.q.toFixed(5)))].sort((a,b)=>a-b);
+    for(let k=0;k<iu.length-1;k++){const m=(iu[k]+iu[k+1])/2;g.moveTo(X(m),cy-side/2);g.lineTo(X(m),cy+side/2);}
+    for(let k=0;k<qu.length-1;k++){const m=(qu[k]+qu[k+1])/2;g.moveTo(cx-side/2,Y(m));g.lineTo(cx+side/2,Y(m));}
+  }
+  g.stroke();g.setLineDash([]);
+  // puntos recibidos
+  const sym=Math.floor((P.t-R.eyeOff/R.fs)/(R.eyeL/R.fs));
+  for(const p of c.pts){g.fillStyle=p.ok===null?'rgba(74,163,255,.55)':p.ok?'rgba(61,220,132,.65)':'rgba(255,93,93,.85)';
+    const x=X(p.i),y=Y(p.q);if(x<cx-side/2-4||x>cx+side/2+4||y<cy-side/2-4||y>cy+side/2+4)continue;g.beginPath();g.arc(x,y,2.3,0,TAU);g.fill();}
+  // puntos ideales
+  for(const p of ideal){g.strokeStyle='#fff';g.lineWidth=1.3;g.beginPath();g.arc(X(p.i),Y(p.q),4,0,TAU);g.stroke();
+    if(ideal.length<=16)T(g,p.bits.join(''),X(p.i)+6,Y(p.q)-8,COL.yellow,9);}
+  // símbolo actual
+  const cur=c.pts[((sym%c.pts.length)+c.pts.length)%c.pts.length];
+  if(cur){g.strokeStyle=COL.yellow;g.lineWidth=2;g.beginPath();g.arc(X(cur.i),Y(cur.q),8,0,TAU);g.stroke();}
+  T(g,'Decisión del receptor: '+(MODS[rid]?MODS[rid].name:rid)+'  ·  blanco: ideal  ·  verde/rojo: símbolo bien/mal detectado',6,h-8,COL.dim,9);
+}
+
+/* ---------- DIAGRAMA TEMPORAL DE BITS ---------- */
+function drawBits(g,w,h){
+  g.fillStyle='#0b1014';g.fillRect(0,0,w,h);
+  if(!R){msg(g,w,h,'Sin simulación activa');return;}
+  if(R.type==='analog'){msg(g,w,h,'Modulación analógica: no hay bits.\nSe compara m(t) con la señal demodulada en el osciloscopio.');return;}
+  const left=74,cell=12,cap=Math.max(8,Math.floor((w-left-6)/cell)),n=R.nbits;
+  const bitsPerSec=S.tx.bitrate,cur=Math.floor(P.t*bitsPerSec);
+  const page=Math.floor(((cur%n)+n)%n/cap)*cap;
+  const rows=[['Bits TX',COL.green],['Símb. TX',COL.violet],['Símb. RX',COL.blue],['Bits RX',COL.blue],['Errores',COL.red]];
+  const rh=(h-16)/rows.length;
+  rows.forEach((r,i)=>T(g,r[0],4,i*rh+rh/2,r[1],10));
+  const cellTxt=(x,y,wd,s,col,bad)=>{g.fillStyle=bad?'#4a1f1f':'#14201a';g.fillRect(x+1,y+3,wd-2,rh-6);g.strokeStyle=bad?COL.red:col;g.lineWidth=1;g.strokeRect(x+1.5,y+3.5,wd-3,rh-7);T(g,s,x+wd/2,y+rh/2,bad?'#ff9a9a':col,10,'center');};
+  const end=Math.min(n,page+cap);
+  for(let k=page;k<end;k++){const x=left+(k-page)*cell;
+    cellTxt(x,0,cell,String(R.bits[k]),COL.green,false);
+    const rb=k<R.rxBits.length?R.rxBits[k]:'·';
+    if(!R.kindMismatch)cellTxt(x,3*rh,cell,String(rb),COL.blue,R.errMask[k]===1);
+    if(R.errMask[k]===1){g.fillStyle=COL.red;g.fillRect(x+2,4*rh+5,cell-4,rh-10);}
+  }
+  // grupos de símbolos
+  const grp=(arr,bp,row,col,errCheck)=>{for(let s=0;s*bp<arr.length;s++){const a=s*bp,b=a+bp;if(b<=page||a>=end)continue;
+      let v=0;for(let j=a;j<Math.min(b,arr.length);j++)v=v*2+arr[j];
+      let bad=false;if(errCheck)for(let j=a;j<Math.min(b,R.nbits);j++)if(R.errMask[j]===1)bad=true;
+      const x0=left+Math.max(a-page,0)*cell,x1=left+Math.min(b-page,cap)*cell;cellTxt(x0,row*rh,x1-x0,bp>=4?v.toString(16).toUpperCase():String(v),col,bad);}};
+  if(R.mod!=='BB'&&R.mod!=='OFDM'){grp(R.bits,R.bps,1,COL.violet,false);if(!R.kindMismatch)grp(R.rxBits,R.rbps,2,COL.blue,true);}
+  else T(g,R.mod==='BB'?'(codificación de línea: ver osciloscopio)':'(símbolos OFDM: '+R.bps+' bits cada uno)',left+4,1.5*rh,COL.dim,10);
+  const x=left+((cur%n)-page)*cell;if(x>=left&&x<=left+cap*cell){g.strokeStyle=COL.yellow;g.lineWidth=1.5;g.beginPath();g.moveTo(x+cell/2,0);g.lineTo(x+cell/2,h-16);g.stroke();}
+  T(g,(R.kindMismatch?'Receptor analógico: sin bits recuperados. ':'')+'Bits '+(page+1)+'–'+end+' de '+n+(R.nErr>0?'  ·  errores: '+R.nErr:'  ·  sin errores en esta muestra'),left,h-7,COL.dim,10);
+}
+
+/* ---------- ESPECTRO ---------- */
+function drawSpec(g,w,h){
+  g.fillStyle='#0b1014';g.fillRect(0,0,w,h);
+  if(!R){msg(g,w,h,'Sin simulación activa');return;}
+  const left=44,pw=w-left-8,ph=h-34,top=8,bb=R.mod==='BB';
+  const half=Math.max(1.6*R.estBw,R.fs/200),f0=bb?0:Math.max(0,R.fc-half),f1=bb?Math.min(R.fs/2,3*R.estBw):R.fc+half;
+  const dmin=-110,dmax=10;
+  gridBg(g,left,top,pw,ph,8,6);
+  for(let j=0;j<=6;j++)T(g,String(Math.round(dmax-(dmax-dmin)*j/6)),left-4,top+ph*j/6,COL.dim,9,'right');
+  for(let i=0;i<=4;i++)T(g,si(f0+(f1-f0)*i/4,'Hz',3),left+pw*i/4,top+ph+12,COL.dim,9,i===0?'left':i===4?'right':'center');
+  const line=(sp,col)=>{g.strokeStyle=col;g.lineWidth=1.2;g.beginPath();let first=true;
+    const k0=Math.max(1,Math.floor(f0/sp.df)),k1=Math.min(sp.db.length-1,Math.ceil(f1/sp.df)),step=Math.max(1,Math.floor((k1-k0)/pw/2));
+    for(let k=k0;k<=k1;k+=step){let m=-200;for(let j=0;j<step&&k+j<=k1;j++)m=Math.max(m,sp.db[k+j]);
+      const x=left+(k*sp.df-f0)/(f1-f0)*pw,y=top+ph*(1-(clamp(m,dmin,dmax)-dmin)/(dmax-dmin));first?g.moveTo(x,y):g.lineTo(x,y);first=false;}g.stroke();};
+  line(R.spR,COL.blue);line(R.spT,COL.violet);
+  if(!bb){const xc=left+(R.fc-f0)/(f1-f0)*pw;g.strokeStyle='rgba(255,213,74,.5)';g.setLineDash([3,3]);g.beginPath();g.moveTo(xc,top);g.lineTo(xc,top+ph);g.stroke();g.setLineDash([]);T(g,'fc',xc+3,top+8,COL.yellow,9);
+    const xa=left+(R.fc-R.estBw/2-f0)/(f1-f0)*pw,xb=left+(R.fc+R.estBw/2-f0)/(f1-f0)*pw;g.strokeStyle=COL.orange;g.beginPath();g.moveTo(xa,top+ph-6);g.lineTo(xa,top+ph-14);g.moveTo(xa,top+ph-10);g.lineTo(xb,top+ph-10);g.moveTo(xb,top+ph-6);g.lineTo(xb,top+ph-14);g.stroke();}
+  T(g,'dB re 1 V pico · BW estimado '+si(R.estBw,'Hz',3)+' · BW 99 % medido '+si(R.occBw,'Hz',3),left,h-6,COL.dim,9);
+}
+
+/* ---------- DIAGRAMA DE OJO ---------- */
+function eyeOpening(){
+  if(!R||!R.eyeSig||R.type!=='digital')return NaN;
+  const L=R.eyeL,off=R.eyeOff,N=R.eyeSig.length;let mp=1e9,mn=-1e9,np=0,nn=0;
+  for(let k=0;(k+1)*L+off<N;k++){const m=Math.round(off+k*L+L/2),v=R.eyeSig[m];if(v>0){mp=Math.min(mp,v);np++;}else{mn=Math.max(mn,v);nn++;}}
+  return(np&&nn)?mp-mn:NaN;
+}
+function drawEye(g,w,h){
+  g.fillStyle='#0b1014';g.fillRect(0,0,w,h);
+  if(!R||R.type!=='digital'||!R.eyeSig){msg(g,w,h,'El diagrama de ojo se calcula\npara señales digitales');return;}
+  const left=30,pw=w-left-6,ph=h-24,L=R.eyeL,off=R.eyeOff,N=R.eyeSig.length;
+  gridBg(g,left,0,pw,ph,8,6);
+  let pk=0;for(let i=0;i<N;i++)pk=Math.max(pk,Math.abs(R.eyeSig[i]));pk=pk||1;const sc=ph/2/(pk*1.15);
+  g.strokeStyle='rgba(61,220,132,.28)';g.lineWidth=1;
+  const nseg=Math.floor((N-off-2*L)/L);
+  for(let k=0;k<nseg;k++){g.beginPath();const a=off+k*L,st=Math.max(1,Math.floor(L/Math.max(pw/2,1)));
+    for(let j=0;j<=2*L;j+=st){const v=R.eyeSig[Math.min(N-1,Math.round(a+j))];const x=left+j/(2*L)*pw,y=ph/2-v*sc;j?g.lineTo(x,y):g.moveTo(x,y);}g.stroke();}
+  g.setLineDash([3,3]);g.strokeStyle='rgba(255,213,74,.6)';g.beginPath();for(const u of [0.25,0.75]){const x=left+u*pw;g.moveTo(x,0);g.lineTo(x,ph);}g.stroke();g.setLineDash([]);
+  T(g,'T',left+pw/2,ph+11,COL.dim,9,'center');T(g,'0',left,ph+11,COL.dim,9,'left');T(g,'2T',left+pw,ph+11,COL.dim,9,'right');
+  const eo=eyeOpening();T(g,'Apertura (componente I): '+(Number.isFinite(eo)?nf(eo,3)+' V':'n/a (más de dos niveles)'),left,ph+11+0,COL.yellow,9,'left');
+  g.fillStyle='#0b1014';
+}
+/* ---------- AUXILIAR ANALÓGICO ---------- */
+function drawAux(g,w,h){
+  g.fillStyle='#0b1014';g.fillRect(0,0,w,h);
+  if(!R||R.type!=='analog'){msg(g,w,h,'Solo para modulación analógica');return;}
+  const left=56,pw=w-left-6,ph=h-24,span=view.spanA/R.fm,ws=P.t;let mn=1e30,mx=-1e30;
+  for(let i=0;i<R.aux.length;i+=3){mn=Math.min(mn,R.aux[i]);mx=Math.max(mx,R.aux[i]);}
+  if(mx-mn<1e-9){mx+=1;mn-=1;}const pad=(mx-mn)*0.1;mn-=pad;mx+=pad;
+  gridBg(g,left,0,pw,ph,10,6);
+  const arr=Float64Array.from(R.aux),sc=ph/(mx-mn),yc=ph-(0-mn)*sc;
+  // traza con desplazamiento: yc para valor 0 en coordenadas locales
+  g.save();g.beginPath();g.rect(left,0,pw,ph);g.clip();
+  traceArr(g,arr,R.fs,ws,span,left,pw,yc,sc,COL.orange,1.8);
+  if(R.mod==='AM'||R.mod==='DSB'){const neg=arr.map(v=>-v);traceArr(g,neg,R.fs,ws,span,left,pw,yc,sc,COL.orange,1.2);}
+  g.restore();
+  const u=R.auxUnit;T(g,nf(mx,u==='Hz'?0:2).replace(',','.')+(u==='Hz'?' Hz':' '+u),4,10,COL.dim,9);T(g,nf(mn,u==='Hz'?0:2).replace(',','.'),4,ph-4,COL.dim,9);
+  T(g,R.auxLabel,left,ph+12,COL.dim,10);
+}
+
+/* ---------- CADENA DE TRANSMISIÓN ---------- */
+let anim=0,chainRects=[];
+const BLOCKS=[
+ {id:'src',n:'FUENTE',c:COL.green},{id:'enc',n:'CODIFICADOR',c:COL.green},{id:'mod',n:'MODULADOR',c:COL.violet},
+ {id:'txr',n:'TRANSMISOR',c:COL.violet},{id:'chn',n:'MEDIO',c:COL.orange},{id:'rxr',n:'RECEPTOR',c:COL.blue},
+ {id:'dem',n:'DEMODULADOR',c:COL.violet},{id:'dec',n:'DECODIFICADOR',c:COL.green},{id:'dst',n:'DESTINO',c:COL.green}];
+function blockSub(id){
+  const t=S.tx,r=S.rx;
+  switch(id){
+    case 'src':return {random:'bits aleatorios',manual:'secuencia manual',text:'texto',pattern:'patrón',sine:'senoidal',square:'cuadrada',tri:'triangular',audio:'audio sint.'}[t.src];
+    case 'enc':return isAnalog(t.mod)?'sin codificar':(t.mod==='BB'?LINES[t.line]:(isLin(t.mod)&&t.mod!=='OOK'?'Gray':'bits'));
+    case 'mod':return MODS[t.mod].name.split(' (')[0];
+    case 'txr':return nf(t.power,0)+' dBm';
+    case 'chn':return {cable:'cable',radio:'radio',fibra:'fibra óptica'}[S.ch.medium]+(S.ch.ideal?' (ideal)':'');
+    case 'rxr':return 'G='+nf(r.gainDb,0)+' dB'+(r.agc?' AGC':'');
+    case 'dem':return MODS[r.demod].name.split(' (')[0];
+    case 'dec':return isAnalog(r.demod)?'—':(r.demod==='BB'?LINES[r.decode]:'bits');
+    case 'dst':return R?(R.type==='digital'&&!R.kindMismatch?'BER '+(R.ber*100).toFixed(1).replace('.',',')+' %':(R.type==='analog'&&!R.kindMismatch?'ρ='+nf(R.rho,3):'sin datos')):'—';
+  }
+}
+function drawChain(g,w,h){
+  g.fillStyle='#0b1014';g.fillRect(0,0,w,h);chainRects=[];
+  const n=BLOCKS.length,two=w<760,rowsN=two?2:1,per=two?5:9;
+  const bw=Math.min(112,(w-12)/per-14),bh=two?58:72,pos=[];
+  BLOCKS.forEach((b,i)=>{const row=two?(i<5?0:1):0,idx=two?(i<5?i:i-5):i,cnt=two?(row?4:5):9;
+    const gap=(w-cnt*bw)/(cnt+1);const x=gap+idx*(bw+gap),y=two?(row?h-bh-12:12):(h-bh)/2-6;pos.push({x,y});chainRects.push({id:b.id,x,y,w:bw,h:bh});});
+  // conexiones animadas
+  for(let i=0;i<n-1;i++){const a=pos[i],b=pos[i+1];const x1=a.x+bw,y1=a.y+bh/2,x2=b.x,y2=b.y+bh/2;
+    let xs=x1,ys=y1,xe=x2,ye=y2;if(two&&i===4){xs=a.x+bw/2;ys=a.y+bh;xe=b.x+bw/2;ye=b.y;}
+    g.strokeStyle=COL.axis;g.lineWidth=2;g.beginPath();g.moveTo(xs,ys);g.lineTo(xe,ye);g.stroke();
+    const dir=Math.atan2(ye-ys,xe-xs);g.fillStyle=COL.axis;g.beginPath();g.moveTo(xe,ye);g.lineTo(xe-8*Math.cos(dir-0.4),ye-8*Math.sin(dir-0.4));g.lineTo(xe-8*Math.cos(dir+0.4),ye-8*Math.sin(dir+0.4));g.fill();
+    for(let k=0;k<3;k++){const u=((anim*0.6+k/3+i*0.13)%1);g.fillStyle=(i<2||i>=6)?COL.green:(i<3?COL.violet:(i===4?COL.orange:COL.blue));g.beginPath();g.arc(xs+(xe-xs)*u,ys+(ye-ys)*u,2.6,0,TAU);g.fill();}}
+  BLOCKS.forEach((b,i)=>{const {x,y}=pos[i];
+    let col=b.c;if(b.id==='chn')col={cable:COL.blue,radio:COL.orange,fibra:COL.cyan}[S.ch.medium];
+    g.fillStyle='#161d24';g.strokeStyle=col;g.lineWidth=1.6;g.beginPath();g.roundRect(x,y,bw,bh,5);g.fill();g.stroke();
+    T(g,b.n,x+bw/2,y+16,col,Math.min(11,bw/9.5),'center');
+    const sub=blockSub(b.id)||'';T(g,sub.length>16?sub.slice(0,15)+'…':sub,x+bw/2,y+bh-18,COL.dim,Math.min(10,bw/9),'center');
+    if(b.id==='chn'&&S.ch.ideal)T(g,'ideal',x+bw/2,y+bh/2+2,COL.green,10,'center');});
+}
+function blockInfoHTML(id){
+  const t=S.tx,r=S.rx,m=MODS[t.mod];
+  const btn=(a,l)=>'<button class="btn sm" data-act="'+a+'">'+l+'</button> ';
+  const H={
+   src:['Fuente de información','Genera el mensaje que se quiere enviar: bits (aleatorios, manuales, texto o patrón) o una forma de onda analógica. Fuente actual: <b>'+blockSub('src')+'</b>'+(R&&R.type==='digital'?' ('+R.nbits+' bits).':'.'),btn('newbits','Nueva secuencia aleatoria')],
+   enc:['Codificador','Convierte la información en símbolos adecuados para el medio: codificación de línea (NRZ, Manchester, AMI…) en banda base, o la asignación bits→símbolo con código Gray en PSK/QAM. En analógico no actúa. Codificación actual: <b>'+blockSub('enc')+'</b>.',''],
+   mod:['Modulador','Imprime la información sobre una portadora variando su amplitud, frecuencia o fase. Modulación: <b>'+m.name+'</b>'+(R&&R.type==='digital'?'; '+R.bps+' bit/símbolo, '+si(R.Rs,'baud',3)+'.':'.'),''],
+   txr:['Transmisor','Amplifica la señal modulada y fija la potencia de salida ('+nf(t.power,0)+' dBm = '+nf(Math.pow(10,t.power/10),2)+' mW) y el ancho de banda disponible ('+si(t.bw,'Hz',3)+').',''],
+   chn:['Medio de transmisión','Introduce atenuación, retardo, ruido, reflexiones y limitaciones de ancho de banda. Medio: <b>'+blockSub('chn')+'</b>. Pérdidas del medio: '+(R?nf(R.link.loss,1)+' dB':'—')+'; potencia recibida '+(R?nf(R.link.prx,1)+' dBm':'—')+'.',btn('ideal',S.ch.ideal?'Desactivar canal ideal':'Activar canal ideal (sin degradaciones)')],
+   rxr:['Receptor','Amplifica la señal débil y la acondiciona. Ganancia manual '+nf(r.gainDb,0)+' dB; el AGC (control automático de ganancia) está '+(r.agc?'activado':'desactivado')+'. Sin AGC, las modulaciones sensibles a la amplitud (ASK, QAM, AM) pueden decidir mal.',btn('agc',r.agc?'Desactivar AGC':'Activar AGC')],
+   dem:['Demodulador','Recupera los símbolos o la forma de onda a partir de la señal recibida usando <b>'+MODS[r.demod].name+'</b>, con su propio oscilador local ('+(isAnalog(r.demod)?si(r.fcA,'Hz'):r.demod==='BB'?'—':si(r.fcD,'Hz'))+'), fase y sincronismo. Si no coincide con el emisor, aparecen errores.',btn('match','Igualar receptor al emisor')],
+   dec:['Decodificador','Convierte los símbolos detectados otra vez en bits (inversa de Gray o de la codificación de línea) y compone la secuencia recuperada.',''],
+   dst:['Destino','Recibe la información recuperada. '+(R&&R.type==='digital'&&!R.kindMismatch?'Bits erróneos: <b>'+R.nErr+'</b> de '+R.nbits+' (BER = '+nf(R.ber,4)+').':(R&&R.type==='analog'&&!R.kindMismatch?'Correlación con el mensaje original: ρ = <b>'+nf(R.rho,3)+'</b>.':'La recepción no es posible con esta configuración.')),'']
+  }[id];
+  return '<h4>'+H[0]+'</h4><div>'+H[1]+'</div><div class="row">'+H[2]+'</div>';
+}
+
+/* ---------- CABLE ---------- */
+function drawCable(g,w,h){
+  g.fillStyle='#0b1014';g.fillRect(0,0,w,h);
+  const c=S.cable,L=linkBudget(S,'cable'),I=L.info,x0=70,x1=w-70,len=x1-x0,yb=h-52;
+  // dibujo del cable
+  g.strokeStyle={tp:COL.orange,coax:'#c8c8c8',ideal:COL.cyan,lossy:'#a77',wrong:COL.red}[c.type]||COL.blue;g.lineWidth=5;g.beginPath();g.moveTo(x0,yb-6);g.lineTo(x1,yb-6);g.stroke();
+  g.strokeStyle='#4a5563';g.lineWidth=5;g.beginPath();g.moveTo(x0,yb+8);g.lineTo(x1,yb+8);g.stroke();
+  g.fillStyle='#161d24';g.strokeStyle=COL.blue;g.lineWidth=1.5;g.beginPath();g.roundRect(8,yb-24,54,46,4);g.fill();g.stroke();T(g,'Emisor',35,yb-13,COL.blue,10,'center');T(g,'Zs='+c.zs+' Ω',35,yb+6,COL.dim,9,'center');
+  g.fillStyle='#161d24';g.beginPath();g.roundRect(w-62,yb-24,54,46,4);g.fill();g.stroke();T(g,'Carga',w-35,yb-13,COL.blue,10,'center');T(g,'ZL='+c.zl+' Ω',w-35,yb+6,COL.dim,9,'center');
+  // ondas
+  const tau=((P.vis*0.5)%3.4),gam=I.gamma,aT=I.aDb;
+  const f=s=>Math.sin(TAU*7*s)*Math.exp(-Math.pow(s/0.11,2));
+  const att=u=>Math.pow(10,-aT*u/20);
+  const top=14,hh=yb-40-top,yc=top+hh/2,amp=hh/2*0.85;
+  g.strokeStyle=COL.grid;g.lineWidth=1;g.beginPath();g.moveTo(x0,yc);g.lineTo(x1,yc);g.stroke();
+  const draw=(fn,col,lw)=>{g.strokeStyle=col;g.lineWidth=lw;g.beginPath();for(let k=0;k<=len;k+=2){const u=k/len,v=fn(u);k?g.lineTo(x0+k,yc-v*amp):g.moveTo(x0+k,yc-v*amp);}g.stroke();};
+  const inc=u=>att(u)*f(u-tau),ref=u=>tau>=1?gam*att(1)*att(1-u)*f(2-u-tau):0;
+  draw(inc,COL.blue,1.4);draw(ref,COL.orange,1.4);draw(u=>inc(u)+ref(u),'rgba(255,255,255,.9)',1.8);
+  T(g,'Γ = '+nf(gam,3)+'   ROE = '+(isFinite(I.vswr)?nf(I.vswr,2):'∞')+'   Z0 = '+c.z0+' Ω',x0,top+2,COL.yellow,11);
+  T(g,'Longitud '+c.len+' m · retardo '+si(L.delay,'s',3)+' · atenuación total '+nf(I.aDb,2)+' dB',x0,h-10,COL.dim,10);
+  g.fillStyle=Math.abs(gam)<0.05?COL.green:COL.orange;T(g,Math.abs(gam)<0.05?'Carga adaptada: reflexión mínima':'Desadaptación: la onda reflejada vuelve al emisor',x1,top+2,Math.abs(gam)<0.05?COL.green:COL.orange,11,'right');
+}
+/* ---------- RADIO ---------- */
+function drawRadio(g,w,h){
+  g.fillStyle='#0b1014';g.fillRect(0,0,w,h);
+  const r=S.radio,L=linkBudget(S,'radio'),I=L.info,gy=h-34,ax=60,bx=w-60,ay=gy-70,by=gy-46;
+  const lamv=clamp(14*(Math.log10(I.lam)+3),18,70);
+  g.strokeStyle=COL.axis;g.lineWidth=2;g.beginPath();g.moveTo(0,gy);g.lineTo(w,gy);g.stroke();
+  const ox=(ax+bx)/2,oh=r.obst>0?20+r.obst*2:0,ow=26;
+  g.save();
+  if(oh>0){g.beginPath();g.rect(0,0,w,h);g.rect(ox-ow/2,gy-oh,ow,oh);g.clip('evenodd');}
+  for(let k=0;k<26;k++){const rad=((P.vis*lamv*0.9+k*lamv)%(lamv*26));const al=clamp(1.1-rad/(bx-ax+40),0.05,1)*0.6;
+    g.strokeStyle='rgba(55,230,230,'+al.toFixed(3)+')';g.lineWidth=1.3;g.beginPath();g.arc(ax,ay,rad,-Math.PI/2.4,Math.PI/2.4);g.stroke();}
+  g.restore();
+  if(oh>0){g.fillStyle='#3a3f48';g.fillRect(ox-ow/2,gy-oh,ow,oh);T(g,'obstáculo '+r.obst+' dB',ox,gy-oh-8,COL.dim,10,'center');}
+  const ant=(x,y,col)=>{g.strokeStyle=col;g.lineWidth=2.5;g.beginPath();g.moveTo(x,gy);g.lineTo(x,y);g.stroke();g.beginPath();g.moveTo(x-9,y-8);g.lineTo(x,y);g.lineTo(x+9,y-8);g.stroke();g.beginPath();g.moveTo(x,y);g.lineTo(x,y-14);g.stroke();};
+  ant(ax,ay,COL.violet);ant(bx,by,COL.blue);T(g,'Tx',ax,gy+12,COL.violet,10,'center');T(g,'Rx',bx,gy+12,COL.blue,10,'center');
+  g.setLineDash([5,4]);g.strokeStyle='rgba(55,230,230,.5)';g.beginPath();g.moveTo(ax,ay);g.lineTo(bx,by);g.stroke();
+  if(S.ch.refl){g.strokeStyle='rgba(255,159,67,.8)';g.beginPath();g.moveTo(ax,ay);g.lineTo((ax+bx)/2+30,gy);g.lineTo(bx,by);g.stroke();T(g,'rayo reflejado (multitrayecto)',(ax+bx)/2+30,gy-6,COL.orange,10,'center');}
+  g.setLineDash([]);
+  const mg=I.margin,okc=mg>=0?COL.green:COL.red;
+  g.fillStyle='#161d24';g.strokeStyle=okc;g.lineWidth=1.5;g.beginPath();g.roundRect(w-96,8,88,14,3);g.stroke();
+  g.fillStyle=okc;g.fillRect(w-95,9,clamp((L.prx+120)/80,0,1)*86,12);T(g,'Prx '+nf(L.prx,1)+' dBm',w-52,32,okc,10,'center');
+  T(g,'f = '+si(r.f,'Hz',4)+'   λ = '+si(I.lam,'m',3)+'   FSPL = '+nf(I.fspl,1)+' dB   d = '+si(r.dist,'m',3),10,12,COL.yellow,11);
+  T(g,'Polarización '+r.pol+' · Gtx '+r.gtx+' dBi · Grx '+r.grx+' dBi · margen '+nf(mg,1)+' dB',10,26,COL.dim,10);
+}
+function drawRadio2(g,w,h){
+  g.fillStyle='#0b1014';g.fillRect(0,0,w,h);
+  const r=S.radio,lam=C0/r.f,left=44,pw=w-left-8,ph=h-34,top=8,d0=r.dist;
+  const da=Math.max(2,d0*0.5),db=d0*1.5,off=S.tx.power+r.gtx+r.grx-r.obst-r.extra;
+  const dir=d=>off-20*Math.log10(4*Math.PI*d/lam);
+  const two=d=>{const dl=Math.sqrt(d*d+(r.h1+r.h2)**2)-Math.sqrt(d*d+(r.h1-r.h2)**2),ph2=TAU*dl/lam;
+    const re=1-r.rho*Math.cos(ph2),im=r.rho*Math.sin(ph2);return dir(d)+20*Math.log10(Math.max(Math.hypot(re,im),1e-4));};
+  const ymax=Math.ceil((dir(da)+8)/10)*10,ymin=ymax-70;
+  gridBg(g,left,top,pw,ph,6,7);
+  for(let j=0;j<=7;j++)T(g,String(ymax-10*j),left-4,top+ph*j/7,COL.dim,9,'right');
+  for(let i=0;i<=3;i++)T(g,si(da+(db-da)*i/3,'m',3),left+pw*i/3,top+ph+12,COL.dim,9,i?i===3?'right':'center':'left');
+  const Y=v=>top+ph*(1-(clamp(v,ymin,ymax)-ymin)/(ymax-ymin));
+  const pl=(fn,col)=>{g.strokeStyle=col;g.lineWidth=1.3;g.beginPath();for(let x=0;x<=pw;x++){const d=da+(db-da)*x/pw;x?g.lineTo(left+x,Y(fn(d))):g.moveTo(left+x,Y(fn(d)));}g.stroke();};
+  pl(two,COL.orange);pl(dir,COL.cyan);
+  g.setLineDash([4,3]);g.strokeStyle=COL.red;g.beginPath();g.moveTo(left,Y(r.thr));g.lineTo(left+pw,Y(r.thr));g.stroke();
+  const xd=left+(d0-da)/(db-da)*pw;g.strokeStyle='rgba(255,213,74,.6)';g.beginPath();g.moveTo(xd,top);g.lineTo(xd,top+ph);g.stroke();g.setLineDash([]);
+  T(g,'Prx (dBm) frente a distancia  ·  cian: directa  ·  naranja: directa + reflejada en el suelo  ·  rojo: umbral',left,h-6,COL.dim,9);
+}
+/* ---------- FIBRA ---------- */
+function drawFiber(g,w,h){
+  g.fillStyle='#0b1014';g.fillRect(0,0,w,h);
+  const f=S.fiber,L=linkBudget(S,'fibra'),I=L.info,x0=70,x1=w-70,cy=h/2,mm=f.mode==='MM';
+  const hj=46,hc=34,hk=mm?20:5;
+  const grd=(hh,c)=>{g.fillStyle=c;g.fillRect(x0,cy-hh/2,x1-x0,hh);};
+  grd(hj,'#2a2f36');grd(hc,'#8aa0b4');grd(hk,'#2b6f86');
+  T(g,'cubierta',x0+8,cy-hj/2-8,COL.dim,10);T(g,'revestimiento',x0+90,cy-hc/2-8,COL.dim,10);T(g,'núcleo '+(mm?'50 µm':'9 µm'),x0+210,cy+hj/2+10,COL.cyan,10);
+  g.fillStyle='#161d24';g.strokeStyle=COL.violet;g.lineWidth=1.5;g.beginPath();g.roundRect(8,cy-26,54,52,4);g.fill();g.stroke();T(g,f.src==='LED'?'LED':'Láser',35,cy-8,COL.violet,10,'center');T(g,nf(S.tx.power,0)+' dBm',35,cy+10,COL.dim,9,'center');
+  g.fillStyle='#161d24';g.strokeStyle=COL.blue;g.beginPath();g.roundRect(w-62,cy-26,54,52,4);g.fill();g.stroke();T(g,'Fotodiodo',w-35,cy-8,COL.blue,10,'center');T(g,nf(L.prx,1)+' dBm',w-35,cy+10,COL.dim,9,'center');
+  const grow=clamp(I.rmsOut/Math.max(I.rmsIn,1e-18),1,8),len0=26;
+  const hp=Math.max(hk,12);g.save();g.beginPath();g.rect(x0,cy-hp/2,x1-x0,hp);g.clip();
+  for(let k=0;k<4;k++){const u=((P.vis*0.25+k/4)%1),x=x0+u*(x1-x0),len=len0*(1+(grow-1)*u),al=Math.pow(10,-L.loss*u/10/ (L.loss>12?3:1)*0.5);
+    const gr=g.createLinearGradient(x-len,0,x+len,0);gr.addColorStop(0,'rgba(55,230,230,0)');gr.addColorStop(0.5,'rgba(120,255,255,'+clamp(al,0.15,1).toFixed(2)+')');gr.addColorStop(1,'rgba(55,230,230,0)');
+    g.fillStyle=gr;g.fillRect(x-len,cy-hp/2,2*len,hp);
+    if(mm){g.strokeStyle='rgba(255,255,255,.35)';g.lineWidth=1;g.beginPath();g.moveTo(x-len,cy);for(let j=0;j<=12;j++){g.lineTo(x-len+j*len/6,cy+(j%2?1:-1)*(hk/2-2)*(0.4+0.5*Math.sin(k+j)));}g.stroke();}}
+  g.restore();
+  T(g,'λ = '+f.wl+' nm  ·  L = '+nf(f.len,1)+' km  ·  pérdida total '+nf(L.loss,1)+' dB  ·  Prx = '+nf(L.prx,1)+' dBm',x0,12,COL.yellow,11);
+  T(g,'(el ensanchamiento del pulso se muestra exagerado en la animación; los valores reales están a la derecha y abajo)',x0,h-10,COL.dim,9);
+}
+function erfv(x){return 1-erfc(x);}
+function drawFiber2(g,w,h){
+  g.fillStyle='#0b1014';g.fillRect(0,0,w,h);
+  const f=S.fiber,L=linkBudget(S,'fibra'),I=L.info,left=40,pw=w-left-8,ph=h-34,top=10,nb=12;
+  const bits=(R&&R.type==='digital'?R.bits.slice(0,nb):[1,0,1,1,0,0,1,0,1,0,1,1]);while(bits.length<nb)bits.push(bits.length%3?1:0);
+  const Tb=I.Tb,tp=I.tp,sg=I.sg,tt=nb*Tb;
+  gridBg(g,left,top,pw,ph,nb,4);
+  const yy=v=>top+ph*(1-v/1.15);
+  const pin=t=>{const k=Math.floor(t/Tb);return(k>=0&&k<nb&&bits[k]&&(t-k*Tb)<tp)?1:0;};
+  g.strokeStyle=COL.violet;g.lineWidth=1.5;g.beginPath();for(let x=0;x<=pw;x++){const t=x/pw*tt;x?g.lineTo(left+x,yy(pin(t))):g.moveTo(left+x,yy(pin(t)));}g.stroke();
+  const pout=t=>{if(sg<=0)return pin(t);let s=0;for(let k=0;k<nb;k++){if(!bits[k])continue;const a=k*Tb,b=a+tp;s+=0.5*(erfv((t-a)/(sg*Math.SQRT2))-erfv((t-b)/(sg*Math.SQRT2)));}return s;};
+  g.strokeStyle=COL.cyan;g.lineWidth=1.8;g.beginPath();for(let x=0;x<=pw;x++){const t=x/pw*tt;x?g.lineTo(left+x,yy(pout(t))):g.moveTo(left+x,yy(pout(t)));}g.stroke();
+  g.setLineDash([4,3]);g.strokeStyle=COL.red;g.beginPath();g.moveTo(left,yy(0.5));g.lineTo(left+pw,yy(0.5));g.stroke();g.setLineDash([]);
+  bits.forEach((b,k)=>T(g,String(b),left+(k+0.5)*pw/nb,top+ph+12,COL.green,10,'center'));
+  T(g,'violeta: entrada · cian: salida (normalizada a la pérdida) · rojo: umbral 50 %',left,h-6,COL.dim,9);
+  T(g,'σ cromática '+si(I.sc,'s',3)+' · σ modal '+si(I.sm,'s',3)+' · σ total '+si(I.sg,'s',3)+' · Tb '+si(Tb,'s',3)+' · '+(I.isi?'4σ > Tb: los bits se solapan (ISI)':'4σ < Tb: sin solapamiento apreciable'),left,top+8,I.isi?COL.orange:COL.green,10);
+}
+/* ---------- BER vs SNR ---------- */
+let SWEEP=null;
+function drawBer(g,w,h){
+  g.fillStyle='#0b1014';g.fillRect(0,0,w,h);
+  if(!SWEEP){msg(g,w,h,'Pulse «Ejecutar barrido» para simular\nla BER para distintos valores de SNR');return;}
+  const left=46,pw=w-left-10,ph=h-30,top=8,sw=SWEEP,xs=sw.snr,x0=xs[0],x1=xs[xs.length-1]||x0+1;
+  gridBg(g,left,top,pw,ph,Math.min(10,xs.length-1||1),sw.kind==='ber'?5:6);
+  const X=v=>left+(v-x0)/Math.max(x1-x0,1e-9)*pw;
+  let Y,lab;
+  if(sw.kind==='ber'){const lo=-5.3;Y=b=>top+ph*(Math.log10(Math.max(b,1e-6))/lo);
+    for(let j=0;j<=5;j++)T(g,'1e-'+j,left-4,top+ph*j/5.3,COL.dim,9,'right');}
+  else{const mx=Math.max(10,...sw.val.filter(Number.isFinite))+2;Y=v=>top+ph*(1-clamp(v,0,mx)/mx);for(let j=0;j<=6;j++)T(g,nf(mx*(1-j/6),0),left-4,top+ph*j/6,COL.dim,9,'right');}
+  xs.forEach((v,i)=>{if(i%Math.ceil(xs.length/10)===0)T(g,nf(v,0),X(v),top+ph+11,COL.dim,9,'center');});
+  T(g,'SNR (dB)',left+pw,top+ph+22,COL.dim,9,'right');
+  if(sw.theo){g.strokeStyle=COL.dim;g.setLineDash([4,3]);g.lineWidth=1.3;g.beginPath();let f=true;sw.theo.forEach((b,i)=>{if(b===null||b<1e-6)return;const x=X(xs[i]),y=Y(b);f?g.moveTo(x,y):g.lineTo(x,y);f=false;});g.stroke();g.setLineDash([]);}
+  g.strokeStyle=COL.orange;g.lineWidth=1.6;g.beginPath();sw.val.forEach((b,i)=>{const bb=sw.kind==='ber'?(b>0?b:sw.floor):b;const x=X(xs[i]),y=Y(bb);i?g.lineTo(x,y):g.moveTo(x,y);});g.stroke();
+  sw.val.forEach((b,i)=>{const zero=sw.kind==='ber'&&b===0;const bb=sw.kind==='ber'?(b>0?b:sw.floor):b;g.fillStyle=zero?'#0b1014':COL.orange;g.strokeStyle=COL.orange;g.beginPath();g.arc(X(xs[i]),Y(bb),3.5,0,TAU);g.fill();g.stroke();});
+  T(g,sw.kind==='ber'?'BER simulada (naranja; círculo vacío = 0 errores, solo indica BER < '+sw.floor.toExponential(1)+')  ·  gris: teoría':'SNR de salida frente a SNR de entrada',left,h-6,COL.dim,9);
+}
+//>>UI
+//<<APP
+/* =====================================================================
+   APLICACIÓN: paneles de resultados, teoría, prácticas, bucle principal
+   ===================================================================== */
+const TABS=[['lab','tab-lab'],['cable','tab-cable'],['radio','tab-radio'],['fibra','tab-fibra'],['ana','tab-ana'],['dig','tab-dig'],['noise','tab-noise'],['ins','tab-ins'],['teoria','tab-teoria'],['line','tab-line'],['prac','tab-prac']];
+let curTab='lab';
+const clone=o=>JSON.parse(JSON.stringify(o));
+
+/* ---------- ajuste receptor / presets ---------- */
+function matchRx(){const t=S.tx,r=S.rx;r.demod=t.mod;r.fcA=t.fcA;r.fcD=t.fcD;r.phase=t.phase;r.bitrate=t.bitrate;r.decode=t.line;r.sync=0;
+  r.ifBw=Math.max(2*(t.dev+t.fm)*1.2,6000);r.lpBw=Math.max(3*t.fm,2000);r.thr=0.5;}
+function setPreset(id){
+  const wasA=isAnalog(S.tx.mod);S.tx.mod=id;
+  if(isAnalog(id)&&!['sine','square','tri','audio'].includes(S.tx.src))S.tx.src='sine';
+  if(!isAnalog(id)&&wasA&&!isDigitalSrc(S.tx.src))S.tx.src='random';
+  matchRx();dirty=true;syncAll();
+}
+function buildPresets(host,ids){const h=$(host);ids.forEach(id=>{const b=document.createElement('button');b.className='btn sm';b.dataset.pre=id;b.textContent=MODS[id].name.split(' (')[0];b.addEventListener('click',()=>setPreset(id));h.appendChild(b);});}
+function updatePresetButtons(){document.querySelectorAll('[data-pre]').forEach(b=>b.classList.toggle('on',b.dataset.pre===S.tx.mod));}
+
+/* ---------- avisos y diagnóstico ---------- */
+function renderWarn(){
+  const w=[];if(R){w.push(...R.warn);}
+  $('warnbar').innerHTML=w.map(s=>'<div class="w">⚠ '+esc(s)+'</div>').join('');
+}
+function renderDiag(){
+  $('diag').innerHTML=DG.map(d=>'<div class="diagrow"><span class="chip '+d.sev+'">'+esc(d.type)+'</span>'+esc(d.msg)+'</div>').join('')
+   +(R&&R.notes.length?R.notes.map(n=>'<div class="diagrow"><span class="chip info">Nota</span>'+esc(n)+'</div>').join(''):'');
+}
+/* ---------- indicadores ---------- */
+function evm(){if(!R||R.type!=='digital'||!R.cons.ideal.length||!R.cons.pts.length)return NaN;
+  const C=R.cons.ideal;let e=0,p=0;for(const q of R.cons.pts){let b=1e9;for(const c of C){const d=(q.i-c.i)**2+(q.q-c.q)**2;if(d<b)b=d;}e+=b;}
+  for(const c of C)p+=c.i*c.i+c.q*c.q;return Math.sqrt((e/R.cons.pts.length)/(p/C.length));}
+function quality(){
+  if(!R)return '—';
+  if(R.type==='analog')return R.kindMismatch?'sin recuperar':R.rho>0.99?'Excelente':R.rho>0.95?'Buena':R.rho>0.8?'Degradada':'Inutilizable';
+  if(R.kindMismatch)return 'sin recuperar';
+  return R.ber===0?'Excelente':R.ber<0.01?'Buena':R.ber<0.1?'Degradada':'Inutilizable';
+}
+function meterList(){
+  if(!R)return [];
+  const col=(ok)=>ok?COL.green:COL.red,M=[];const lat=R.link.delay+R.Tunit;
+  M.push(['SNR configurada',nf(R.snrCfg,1)+' dB','en B_ref = '+si(R.Bref,'Hz',3)]);
+  M.push(['SNR medida',Number.isFinite(R.snrMeas)?nf(R.snrMeas,1)+' dB':'∞','sobre las muestras']);
+  M.push(['Potencia de señal',si(R.Psig,'V²',3),'muestras recibidas (1 Ω)']);
+  M.push(['Potencia de ruido',si(R.Pn,'V²',3),'en toda la banda simulada']);
+  if(R.type==='digital'){
+    const e=R.kindMismatch;
+    M.push(['BER',e?'—':(R.ber===0?'0':R.ber.toExponential(2).replace('.',',')),e?'receptor incompatible':R.nbits+' bits simulados',e?COL.red:col(R.ber===0)]);
+    M.push(['Bits erróneos',e?'—':R.nErr+' / '+R.nbits,e?'':nf(R.nErr/R.nbits*100,1)+' % de errores',e?COL.red:col(R.nErr===0)]);
+    const ev=evm();M.push(['EVM',Number.isFinite(ev)?nf(ev*100,1)+' %':'n/a','error de vector']);
+    M.push(['Tasa de bits',si(S.tx.bitrate,'b/s',3),'']);M.push(['Tasa de símbolos',si(R.Rs,'baud',3),R.bps+' bit/símbolo']);
+    if(R.mod!=='BB')M.push(['Portadora',si(R.fc,'Hz',4),'']);
+  }else{
+    M.push(['Correlación ρ',R.kindMismatch?'—':nf(R.rho,3),'mensaje vs. demodulado',R.kindMismatch?COL.red:col(R.rho>0.95)]);
+    M.push(['SNR de salida',R.kindMismatch?'—':nf(R.snrOut,1)+' dB','de ρ²/(1−ρ²)']);
+    M.push(['Portadora',si(R.fc,'Hz',4),'']);M.push(['Frecuencia del mensaje',si(R.fm,'Hz',3),'']);
+  }
+  M.push(['Calidad recibida',quality(),'']);
+  M.push(['BW estimado',si(R.estBw,'Hz',3),'teórico']);M.push(['BW 99 % medido',si(R.occBw,'Hz',3),'del espectro']);
+  M.push(['Eficiencia espectral',R.type==='digital'?nf(S.tx.bitrate/R.estBw,2)+' b/s/Hz':'—','Rb / BW estimado']);
+  M.push(['Latencia',si(lat,'s',3),'propagación + 1 símbolo']);
+  M.push(['Potencia recibida',nf(R.link.prx,1)+' dBm','balance del medio']);
+  return M;
+}
+function fillMeters(id,list){const el=$(id);if(!el)return;
+  el.innerHTML=list.map(m=>'<div class="meter"><span>'+esc(m[0])+'</span><b style="color:'+(m[3]||'inherit')+'">'+esc(m[1])+'</b><span>'+esc(m[2]||'')+'</span></div>').join('');}
+function renderMeters(){
+  const L=meterList();
+  if(curTab==='lab')fillMeters('meters-lab',L.filter((m,i)=>[0,1,4,5,8,9,10,11,12,13,14,15,16,17].includes(i)));
+  if(curTab==='ana'||curTab==='dig')fillMeters(R&&R.type==='analog'?'meters-ana':'meters-dig',L);
+  if(curTab==='ins')fillMeters('meters-ins',L);
+  if(curTab==='noise'){fillMeters('meters-noise',L.slice(0,8).concat(L.filter(m=>m[0]==='Calidad recibida')));
+    if(R&&R.type==='digital'&&!R.kindMismatch){const n=R.nbits;$('berNote').textContent=R.nErr===0?'0 errores en '+n+' bits: solo se puede afirmar BER < ≈'+(3/n).toExponential(1).replace('.',',')+' (95 % de confianza). Una BER nula en una muestra pequeña no garantiza una transmisión sin errores.':'BER estimada con '+n+' bits: '+nf(R.ber*100,2)+' %. La incertidumbre disminuye al simular más bits (use el barrido Monte Carlo).';
+      if(R.theo!==null&&R.theo!==undefined)$('berNote').textContent+=' BER teórica aproximada (receptor ideal): '+R.theo.toExponential(1).replace('.',',')+'.';}
+    else $('berNote').textContent=R&&R.type==='analog'?'En analógico la calidad se mide con la correlación ρ y la SNR de salida; no hay BER.':'Receptor incompatible: no hay bits recuperados.';}
+}
+/* ---------- paneles de cada medio ---------- */
+const selNote=(m)=>S.ch.medium===m?'Este medio es el seleccionado en la simulación.':'Este medio no está seleccionado: el osciloscopio usa «'+S.ch.medium+'». ';
+function renderMedia(){
+  if(curTab==='cable'){const L=linkBudget(S,'cable'),I=L.info,c=S.cable;
+    fillMeters('out-cable',[['Γ = (ZL−Z0)/(ZL+Z0)',nf(I.gamma,4),'ZL='+c.zl+' Ω, Z0='+c.z0+' Ω',Math.abs(I.gamma)<0.05?COL.green:COL.orange],['ROE (VSWR)',isFinite(I.vswr)?nf(I.vswr,3):'∞','(1+|Γ|)/(1−|Γ|)'],['Pérdida de retorno',nf(I.rl,1)+' dB','−20·log|Γ|'],
+      ['Atenuación del cable',nf(I.aDb,2)+' dB',c.att+' dB/100 m × '+c.len+' m'],['Pérdida por desadaptación',nf(I.misl,2)+' dB','−10·log(1−Γ²)'],['Retardo de propagación',si(I.delay,'s',3),'L / vp'],
+      ['Velocidad de propagación',si(I.vp,'m/s',3),(c.vf*100).toFixed(0)+' % de c'],['Eco en el receptor',nf(I.echoGain,4),'Γ_L·Γ_S·a² (relativo al directo)'],['SNR del enlace',nf(L.snrDb,1)+' dB','Prx '+nf(L.prx,1)+' dBm']]);
+    $('note-cable').textContent='ROE válida para cargas resistivas; con impedancias complejas se emplea |Γ|. '+(L.warn[0]||'');
+    $('sel-cable').textContent=selNote('cable');
+    $('th-cable').innerHTML='<p><b>Modelo visual simplificado</b>: se dibuja una onda incidente que se atenúa exponencialmente y una onda reflejada de amplitud Γ·a. Un modelo completo usaría las ecuaciones del telegrafista (R, L, G, C por unidad de longitud, con dependencia de la frecuencia: efecto pelicular y dispersión).</p><p>Con ZL = Z0 toda la potencia se entrega a la carga (Γ = 0, ROE = 1). Con ZL → ∞ (circuito abierto) Γ = +1; con ZL = 0 (cortocircuito) Γ = −1. El eco llega al receptor solo si el generador también está desadaptado (Zs ≠ Z0).</p>';}
+  if(curTab==='radio'){const L=linkBudget(S,'radio'),I=L.info,r=S.radio;
+    fillMeters('out-radio',[['Longitud de onda λ',si(I.lam,'m',3),'λ = c / f'],['Pérdida en espacio libre',nf(I.fspl,1)+' dB','20·log10(4πd/λ)'],['Potencia transmitida',nf(S.tx.power,1)+' dBm',''],
+      ['Ganancias de antena',nf(r.gtx+r.grx,0)+' dBi','Gtx + Grx'],['Pérdidas netas del canal',nf(L.loss,1)+' dB','FSPL − G + obstáculos + pol. + extra'],['Potencia recibida',nf(L.prx,1)+' dBm','Ptx − pérdidas netas',I.margin>=0?COL.green:COL.red],
+      ['Umbral de recepción',nf(r.thr,0)+' dBm',''],['Margen',nf(I.margin,1)+' dB','Prx − umbral',I.margin>=0?COL.green:COL.red],['SNR del enlace',nf(L.snrDb,1)+' dB','ruido '+nf(L.noise,1)+' dBm']]);
+    $('note-radio').textContent='dBm: potencia absoluta (referida a 1 mW); dB: relación; dBi: ganancia respecto a la antena isótropa. FSPL solo es válida en campo lejano y espacio libre. '+(L.warn[0]||'');
+    $('sel-radio').textContent=selNote('radio');
+    $('th-radio').innerHTML='<p>El modelo de dos rayos suma la onda directa y la reflejada en el suelo con su diferencia de fase 2πΔ/λ; cuando están en oposición de fase aparece un desvanecimiento profundo. Esto es un modelo geométrico simplificado, <b>no</b> una simulación electromagnética completa: no incluye difracción, rugosidad ni dispersión por el entorno.</p><p>En la simulación, la frecuencia física se usa para λ, pérdidas y fase del eco; la portadora de simulación está escalada para poder representar las muestras. Las frecuencias permitidas dependen de la normativa de cada país.</p>';}
+  if(curTab==='fibra'){const L=linkBudget(S,'fibra'),I=L.info,f=S.fiber;
+    fillMeters('out-fiber',[['Atenuación de la fibra',nf(f.att*f.len,2)+' dB',f.att+' dB/km × '+nf(f.len,1)+' km'],['Conectores y empalmes',nf(f.nconn*f.connLoss+f.nspl*f.splLoss,2)+' dB',''],['Pérdidas totales',nf(L.loss,2)+' dB','suma de pérdidas'],
+      ['Potencia emitida',nf(S.tx.power,1)+' dBm',''],['Potencia recibida',nf(L.prx,2)+' dBm','Ptx − pérdidas',I.margin>=0?COL.green:COL.red],['Margen',nf(I.margin,1)+' dB','Prx − sensibilidad ('+f.sens+' dBm)',I.margin>=0?COL.green:COL.red],
+      ['Coef. dispersión D',nf(I.D,1)+' ps/(nm·km)','cromática'],['σ total',si(I.sg,'s',3),'√(σc²+σm²)'],['Ancho de banda óptico',isFinite(I.bwEl)?si(I.bwEl,'Hz',3):'∞','0,187/σ'],['Retardo',si(L.delay,'s',3),'n_g ≈ 1,468']]);
+    $('note-fiber').textContent='Presupuesto: Prx (dBm) = Ptx (dBm) − pérdidas totales (dB). Restar dB a dBm da dBm; la diferencia entre dos potencias en dBm es dB.';
+    $('sel-fiber').textContent=selNote('fibra')+(S.tx.mod!=='BB'&&S.tx.mod!=='OOK'&&S.tx.mod!=='ASK'?' Aviso: la fibra real usa modulación de intensidad (IM/DD); aquí se emplea un modelo equivalente de banda base.':'');
+    $('th-fiber').innerHTML='<p>La luz se guía por reflexión interna total: el núcleo tiene mayor índice de refracción que el revestimiento. En fibra multimodo, los distintos modos recorren caminos de distinto retardo (dispersión modal); en monomodo solo queda la dispersión cromática D·Δλ·L, que depende de la fuente (LED frente a láser) y de la longitud de onda (mínima cerca de 1310 nm).</p>';}
+}
+/* ---------- “qué ocurre” en analógico/digital ---------- */
+function renderExplain(){
+  if(!R)return;const t=S.tx;
+  if(curTab==='ana'){
+    const E={AM:'La envolvente sigue a m(t) siempre que μ ≤ 1. Con μ = '+nf(t.mu,2)+(t.mu>1?' hay sobremodulación: la envolvente se invierte y el detector la distorsiona.':' la envolvente nunca cruza por cero y el detector de envolvente recupera el mensaje.')+' Ancho de banda: 2·fm = '+si(2*t.fm,'Hz')+'. El 50 % o más de la potencia está en la portadora, que no lleva información.',
+      DSB:'No hay portadora: la envolvente es A·m(t) y cambia de fase al cruzar por cero, por lo que un detector de envolvente falla y se necesita detección coherente con un oscilador local en frecuencia y fase. Con error de fase Δφ la salida se atenúa como cos Δφ (nula a 90°).',
+      SSB:'Solo se transmite una banda lateral: el ancho de banda es fm = '+si(t.fm,'Hz')+' (la mitad que AM) y no se gasta potencia en la portadora. Se genera con la transformada de Hilbert y se demodula de forma coherente.',
+      FM:'La frecuencia instantánea varía como fc + Δf·m(t) con Δf = '+si(t.dev,'Hz')+'. Índice β = Δf/fm = '+nf(t.dev/t.fm,1)+'. Ancho de banda de Carson: 2(Δf+fm) = '+si(2*(t.dev+t.fm),'Hz')+'. La amplitud es constante, lo que da inmunidad frente a ruido de amplitud a costa de ancho de banda.',
+      PM:'La fase de la portadora sigue a m(t) con desviación kp = '+nf(t.kp,1)+' rad. Es matemáticamente cercana a FM (la frecuencia instantánea es la derivada de la fase). Con kp > π hay ambigüedades de 2π en la demodulación.'}[t.mod];
+    $('th-ana').innerHTML='<p>'+E+'</p><p class="hint">Fidelidad actual: ρ = '+(R.kindMismatch?'—':nf(R.rho,3))+'. Reduzca la SNR en la pestaña «Ruido…» para comparar la sensibilidad al ruido.</p>';
+    $('tg-ana').textContent=MODS[t.mod].name;}
+  if(curTab==='dig'){
+    const m=t.mod,bps=R.bps;
+    const E={ASK:'La amplitud de la portadora toma '+t.levels+' niveles. Es la más sensible al ruido y a las variaciones de ganancia (necesita AGC y umbral correcto).',OOK:'Caso particular de ASK: la portadora se enciende o se apaga. El umbral óptimo depende del nivel recibido.',
+      BFSK:'Dos tonos separados '+si(t.sep,'Hz')+'. El receptor compara la energía en cada tono (detección no coherente), por lo que tolera errores de fase.',FSK4:'Cuatro tonos (2 bits/símbolo, código Gray). Mayor tasa por símbolo pero más ancho de banda: ≈ '+si(R.estBw,'Hz',3)+'.',
+      BPSK:'Dos fases (0 y 180°): 1 bit/símbolo. Máxima robustez entre las PSK.',QPSK:'Cuatro fases en cuadratura: 2 bits/símbolo con la misma BER por bit que BPSK, mitad de ancho de banda para la misma tasa.',
+      PSK8:'Ocho fases con codificación Gray: 3 bits/símbolo. Los puntos están más próximos, así que necesita más SNR.',QAM16:'16 puntos en cuadrícula, 4 bits/símbolo. Cada decisión depende de amplitud y fase; muy sensible a ruido y error de fase.',
+      QAM64:'64 puntos, 6 bits/símbolo. Eficiencia espectral alta pero exige SNR elevada (≈ 20 dB para BER baja).',
+      OFDM:'Versión educativa: '+t.nsc+' subportadoras ortogonales (separación = 1/T = '+si(R.Rs,'Hz',3)+') con QPSK cada una. Se demodula correlacionando cada subportadora (DFT directa, sin FFT ni prefijo cíclico: no modela multitrayecto selectivo).',
+      BB:'Banda base: los bits se representan directamente con niveles de tensión mediante '+LINES[t.line]+'.'}[m];
+    $('th-dig').innerHTML='<p>'+E+'</p><p>Bits por símbolo: <b>'+bps+'</b> · tasa de símbolos Rs = Rb / bps = '+si(R.Rs,'baud',3)+(m==='BB'?'':' · ciclos de portadora por símbolo: '+nf(R.fc/R.Rs,1))+'.</p>';
+    $('tg-dig').textContent=MODS[m].name;}
+}
+/* ---------- TEORÍA ---------- */
+function thHtml(){
+  const t=S.tx,r=R,Lc=linkBudget(S,'cable'),Lr=linkBudget(S,'radio'),Lf=linkBudget(S,'fibra');
+  const f1=t.fcD;
+  const Q=[
+  ['Señales analógicas y digitales','<p>Una señal analógica toma valores continuos en el tiempo (p. ej. una senoide); una digital representa la información con un conjunto finito de niveles (bits). La señal analógica se digitaliza mediante muestreo y cuantificación.</p><p class="ex">Ahora: modulación <b>'+MODS[t.mod].name+'</b> ('+(isAnalog(t.mod)?'señal analógica':'señal digital')+').</p>'],
+  ['Frecuencia, período, amplitud y fase','<p><code>T = 1/f</code>, <code>s(t) = A·cos(2πft + φ)</code>. A en voltios, f en hercios, φ en radianes (φ[rad] = φ[°]·π/180).</p><p class="ex">Portadora actual: f = '+si(isAnalog(t.mod)?t.fcA:t.fcD,'Hz',4)+' → T = '+si(1/(isAnalog(t.mod)?t.fcA:t.fcD),'s',3)+'; A = '+nf(t.amp,2)+' V; φ = '+t.phase+'° = '+nf(t.phase*Math.PI/180,3)+' rad.</p>'],
+  ['Frecuencia y longitud de onda','<p><code>λ = c / f</code> con c = 299 792 458 m/s.</p><p class="ex">A '+si(S.radio.f,'Hz',4)+': λ = '+si(C0/S.radio.f,'m',4)+'. Una antena de media onda mide ≈ λ/2 = '+si(C0/S.radio.f/2,'m',3)+'.</p>'],
+  ['Portadora y señal moduladora','<p>La moduladora m(t) contiene la información; la portadora es una senoide de frecuencia mucho mayor que se modifica según m(t) para adaptar la señal al medio (antenas razonables, multiplexación en frecuencia).</p>'],
+  ['Modulación y demodulación','<p>Modular es variar amplitud, frecuencia o fase de la portadora. Demodular recupera m(t) o los símbolos. El receptor necesita conocer la técnica, la frecuencia de portadora (y su fase en detección coherente) y el ritmo de símbolos: si no coinciden aparecen errores de modulación, de sincronización o de tasa.</p><p class="ex">Emisor: '+MODS[t.mod].name+' · Receptor: '+MODS[S.rx.demod].name+' → '+(t.mod===S.rx.demod?'coinciden':'<b>no coinciden</b>')+'.</p>'],
+  ['Muestreo y cuantificación','<p>Teorema de Nyquist: fs ≥ 2·fmax. Con N bits, SNR de cuantificación ≈ 6,02·N + 1,76 dB.</p><p class="ex">El simulador muestrea a fs = '+(r?si(r.fs,'Hz',3):'—')+' (≥ 16 veces la frecuencia más alta). Una fuente analógica con modulación digital se cuantifica con 4 bits (16 niveles): SNRq ≈ '+nf(6.02*4+1.76,1)+' dB.</p>'],
+  ['Codificación de línea','<p>Define cómo se representan los bits en el medio (NRZ, Manchester, AMI, HDB3, 4B/5B). Afecta a la componente continua, a las transiciones disponibles para recuperar el reloj y al ancho de banda. Véase la pestaña «Codificación de línea».</p>'],
+  ['Tasa de bits y tasa de símbolos','<p><code>Rb = Rs · log₂M</code> (b/s = baud × bit/símbolo).</p><p class="ex">Ahora: Rb = '+si(t.bitrate,'b/s',3)+', '+(r&&r.type==='digital'?r.bps+' bit/símbolo → Rs = '+si(r.Rs,'baud',3):'modulación analógica')+'.</p>'],
+  ['Ancho de banda','<p>Rango de frecuencias que ocupa la señal. AM/DSB: 2fm; SSB: fm; FM (Carson): 2(Δf+fm); PSK/QAM con pulsos rectangulares: ≈ 2Rs hasta el primer nulo.</p><p class="ex">BW estimado actual: '+(r?si(r.estBw,'Hz',3):'—')+'; medido (99 % de la potencia): '+(r?si(r.occBw,'Hz',3):'—')+'.</p>'],
+  ['Ruido y SNR','<p><code>SNR(dB) = 10·log₁₀(Ps/Pn)</code>. Aquí se define en un ancho de banda de referencia B_ref (Rs en digital, 2fm en analógico); el ruido térmico vale N = −174 dBm/Hz + 10·log₁₀(B) + NF.</p><p class="ex">SNR configurada: '+(r?nf(r.snrCfg,1):'—')+' dB; medida: '+(r&&Number.isFinite(r.snrMeas)?nf(r.snrMeas,1):'∞')+' dB. Potencia del ruido térmico en '+si(t.bw,'Hz',3)+' con NF = 6 dB: '+nf(nth(t.bw,6),1)+' dBm.</p>'],
+  ['BER','<p>BER = errores / bits. Teoría (receptor coherente, AWGN): BPSK/QPSK <code>Pb = Q(√(2·Eb/N0))</code>. Con n bits simulados y 0 errores solo se garantiza BER &lt; ≈3/n (95 %).</p><p class="ex">'+(r&&r.type==='digital'&&!r.kindMismatch?'BER medida: '+r.nErr+' errores en '+r.nbits+' bits'+(r.theo!==null&&r.theo!==undefined?'; teórica ≈ '+r.theo.toExponential(1).replace('.',','):'')+'.':'No aplicable en la configuración actual.')+'</p>'],
+  ['Impedancia característica','<p>Z0 = √((R+jωL)/(G+jωC)) ≈ √(L/C) en una línea sin pérdidas. Es la relación V/I de una onda que viaja por la línea. Valores típicos: 50 Ω y 75 Ω (coaxial), 100 Ω (par trenzado).</p><p class="ex">Cable actual: Z0 = '+S.cable.z0+' Ω, velocidad vp = '+si(Lc.info.vp,'m/s',3)+'.</p>'],
+  ['Coeficiente de reflexión y ROE','<p><code>Γ = (ZL − Z0)/(ZL + Z0)</code>; <code>ROE = (1+|Γ|)/(1−|Γ|)</code>; pérdida de retorno = −20·log|Γ|. Con impedancias complejas se usa el módulo |Γ|.</p><p class="ex">Ahora: Γ = '+nf(Lc.info.gamma,3)+', ROE = '+(isFinite(Lc.info.vswr)?nf(Lc.info.vswr,2):'∞')+', RL = '+nf(Lc.info.rl,1)+' dB.</p>'],
+  ['Adaptación de impedancias','<p>Si ZL = Z0, Γ = 0 y toda la potencia pasa a la carga. Si no, parte se refleja: se pierde potencia y aparecen ecos que interfieren con los símbolos siguientes (ISI).</p>'],
+  ['Antenas, propagación y polarización','<p>Una antena convierte señal guiada en onda radiada. La ganancia (dBi) concentra la potencia en ciertas direcciones. La polarización es la orientación del campo eléctrico: Tx y Rx cruzados pierden hasta decenas de dB.</p>'],
+  ['Pérdidas en espacio libre','<p><code>FSPL(dB) = 20·log₁₀(4πd/λ)</code> con d y λ en las mismas unidades. Válida en campo lejano, visión directa y sin obstáculos.</p><p class="ex">A '+si(S.radio.f,'Hz',3)+' y '+si(S.radio.dist,'m',3)+': FSPL = '+nf(Lr.info.fspl,1)+' dB → Prx = '+nf(Lr.prx,1)+' dBm.</p>'],
+  ['Reflexión, difracción y multitrayecto','<p>La onda puede reflejarse (suelo, edificios), difractarse en bordes y llegar por varios caminos. La suma de las réplicas con distinta fase produce desvanecimiento; si los retardos son comparables al tiempo de símbolo aparece ISI.</p>'],
+  ['Reflexión interna total en fibra óptica','<p>Ocurre si el ángulo de incidencia supera el crítico: <code>sin θc = n2/n1</code>. Apertura numérica NA = √(n1²−n2²).</p><p class="ex">Con n1 = 1,48 y n2 = 1,46: θc = '+nf(Math.asin(1.46/1.48)*180/Math.PI,1)+'°, NA = '+nf(Math.sqrt(1.48*1.48-1.46*1.46),3)+'.</p>'],
+  ['Atenuación y dispersión','<p>Atenuación: pérdida de potencia (dB/km). Dispersión: ensanchamiento del pulso (cromática y modal). Para NRZ se recomienda 4σ ≤ Tb.</p><p class="ex">Fibra actual: pérdida '+nf(Lf.loss,1)+' dB, σ = '+si(Lf.info.sg,'s',3)+', Tb = '+si(Lf.info.Tb,'s',3)+' → '+(Lf.info.isi?'hay solapamiento de pulsos':'sin solapamiento')+'.</p>'],
+  ['Presupuesto de potencia','<p><code>Prx(dBm) = Ptx(dBm) − Pérdidas(dB)</code>; en radio se suman además las ganancias (dBi). Margen = Prx − sensibilidad.</p><p class="ex">Fibra: '+nf(S.tx.power,1)+' dBm − '+nf(Lf.loss,1)+' dB = '+nf(Lf.prx,1)+' dBm; margen '+nf(Lf.info.margin,1)+' dB.</p>'],
+  ['Eficiencia espectral y latencia','<p>Eficiencia = Rb / B (b/s/Hz). Latencia = tiempo de propagación (L/vp) + tiempos de símbolo y de procesamiento.</p><p class="ex">'+(r?'Ahora: '+(r.type==='digital'?nf(t.bitrate/r.estBw,2)+' b/s/Hz; ':'')+'latencia ≈ '+si(r.link.delay+r.Tunit,'s',3)+'.':'')+'</p>']
+  ];
+  return Q.map(q=>'<details><summary>'+q[0]+'</summary>'+q[1]+'</details>').join('');
+}
+let theoryOpen=new Set();
+function renderTheory(){
+  if(curTab!=='teoria')return;const host=$('theory');
+  host.querySelectorAll('details').forEach((d,i)=>{if(d.open)theoryOpen.add(i);else theoryOpen.delete(i);});
+  host.innerHTML=thHtml();host.querySelectorAll('details').forEach((d,i)=>{if(theoryOpen.has(i))d.open=true;});
+}
+
+/* ---------- CODIFICACIÓN DE LÍNEA (pestaña) ---------- */
+const LINEINFO={
+ NRZL:['Ethernet 10BASE-T no; RS-232/UART, lógica TTL','Simple y de ancho de banda mínimo.','Componente continua y sin transiciones con secuencias largas: pierde el reloj.'],
+ NRZI:['USB, 100BASE-FX (tras 4B/5B)','Insensible a la polaridad; transición con cada 1.','Los ceros largos no tienen transiciones.'],
+ RZ:['Enlaces ópticos, infrarrojos','Transición dentro de cada bit 1 (o 0) → ayuda al reloj.','Doble ancho de banda que NRZ.'],
+ MANCH:['Ethernet 10BASE-T (IEEE 802.3), RFID','Una transición en cada bit: autosincronizable y sin componente continua.','Doble ancho de banda; sensible a la polaridad.'],
+ DMANCH:['Token Ring (IEEE 802.5)','Insensible a la polaridad; transición central siempre.','Doble ancho de banda; mayor complejidad.'],
+ AMI:['Líneas T1/E1 (con HDB3/B8ZS)','Sin componente continua; detecta errores por violación de alternancia.','Los ceros largos pierden el reloj; 3 niveles.'],
+ HDB3:['E1/PDH europeo (ITU-T G.703)','Como AMI pero sustituye 4 ceros por B00V o 000V: garantiza transiciones.','Más complejo; 3 niveles.'],
+ '4B5B':['100BASE-TX, FDDI','Limita a 3 ceros consecutivos y facilita el reloj; permite códigos de control.','Añade un 25 % de sobrecarga (125 Mbaud para 100 Mb/s).']
+};
+function lineBitsArr(){return [...$('lineBits').value].filter(c=>c==='0'||c==='1').map(Number);}
+function renderLineTab(){
+  const bits=lineBitsArr();if(!bits.length)return;
+  let rows='<table class="t"><tr><th>Código</th><th>Nivel medio (DC)</th><th>Transiciones</th><th>Racha máx. sin transición</th><th>Recuperación de reloj</th></tr>';
+  for(const k of Object.keys(LINES)){const e=lineEncode(k,bits),st=lineStats(e.h),tpb=st.transitions/e.nc;
+    rows+='<tr><td>'+LINES[k]+'</td><td>'+nf(st.dc,2)+'</td><td>'+st.transitions+'</td><td>'+st.maxRunBits+' bit</td><td>'+(tpb>=0.99?'Alta':tpb>=0.4?'Media':'Baja')+'</td></tr>';}
+  $('lineTable').innerHTML=rows+'</table>';
+  $('lineTheory').innerHTML=Object.keys(LINES).map(k=>'<details><summary>'+LINES[k]+'</summary><p><b>Se usa en:</b> '+LINEINFO[k][0]+'.</p><p><b>Ventaja:</b> '+LINEINFO[k][1]+'</p><p><b>Inconveniente:</b> '+LINEINFO[k][2]+'</p></details>').join('');
+}
+function drawLine(g,w,h){
+  g.fillStyle='#0b1014';g.fillRect(0,0,w,h);
+  const bits=lineBitsArr();if(!bits.length){msg(g,w,h,'Introduzca bits');return;}
+  const keys=Object.keys(LINES),left=104,pw=w-left-8,lh=(h-18)/(keys.length),n=bits.length;
+  keys.forEach((k,i)=>{const e=lineEncode(k,bits),y0=i*lh,yc=y0+lh/2,A=lh*0.34;
+    T(g,LINES[k].length>14?LINES[k].slice(0,13)+'…':LINES[k],4,yc,COL.green,10);
+    const hs=e.h,m=hs.length;g.strokeStyle=COL.blue;g.lineWidth=1.6;g.beginPath();
+    for(let j=0;j<m;j++){const x0=left+j/m*pw,x1=left+(j+1)/m*pw,y=yc-hs[j]*A;j?g.lineTo(x0,y):g.moveTo(x0,y);g.lineTo(x1,y);}g.stroke();
+    g.strokeStyle='rgba(255,255,255,.12)';g.setLineDash([2,3]);g.beginPath();for(let j=0;j<=e.nc;j++){const x=left+j/e.nc*pw;g.moveTo(x,y0+2);g.lineTo(x,y0+lh-2);}g.stroke();g.setLineDash([]);
+    if(i===0)bits.forEach((b,j)=>T(g,String(b),left+(j+0.5)/n*pw,y0+8,COL.yellow,9,'center'));});
+  T(g,'Los intervalos de bit se muestran discontinuos; en 4B/5B hay 5 intervalos por cada 4 bits de datos.',left,h-7,COL.dim,9);
+}
+
+/* ---------- COMPATIBILIDAD ---------- */
+let compatBusy=false;
+async function runCompat(){
+  if(compatBusy)return;compatBusy=true;const hint=$('compatHint');
+  const dl=['ASK','OOK','BFSK','FSK4','BPSK','QPSK','PSK8','QAM16','QAM64','OFDM','BB'],an=['AM','DSB','SSB','FM','PM'];
+  const cellColor=(v,ok)=>ok===null?'#222':v<0.0005?'#17402a':v<0.05?'#4a4a17':v<0.25?'#5a3a17':'#4a1f1f';
+  const mk=(list,analog)=>{let h='<table class="t"><tr><th>TX \\ RX</th>'+list.map(x=>'<th>'+MODS[x].name.split(' ')[0]+'</th>').join('')+'</tr>';return h;};
+  let html='';
+  for(const [list,analog] of [[dl,false],[an,true]]){
+    html+='<p class="hint">'+(analog?'Analógico: correlación ρ entre m(t) y la señal demodulada (1 = perfecto).':'Digital: BER en % (64 bits, SNR 35 dB).')+'</p>'+mk(list,analog);
+    for(const a of list){html+='<tr><th>'+MODS[a].name.split(' ')[0]+'</th>';
+      for(const b of list){const s=DEF();s.tx.mod=a;s.rx.demod=b;s.ch.snr=35;s.ch.atten=false;s.tx.nbits=64;
+        const rr=simulate(s,{bits:4242,noise:99});let txt,bg;
+        if(analog){txt=nf(rr.rho,2);bg=rr.rho>0.95?'#17402a':rr.rho>0.6?'#5a3a17':'#4a1f1f';}
+        else{txt=nf(rr.ber*100,0);bg=cellColor(rr.ber,true);}
+        html+='<td style="background:'+bg+(a===b?';outline:2px solid #4aa3ff':'')+'" title="TX '+MODS[a].name+' → RX '+MODS[b].name+'">'+txt+'</td>';}
+      html+='</tr>';await new Promise(r=>setTimeout(r,0));hint.textContent='Calculando… '+MODS[a].name;}
+    html+='</table>';
+  }
+  $('compat').innerHTML=html+'<p class="hint">Diagonal (recuadro azul): receptor coherente. Fuera de ella el resultado sale de la propia demodulación sobre las muestras, no de una tabla fija. Emisor digital con receptor analógico (o al revés) es incompatible por tipo de señal.</p>';
+  hint.textContent='Tabla calculada.';compatBusy=false;
+}
+
+/* ---------- Monte Carlo y barrido de BER ---------- */
+function monte(S2,total){
+  const chunk=Math.min(total,512);let e=0,n=0,last=null;
+  for(let k=0;n<total;k++){const s=clone(S2);s.tx.src='random';s.tx.nbits=chunk;s.tx.hardMax=1e6;
+    last=simulate(s,{bits:1000+k*17,noise:5000+k*31});if(last.kindMismatch||last.type!=='digital')return {ber:NaN,last,n:0};e+=last.nErr;n+=last.nbits;}
+  return {ber:e/n,n,last};
+}
+let sweepBusy=false;
+async function runSweep(){
+  if(sweepBusy)return;sweepBusy=true;
+  let a=+$('swA').value,b=+$('swB').value,st=Math.max(0.25,+$('swC').value),nb=clamp(+$('swN').value||1200,100,20000);if(b<a)[a,b]=[b,a];
+  const snrs=[];for(let v=a;v<=b+1e-9&&snrs.length<40;v+=st)snrs.push(v);
+  const dig=!isAnalog(S.tx.mod),val=[],theo=[];const info=$('berInfo');
+  for(let i=0;i<snrs.length;i++){const s2=clone(S);s2.ch.snrMode='manual';s2.ch.snr=snrs[i];s2.ch.ideal=false;s2.ch.awgn=true;
+    if(dig){const m=monte(s2,nb);val.push(Number.isNaN(m.ber)?0.5:m.ber);theo.push(s2.rx.demod===s2.tx.mod?theoBER(s2.tx.mod,undb(snrs[i]),s2):null);}
+    else{let acc=0;for(let k=0;k<3;k++){const r2=simAnalog(s2,{bits:1,noise:11+k*7});acc+=Number.isFinite(r2.snrOut)?r2.snrOut:0;}val.push(acc/3);}
+    info.textContent='Simulando… SNR = '+nf(snrs[i],1)+' dB ('+(i+1)+'/'+snrs.length+')';await new Promise(r=>setTimeout(r,0));}
+  SWEEP={kind:dig?'ber':'snr',snr:snrs,val,theo:dig?theo:null,floor:0.5/nb};
+  info.textContent=dig?'Barrido completado ('+nb+' bits por punto). Con BER = 0 solo se puede afirmar BER < '+(3/nb).toExponential(1).replace('.',',')+'.':'Barrido analógico completado (SNR de salida media de 3 realizaciones).';
+  sweepBusy=false;return SWEEP;
+}
+
+/* ---------- PRÁCTICAS ---------- */
+const PR=[];
+function tab(rows,head){return '<table class="t"><tr>'+head.map(h=>'<th>'+h+'</th>').join('')+'</tr>'+rows.map(r=>'<tr>'+r.map(c=>'<td>'+c+'</td>').join('')+'</tr>').join('')+'</table>';}
+function sA(mod,fn){const s=DEF();s.tx.mod=mod;s.rx.demod=mod;s.ch.snr=35;s.ch.atten=false;if(fn)fn(s);matchRxTo(s);return s;}
+function matchRxTo(s){s.rx.demod=s.tx.mod;s.rx.fcA=s.tx.fcA;s.rx.fcD=s.tx.fcD;s.rx.bitrate=s.tx.bitrate;s.rx.decode=s.tx.line;s.rx.phase=s.tx.phase;s.rx.ifBw=Math.max(2*(s.tx.dev+s.tx.fm)*1.2,6000);}
+function pBase(id,title,tab_,obj,setup,proc,exp,q,expl,run){PR.push({id,title,tab:tab_,obj,setup,proc,exp,q,expl,run});}
+pBase(1,'AM y sobremodulación','ana','Observar cómo el índice de modulación μ determina la forma de la envolvente y la fidelidad del detector de envolvente.',
+ s=>{s.tx.mod='AM';s.rx.demod='AM';s.tx.mu=0.5;s.ch.snr=35;s.tx.src='sine';},
+ ['Con μ = 0,5 observe la envolvente en el gráfico auxiliar.','Suba μ lentamente hasta 1,0 y después hasta 1,5.','Compare la señal demodulada con m(t) en el osciloscopio.'],
+ 'Para μ ≤ 1 la envolvente reproduce m(t). Para μ > 1 la envolvente cruza por cero (la portadora invierte su fase) y la señal demodulada se deforma.',
+ ['¿Qué ocurre con la envolvente en μ = 1?','¿Por qué baja ρ para μ > 1?'],'Un detector de envolvente entrega |A(1+μ·m)|: cuando 1+μm < 0 el valor absoluto «pliega» la señal, generando distorsión armónica.',
+ ()=>{const rows=[0.4,0.8,1.0,1.4,1.8].map(mu=>{const s=sA('AM',x=>{x.tx.mu=mu;});const r=simulate(s,{bits:1,noise:3});return [nf(mu,1),nf(r.rho,3),nf(r.snrOut,1)+' dB',mu>1?'sobremodulación':'correcta'];});return tab(rows,['μ','ρ','SNR salida','estado']);});
+pBase(2,'FM frente a AM','ana','Comparar la sensibilidad al ruido de AM y FM (modelo didáctico).',
+ s=>{s.tx.mod='FM';s.rx.demod='FM';s.ch.snr=12;s.tx.src='sine';},
+ ['Con FM y SNR = 12 dB observe la señal demodulada y el espectro.','Pulse AM y compare.','Baje la SNR a 6 dB y repita.'],
+ 'A SNR media/alta FM recupera mejor el mensaje (ganancia de FM), pero ocupa más ancho de banda; por debajo de un umbral FM se degrada bruscamente.',
+ ['¿Cuánto ancho de banda ocupa cada una?','¿Qué es el efecto umbral?'],'El ruido perturba la amplitud, que FM ignora; la desviación Δf amplifica la excursión de la información frente al ruido a costa de ancho de banda (Carson).',
+ ()=>{const rows=[];for(const snr of [6,12,20]){const a=simulate(sA('AM',x=>{x.ch.snr=snr;x.tx.mu=0.8;}),{bits:1,noise:5}),f=simulate(sA('FM',x=>{x.ch.snr=snr;}),{bits:1,noise:5});rows.push([snr+' dB',nf(a.snrOut,1)+' dB',nf(f.snrOut,1)+' dB',si(a.estBw,'Hz',3),si(f.estBw,'Hz',3)]);}return tab(rows,['SNR entrada','SNR salida AM','SNR salida FM','BW AM','BW FM']);});
+pBase(3,'BPSK frente a QPSK','dig','Comparar bits por símbolo, constelaciones y errores.',
+ s=>{s.tx.mod='BPSK';s.rx.demod='BPSK';s.ch.snr=8;},
+ ['Con BPSK observe 2 puntos en la constelación.','Pulse QPSK: 4 puntos y 2 bits/símbolo.','Compare BER y ancho de banda con la misma tasa de bits.'],
+ 'A igual Eb/N0 ambas tienen la misma BER por bit, pero QPSK necesita la mitad de ancho de banda para la misma Rb.',['¿Cuántos símbolos por segundo usa cada una?'],'QPSK transmite dos bits independientes en I y Q (BPSK en cuadratura).',
+ ()=>{const rows=['BPSK','QPSK'].map(m=>{const s=sA(m,x=>{x.ch.snr=8;});const mc=monte(s,1500);return [MODS[m].name,String(mc.last.bps),si(mc.last.Rs,'baud',3),si(mc.last.estBw,'Hz',3),mc.ber.toExponential(2).replace('.',','),mc.last.theo!==null?mc.last.theo.toExponential(1).replace('.',','):'—'];});return tab(rows,['Modulación','bit/símb.','Rs','BW est.','BER sim.','BER teórica']);});
+pBase(4,'QPSK frente a 16-QAM','dig','Observar el aumento de eficiencia espectral y la mayor sensibilidad al ruido.',
+ s=>{s.tx.mod='QAM16';s.rx.demod='QAM16';s.ch.snr=16;},
+ ['Con 16-QAM a 16 dB observe la nube de puntos.','Cambie a QPSK y compare.','Reduzca la SNR a 12 dB.'],
+ '16-QAM duplica los bits por símbolo (4 frente a 2) pero sus puntos están más próximos: necesita unos 4 dB más para la misma BER.',['¿Por qué se confunden los puntos interiores?'],'La distancia mínima entre puntos se reduce con la energía media fija.',
+ ()=>{const rows=[];for(const snr of [12,16]){for(const m of ['QPSK','QAM16']){const mc=monte(sA(m,x=>{x.ch.snr=snr;}),1500);rows.push([snr+' dB',MODS[m].name,nf(S.tx.bitrate/mc.last.estBw,2)+' b/s/Hz',mc.ber.toExponential(2).replace('.',',')]);}}return tab(rows,['SNR','Modulación','Eficiencia','BER']);});
+pBase(5,'Efecto de la SNR','noise','Reducir la SNR y registrar la BER.',
+ s=>{s.tx.mod='QPSK';s.rx.demod='QPSK';s.ch.snr=14;},
+ ['Pulse «Ejecutar barrido» en la pestaña de ruido.','Compare la curva simulada con la teórica.','Pruebe más bits por punto para reducir la incertidumbre.'],
+ 'La BER cae de forma exponencial al subir la SNR (curva en cascada).',['¿Por qué los puntos con 0 errores no son «BER = 0»?'],'Con n bits solo se resuelve BER ≳ 1/n.',
+ ()=>{const rows=[0,4,8,12].map(v=>{const mc=monte(sA('QPSK',x=>{x.ch.snr=v;}),1500);return [v+' dB',mc.ber.toExponential(2).replace('.',','),mc.last.theo.toExponential(1).replace('.',',')];});return tab(rows,['SNR','BER simulada','BER teórica']);});
+pBase(6,'Adaptación de impedancias','cable','Cambiar la impedancia de carga y observar las reflexiones.',
+ s=>{s.ch.medium='cable';s.ch.refl=true;s.ch.snr=30;s.tx.mod='QPSK';s.rx.demod='QPSK';s.tx.bitrate=4e6;s.tx.fcD=8e6;s.rx.bitrate=4e6;s.rx.fcD=8e6;s.cable.type='coax';applyCableTo(s,'coax');s.cable.len=100;s.cable.zs=5;s.cable.zl=50;s.ch.snr=14;},
+ ['Con ZL = Z0 la onda reflejada desaparece.','Cambie ZL a 25, 100 y 1000 Ω.','Observe Γ, ROE y la señal recibida.'],
+ 'Con ZL = Z0: Γ = 0. Con carga abierta Γ → +1, con carga baja Γ negativo. El eco llega al receptor por la desadaptación del generador (Zs = 5 Ω).',['¿Qué signo tiene Γ si ZL < Z0?'],'La onda reflejada se suma con retardo 2L/vp y distorsiona los símbolos.',
+ ()=>{const rows=[50,75,100,200,25,1000].map(zl=>{const s=sA('QPSK',x=>{x.ch.medium='cable';x.ch.refl=true;x.ch.snr=30;x.tx.bitrate=4e6;x.tx.fcD=8e6;applyCableTo(x,'coax');x.cable.len=100;x.cable.zs=5;x.cable.zl=zl;x.ch.snr=14;});const mc=monte(s,1024),I=linkBudget(s,'cable').info;return [zl+' Ω',nf(I.gamma,3),isFinite(I.vswr)?nf(I.vswr,2):'∞',nf(I.echoGain,3),mc.ber.toExponential(1).replace('.',',')];});return tab(rows,['ZL','Γ','ROE','eco rel.','BER']);});
+function applyCableTo(s,v){const T=CABLES[v];s.cable.type=v;s.cable.z0=T.z0;s.cable.att=T.att;s.cable.vf=T.vf;s.cable.xt=T.xt;s.cable.zl=T.z0;s.cable.zs=T.z0;}
+pBase(7,'Atenuación en fibra óptica','fibra','Variar la longitud y calcular la potencia recibida.',
+ s=>{s.ch.medium='fibra';s.tx.power=0;s.fiber.len=20;s.fiber.att=0.2;s.fiber.wl=1550;},
+ ['Anote la potencia recibida con 20 km.','Aumente la longitud a 100 y 150 km.','Calcule cuándo el margen se hace negativo.'],
+ 'Cada kilómetro resta α dB; el balance es lineal en dB: Prx = Ptx − α·L − pérdidas de conectores y empalmes.',['¿A qué longitud se agota el margen?'],'La potencia óptica decae exponencialmente en unidades lineales, linealmente en dB.',
+ ()=>{const rows=[10,50,100,150,200].map(l=>{const s=clone(S);s.fiber.len=l;const L=linkBudget(s,'fibra');return [l+' km',nf(L.loss,1)+' dB',nf(L.prx,1)+' dBm',nf(L.info.margin,1)+' dB',L.info.margin>=0?'OK':'sin margen'];});return tab(rows,['Longitud','Pérdidas','Prx','Margen','Estado']);});
+pBase(8,'Dispersión óptica','fibra','Observar el ensanchamiento de pulsos y el solapamiento entre bits.',
+ s=>{s.ch.medium='fibra';s.fiber.mode='MM';s.fiber.src='LED';s.fiber.wl=850;s.fiber.len=2;s.fiber.att=2.5;s.tx.mod='BB';s.rx.demod='BB';s.tx.line='NRZL';s.rx.decode='NRZL';s.tx.bitrate=2e8;s.rx.bitrate=2e8;s.tx.bw=4e8;s.tx.power=0;s.ch.snr=30;},
+ ['Observe el gráfico «antes y después» con LED multimodo.','Suba la tasa de bits y la longitud.','Cambie a láser monomodo a 1310 nm.'],
+ 'El pulso se ensancha con σ² = σc² + σm². Cuando 4σ > Tb los bits vecinos se solapan y aparecen errores aunque haya potencia de sobra.',['¿Por qué al duplicar la tasa se agrava el solapamiento?'],'El tiempo de bit disminuye mientras σ (dependiente de L) se mantiene.',
+ ()=>{const rows=[1e7,1e8,4e8,1e9].map(rb=>{const s=sA('BB',x=>{x.tx.line='NRZL';x.ch.medium='fibra';x.fiber.mode='MM';x.fiber.src='LED';x.fiber.wl=850;x.fiber.len=2;x.fiber.att=2.5;x.tx.bitrate=rb;x.tx.bw=4*rb;x.ch.snr=30;x.tx.power=0;});s.rx.bitrate=rb;const mc=monte(s,512),I=linkBudget(s,'fibra').info;return [si(rb,'b/s',3),si(I.sg,'s',3),si(I.Tb,'s',3),I.isi?'sí':'no',mc.ber.toExponential(1).replace('.',',')];});return tab(rows,['Rb','σ total','Tb','¿4σ > Tb?','BER sim.']);});
+pBase(9,'Desvanecimiento por multitrayecto','radio','Comparar la señal directa con la suma de varias trayectorias.',
+ s=>{s.ch.medium='radio';s.ch.refl=true;s.ch.fade=true;s.ch.fadeK=0;s.ch.snr=20;s.radio.dist=100;},
+ ['Active multitrayecto y desvanecimiento.','Observe el gráfico de dos rayos: las caídas son nulos de interferencia.','Mueva la distancia unos metros.'],
+ 'La suma de la onda directa y la reflejada con distinta fase produce máximos y mínimos de potencia recibida; con Rayleigh la amplitud fluctúa con el tiempo.',['¿De qué depende la distancia entre nulos?'],'La diferencia de recorrido Δ cambia con la distancia: nulo cuando 2πΔ/λ ≈ múltiplo impar de π con reflexión de signo opuesto.',
+ ()=>{const r=S.radio,lam=C0/r.f;let mx=-1e9,mn=1e9;const dir=d=>-20*Math.log10(4*Math.PI*d/lam);for(let d=r.dist*0.8;d<=r.dist*1.2;d+=0.05){const dl=Math.sqrt(d*d+(r.h1+r.h2)**2)-Math.sqrt(d*d+(r.h1-r.h2)**2),ph=TAU*dl/lam,v=20*Math.log10(Math.max(Math.hypot(1-r.rho*Math.cos(ph),r.rho*Math.sin(ph)),1e-4));mx=Math.max(mx,v);mn=Math.min(mn,v);}
+   const rows=[0,3,10].map(k=>{const s=sA('QPSK',x=>{x.ch.fade=true;x.ch.fadeK=k;x.ch.snr=20;});const mc=monte(s,1024);return ['K = '+k,mc.ber.toExponential(1).replace('.',',')];});
+   return '<p>Dos rayos en ±20 % de la distancia: variación de '+nf(mn,1)+' a '+nf(mx,1)+' dB respecto a la directa.</p>'+tab(rows,['Canal Rice','BER (QPSK, SNR 20 dB)']);});
+pBase(10,'Error de configuración del receptor','lab','Cambiar la modulación, la frecuencia o la tasa del receptor para provocar errores.',
+ s=>{s.tx.mod='QPSK';s.rx.demod='QPSK';s.ch.snr=30;s.rx.demod='BPSK';},
+ ['Con el receptor en BPSK observe el diagnóstico.','Vuelva a QPSK y desajuste portadora, fase, tasa y sincronismo uno a uno.','Fíjese en el tipo de fallo que indica el diagnóstico.'],
+ 'Cada desajuste produce un patrón diferente: rotación de la constelación (portadora/fase), desplazamiento progresivo de las ventanas (tasa), mezcla de símbolos (sincronismo).',['¿Qué fallo es más grave: 1 % de error en la tasa o 5° de fase?'],'La integración ocurre en ventanas fijas del receptor; si no coinciden con el emisor se integra parte de otro símbolo.',
+ ()=>{const mk=(l,f)=>{const s=sA('QPSK',x=>{x.ch.snr=30;});f(s);const r=simulate(s,{bits:77,noise:5}),d=diagnose(s,r)[0];return [l,nf(r.ber*100,1)+' %',d.type];};
+   return tab([mk('Correcto',s=>{}),mk('Receptor BPSK',s=>{s.rx.demod='BPSK';}),mk('Portadora +2 %',s=>{s.rx.fcD*=1.02;}),mk('Fase 45°',s=>{s.rx.phase=45;}),mk('Tasa +10 %',s=>{s.rx.bitrate*=1.1;}),mk('Muestreo +30 %',s=>{s.rx.sync=30;})],['Configuración','BER','Diagnóstico']);});
+function loadPractice(p){S=DEF();p.setup(S);if(isAnalog(S.tx.mod)&&!['sine','square','tri','audio'].includes(S.tx.src))S.tx.src='sine';
+  matchRxKeep(S);P.t=0;P.playing=true;dirty=true;syncAll();switchTab(p.tab);updatePlayBtn();}
+function matchRxKeep(s){const keep=s.rx.demod,ph=s.rx.phase;const need=s.rx.demod!==s.tx.mod||true;void need;void keep;void ph;}
+function buildPractices(){
+  const host=$('pracList');host.innerHTML='';
+  PR.forEach(p=>{const d=document.createElement('details');d.className='prac';
+    d.innerHTML='<summary>Práctica '+p.id+': '+p.title+'</summary><div class="pb"><p><b>Objetivo.</b> '+p.obj+'</p><p><b>Procedimiento.</b></p><ol>'+p.proc.map(x=>'<li>'+x+'</li>').join('')+'</ol><p><b>Gráficos esperados.</b> '+p.exp+'</p><p><b>Preguntas de observación.</b></p><ul>'+p.q.map(x=>'<li>'+x+'</li>').join('')+'</ul><p><b>Explicación.</b> '+p.expl+'</p><div class="row"><button class="btn sm" data-load="'+p.id+'">Cargar práctica / restablecer condiciones iniciales</button><button class="btn sm" data-run="'+p.id+'">Ejecutar experimento</button>'+(p.id===5?'<button class="btn sm" data-sweep="1">Barrido en la pestaña de ruido</button>':'')+'</div><div class="res" id="pres'+p.id+'">Los resultados del experimento aparecerán aquí.</div></div>';
+    host.appendChild(d);});
+  host.addEventListener('click',async e=>{const l=e.target.closest('[data-load]'),r=e.target.closest('[data-run]'),sw=e.target.closest('[data-sweep]');
+    if(l){loadPractice(PR[+l.dataset.load-1]);}
+    if(r){const p=PR[+r.dataset.run-1],box=$('pres'+p.id);box.textContent='Simulando…';await new Promise(x=>setTimeout(x,20));
+      const keep=clone(S);try{S=clone(S);box.innerHTML=p.run();}catch(err){box.textContent='Error: '+err.message;}finally{S=keep;}}
+    if(sw){switchTab('noise');}});
+}
+
+/* ---------- bloques de la cadena (acciones) ---------- */
+document.addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a)return;
+  const act=a.dataset.act;
+  if(act==='newbits'){seed.bits=(Math.random()*1e9)>>>0;S.tx.src='random';}
+  if(act==='ideal')S.ch.ideal=!S.ch.ideal;
+  if(act==='agc')S.rx.agc=!S.rx.agc;
+  if(act==='match')matchRx();
+  dirty=true;syncAll();const id=a.closest('#blockInfo')?curBlock:null;if(id)$('blockInfo').innerHTML=blockInfoHTML(id);});
+let curBlock=null;
+
+/* ---------- pestañas ---------- */
+function switchTab(id){
+  curTab=id;
+  TABS.forEach(([k,sec])=>{const s=$(sec);s.classList.toggle('act',k===id);});
+  document.querySelectorAll('.tabbtn').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===id?'true':'false'));
+  if(id==='cable'||id==='radio'||id==='fibra'){S.ch.medium=id;dirty=true;syncAll(true);}
+  if(id==='line')renderLineTab();
+  dirty=true;
+}
+function buildTabs(){const nav=$('tabs');
+  TABS.forEach(([k,sec])=>{const b=document.createElement('button');b.className='tabbtn';b.role='tab';b.dataset.tab=k;b.textContent=$(sec).dataset.title;b.addEventListener('click',()=>switchTab(k));nav.appendChild(b);});}
+
+/* ---------- reproducción ---------- */
+function updatePlayBtn(){$('bPlay').textContent=P.playing?'⏸ Pausar':(P.t>0?'▶ Reanudar':'▶ Iniciar');$('bPlay').classList.toggle('on',P.playing);$('bFreeze').classList.toggle('on',P.frozen);}
+function stepOnce(){if(!R)return;P.playing=false;const st=R.type==='analog'?R.Tunit/8:R.Tunit;P.t=(P.t+st)%R.T;updatePlayBtn();}
+function recompute(){
+  dirty=false;
+  try{R=simulate(S,seed);DG=diagnose(S,R);}catch(err){console.error(err);R=null;DG=[{type:'Error',sev:'err',msg:'Error de simulación: '+err.message}];}
+  if(R)R._pk=0;
+  renderWarn();renderDiag();renderMeters();renderMedia();renderExplain();renderTheory();
+  if(R&&P.t>=R.T)P.t=0;
+}
+let lastTs=0,raf=0;
+function frame(ts){
+  raf=requestAnimationFrame(frame);
+  if(P.halted)return;
+  const dt=Math.min(0.1,(ts-lastTs)/1000||0);lastTs=ts;
+  if(dirty)recompute();
+  if(P.playing&&!P.frozen){P.vis+=dt*P.speed;anim=P.vis;if(R)P.t=(P.t+dt*P.speed*R.T/12)%R.T;}
+  for(const o of CVS){if(o.tab!==curTab)continue;fitCanvas(o);try{o.fn(o.g,o.w,o.h);}catch(err){o.g.fillStyle='#300';o.g.fillRect(0,0,o.w,o.h);T(o.g,'Error de dibujo: '+err.message,6,14,COL.red,11);console.error(err);}}
+}
+function shutdown(){P.halted=true;P.playing=false;cancelAnimationFrame(raf);R=null;SWEEP=null;$('halt').classList.add('on');updatePlayBtn();}
+function resume(){P.halted=false;$('halt').classList.remove('on');dirty=true;lastTs=performance.now();raf=requestAnimationFrame(frame);}
+
+/* ---------- inicialización (una sola vez) ---------- */
+function init(){
+  buildTabs();
+  buildCtl('ctl-tx',TXS,()=>S.tx);buildCtl('ctl-rx',RXS,()=>S.rx);
+  buildCtl('ctl-chq',CHQ,()=>S.ch);buildCtl('ctl-ch',CHS,()=>S.ch);
+  buildCtl('ctl-cable',CABLESH,()=>S.cable);
+  buildCtl('ctl-radio',RADIOSH,()=>S.radio);buildCtl('ctl-radio',RADIOCH,()=>S.ch);
+  buildCtl('ctl-fiber',FIBERSH,()=>S.fiber);
+  buildCtl('ctl-view',VIEWSH,()=>view);
+  TRACEDEF.forEach(td=>mkCtl($('ctl-view'),{k:td[0],t:'check',l:td[1]},()=>view.traces));
+  buildPresets('presets-ana',['AM','DSB','SSB','FM','PM']);
+  buildPresets('presets-dig',['ASK','OOK','BFSK','FSK4','BPSK','QPSK','PSK8','QAM16','QAM64','OFDM','BB']);
+  $('lg-lab').innerHTML=TRACEDEF.filter(t=>['tx','rx','demod'].includes(t[0])).map(t=>'<span><i style="background:'+t[2]+'"></i>'+t[1]+'</span>').join('');
+  const sc=(keys)=>(g,w,h)=>drawScope(g,w,h,{traces:keys});
+  regCanvas('cv-chain','lab',drawChain);regCanvas('cv-scope-lab','lab',sc(['tx','rx','demod']));regCanvas('cv-const-lab','lab',drawConst);regCanvas('cv-bits-lab','lab',drawBits);
+  regCanvas('cv-cable','cable',drawCable);regCanvas('cv-scope-cable','cable',sc(['tx','rx']));
+  regCanvas('cv-radio','radio',drawRadio);regCanvas('cv-radio2','radio',drawRadio2);regCanvas('cv-scope-radio','radio',sc(['tx','rx']));
+  regCanvas('cv-fiber','fibra',drawFiber);regCanvas('cv-fiber2','fibra',drawFiber2);regCanvas('cv-scope-fiber','fibra',sc(['tx','rx']));
+  regCanvas('cv-scope-ana','ana',sc(['info','carrier','tx','rx','demod']));regCanvas('cv-aux','ana',drawAux);regCanvas('cv-spec-ana','ana',drawSpec);
+  regCanvas('cv-scope-dig','dig',sc(['info','tx','rx','demod']));regCanvas('cv-const-dig','dig',drawConst);regCanvas('cv-spec-dig','dig',drawSpec);regCanvas('cv-bits-dig','dig',drawBits);
+  regCanvas('cv-scope-noise','noise',sc(['rx','demod']));regCanvas('cv-const-noise','noise',drawConst);regCanvas('cv-eye-noise','noise',drawEye);regCanvas('cv-ber','noise',drawBer);regCanvas('cv-bits-noise','noise',drawBits);
+  regCanvas('cv-scope-ins','ins',(g,w,h)=>drawScope(g,w,h,{traces:TRACEDEF.map(t=>t[0]).filter(k=>view.traces[k])}));
+  regCanvas('cv-spec-ins','ins',drawSpec);regCanvas('cv-const-ins','ins',drawConst);regCanvas('cv-eye-ins','ins',drawEye);regCanvas('cv-bits-ins','ins',drawBits);
+  regCanvas('cv-line','line',drawLine);
+  buildPractices();
+  // eventos de la cabecera
+  $('bPlay').addEventListener('click',()=>{P.playing=!P.playing;if(P.frozen&&P.playing)P.frozen=false;updatePlayBtn();});
+  $('bReset').addEventListener('click',()=>{P.t=0;P.vis=0;updatePlayBtn();});
+  $('bStep').addEventListener('click',stepOnce);
+  $('rSpeed').addEventListener('input',e=>{P.speed=parseFloat(e.target.value);$('oSpeed').textContent=nf(P.speed,1)+'×';});
+  $('bFreeze').addEventListener('click',()=>{P.frozen=!P.frozen;updatePlayBtn();});
+  $('bNewBits').addEventListener('click',()=>{seed.bits=(Math.random()*1e9)>>>0;if(!isDigitalSrc(S.tx.src)&&!isAnalog(S.tx.mod)){}else if(!isAnalog(S.tx.mod))S.tx.src='random';dirty=true;syncAll();});
+  $('bNewNoise').addEventListener('click',()=>{seed.noise=(Math.random()*1e9)>>>0;dirty=true;});
+  $('bHalt').addEventListener('click',shutdown);$('bResume').addEventListener('click',resume);
+  $('bMatch').addEventListener('click',()=>{matchRx();dirty=true;syncAll();});
+  $('bCompat').addEventListener('click',runCompat);$('bSweep').addEventListener('click',runSweep);
+  $('lineBits').addEventListener('input',renderLineTab);
+  $('lineRand').addEventListener('click',()=>{let s='';for(let i=0;i<16;i++)s+=Math.random()<0.5?'0':'1';$('lineBits').value=s;renderLineTab();});
+  $('lineZeros').addEventListener('click',()=>{$('lineBits').value='1000000000001000';renderLineTab();});
+  $('lineOnes').addEventListener('click',()=>{$('lineBits').value='0111111111110100';renderLineTab();});
+  $('cv-chain').addEventListener('click',e=>{const b=$('cv-chain').getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-b.top;
+    const hit=chainRects.find(r=>x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h);if(hit){curBlock=hit.id;$('blockInfo').innerHTML=blockInfoHTML(hit.id);}});
+  syncAll();switchTab('lab');updatePlayBtn();
+  raf=requestAnimationFrame(frame);
+}
+init();
+//>>APP
+</script>
+</body></html>

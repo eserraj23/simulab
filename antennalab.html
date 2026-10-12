@@ -1,0 +1,1297 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AntennaLab RF – Cálculo y diseño de antenas EPSJ23 (2026)</title>
+<!--
+  AntennaLab RF (E.Serra)
+	2026 (IA)
+  Herramienta de diseño de antenas: monopolo, dipolo y Yagi-Uda.
+  - Un único archivo, sin dependencias externas (funciona sin conexión).
+  - Gráficos 2D/3D, SVG técnicos y radar dibujados con Canvas/SVG en JavaScript puro.
+  - Exportación: PDF (diálogo de impresión), PNG de cada gráfico y CSV de cálculos.
+-->
+<style>
+/* =========   diseño ===================== */
+:root{
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, "Liberation Mono", monospace;
+  --r-lg: 18px; --r-md: 10px; --r-sm: 6px;
+}
+/* Tema oscuro: cianotipo (plano técnico) */
+[data-theme="dark"]{
+  --bg:#0a1e33; --panel:#08192b; --card:#0e2740; --card2:#12304d; --line:#1f4466;
+  --ink:#e3f0fb; --muted:#8aa9c6; --accent:#ffb23e; --accent-ink:#2a1700;
+  --c1:#4fd6e8; --c2:#ffb23e; --c3:#b79cff; --ok:#5fdc92; --bad:#ff7a6b;
+  --grid:#25507a; --gridfaint:rgba(120,180,230,.07); --ground:rgba(138,169,198,.20);
+  --shadow:0 14px 34px rgba(0,8,20,.35); color-scheme:dark;
+}
+/* Tema claro: papel vegetal */
+[data-theme="light"]{
+  --bg:#e4ecef; --panel:#d9e3e7; --card:#f8fbfc; --card2:#edf3f5; --line:#bccbd2;
+  --ink:#0d2236; --muted:#52687a; --accent:#b3560a; --accent-ink:#ffffff;
+  --c1:#07788a; --c2:#b3560a; --c3:#6339d1; --ok:#157a44; --bad:#b4261a;
+  --grid:#b9c8cf; --gridfaint:rgba(13,34,54,.045); --ground:rgba(82,104,122,.16);
+  --shadow:0 10px 26px rgba(13,34,54,.10); color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:14.5px/1.55 var(--font-sans);-webkit-font-smoothing:antialiased;transition:background .3s,color .3s}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(var(--gridfaint) 1px,transparent 1px),linear-gradient(90deg,var(--gridfaint) 1px,transparent 1px);
+  background-size:40px 40px}
+h1,h2,h3,h4,p{margin:0}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ===================== Estructura ===================== */
+.app{position:relative;z-index:1;display:grid;grid-template-columns:318px minmax(0,1fr);min-height:100vh}
+.side{position:sticky;top:0;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--line);padding:20px 18px 28px;display:flex;flex-direction:column;gap:18px}
+.main{padding:22px clamp(14px,2.6vw,36px) 60px;min-width:0}
+
+.brand{display:flex;align-items:center;gap:12px}
+.brand svg{width:40px;height:40px;flex:none}
+.brand b{display:block;font-size:19px;letter-spacing:.2px}
+.brand span{display:block;font-size:12.5px;color:var(--muted)}
+
+.sbox{display:flex;flex-direction:column;gap:11px}
+.sbox h3{font-size:13px;font-weight:700;color:var(--muted);padding-bottom:6px;border-bottom:1px solid var(--line)}
+.fld{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--muted)}
+.fld .row{display:flex;gap:6px}
+input[type=number],select{background:var(--card);border:1px solid var(--line);border-radius:var(--r-sm);padding:7px 9px;min-width:0;width:100%;color:var(--ink);transition:border-color .2s,box-shadow .2s}
+input[type=number]{font-family:var(--font-mono)}
+input[type=number]:hover,select:hover{border-color:var(--muted)}
+input[type=number]:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent);outline:none}
+.row select{width:92px;flex:none}
+.fields{display:flex;flex-direction:column;gap:10px}
+
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:3px}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label{text-align:center;padding:7px 4px;border-radius:7px;cursor:pointer;font-size:13.5px;color:var(--muted);transition:background .25s,color .25s}
+.seg input:checked+label{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.seg input:focus-visible+label{outline:2px solid var(--accent);outline-offset:2px}
+
+.readout{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px;display:grid;gap:8px}
+.readout div{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.readout span{color:var(--muted);font-size:12.5px}
+.readout b{font-family:var(--font-mono);font-weight:600;font-size:14px;text-align:right}
+.err{background:color-mix(in srgb,var(--bad) 18%,transparent);border:1px solid var(--bad);color:var(--ink);border-radius:var(--r-sm);padding:8px 10px;font-size:13px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;background:var(--card2);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 12px;cursor:pointer;transition:background .2s,border-color .2s,transform .15s}
+.btn:hover{border-color:var(--accent)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.sm{padding:3px 9px;font-size:12px}
+.btn.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+/* ===================== Barra superior y pestañas ===================== */
+.topbar{display:flex;align-items:center;gap:12px;justify-content:space-between;margin-bottom:18px}
+.topbar h1{font-size:clamp(20px,2.4vw,28px);font-weight:750;letter-spacing:-.2px}
+.topbar p{color:var(--muted);font-size:13.5px}
+.topbar .acts{display:flex;gap:8px;flex:none}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:22px;overflow-x:auto;scrollbar-width:thin}
+.tab{background:none;border:0;border-bottom:3px solid transparent;padding:10px 16px;cursor:pointer;color:var(--muted);white-space:nowrap;font-weight:600;transition:color .2s,border-color .25s;margin-bottom:-1px}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected=true]{color:var(--ink);border-bottom-color:var(--accent)}
+.panel{display:flex;flex-direction:column;gap:18px;animation:enter .35s ease both}
+@keyframes enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.panel-head p{color:var(--muted);max-width:78ch;margin-top:4px}
+.panel-head h2{font-size:22px}
+
+/* ===================== Tarjetas y métricas ===================== */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);padding:16px 18px;box-shadow:var(--shadow);min-width:0}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.card-h h3{font-size:15.5px}
+.tag{font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:1px 9px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:18px}
+.metrics{display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:12px}
+.metric{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:11px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.metric .k{font-size:12.5px;color:var(--muted)}
+.metric .v{font-family:var(--font-mono);font-size:19px;font-weight:650;overflow-wrap:anywhere}
+.metric .v small{font-size:12.5px;color:var(--muted);margin-left:5px;font-weight:500}
+.metric .n{font-size:12px;color:var(--muted)}
+.flash .metric{animation:pop .45s ease both}
+@keyframes pop{from{opacity:.2;transform:scale(.97)}to{opacity:1;transform:none}}
+.svgwrap{overflow-x:auto;border-radius:var(--r-md);background:var(--card2);border:1px solid var(--line)}
+figure{margin:0;min-width:0}
+figcaption{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);margin-bottom:6px}
+canvas{display:block;width:100%;height:auto;border-radius:var(--r-md);border:1px solid var(--line);max-width:100%}
+.cv3d{touch-action:none;cursor:grab}
+.cv3d.grabbing{cursor:grabbing}
+.stats{font-size:12.5px;color:var(--muted);margin-top:6px;font-family:var(--font-mono)}
+.hint{font-size:12.5px;color:var(--muted);margin-top:8px}
+.viewer-ctrl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.viewer-ctrl .chk{display:inline-flex;gap:6px;align-items:center;font-size:13px;color:var(--muted);cursor:pointer}
+.viewer-ctrl select{width:auto;padding:4px 8px}
+.legend{display:flex;flex-wrap:wrap;gap:16px;font-size:13px;color:var(--muted);margin-top:10px}
+.legend i{display:inline-block;width:22px;height:4px;border-radius:2px;vertical-align:middle;margin-right:6px}
+
+.ctrl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;align-items:end}
+.slider{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted)}
+.slider .row{display:flex;gap:10px;align-items:center}
+.slider input[type=range]{flex:1;accent-color:var(--accent)}
+.slider input[type=number]{width:74px;flex:none}
+.chk-line{display:flex;gap:8px;align-items:center;font-size:13.5px;cursor:pointer}
+.chk-line input{accent-color:var(--accent);width:16px;height:16px}
+
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-weight:600;font-size:12.5px;position:sticky;top:0;background:var(--card)}
+td.num,th.num{text-align:right;font-family:var(--font-mono)}
+tbody tr{transition:background .15s}
+tbody tr:hover{background:var(--card2)}
+.tablewrap{max-height:430px;overflow:auto;border:1px solid var(--line);border-radius:var(--r-md)}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px}
+
+/* ===================== SVG técnicos ===================== */
+.tech{display:block;width:100%;height:auto}
+.tech text{fill:var(--ink);font:12px var(--font-mono)}
+.tech .ttl{font-weight:700;font-size:13.5px;font-family:var(--font-sans)}
+.tech .dimtxt{font-size:12px}
+.tech .lbl{fill:var(--muted);font-size:11.5px}
+.tech .dim{stroke:var(--muted);stroke-width:1.2;fill:none}
+.tech .ext{stroke:var(--muted);stroke-width:1;stroke-dasharray:3 3;fill:none}
+.tech .arrow{fill:var(--muted)}
+.tech .wire{stroke:var(--c2);stroke-width:5;stroke-linecap:round;fill:none}
+.tech .ghost{stroke:var(--muted);stroke-width:2;stroke-dasharray:6 5;fill:none}
+.tech .curve{stroke:var(--c1);stroke-width:2;stroke-dasharray:5 4;fill:none}
+.tech .gnd{fill:var(--ground);stroke:var(--muted);stroke-width:1.5}
+.tech .gnd-l{stroke:var(--muted);stroke-width:1;opacity:.7}
+.tech .feed{fill:var(--bad);stroke:var(--card2);stroke-width:2}
+.tech .coax{stroke:var(--c1);stroke-width:3;fill:none}
+.tech .src{fill:var(--card2);stroke:var(--c1);stroke-width:2}
+.tech .boom{stroke:var(--muted);stroke-width:8;stroke-linecap:round}
+.tech .refl{stroke:var(--c3);stroke-width:4;stroke-linecap:round}
+.tech .drv{stroke:var(--c2);stroke-width:4.5;stroke-linecap:round}
+.tech .dir{stroke:var(--c1);stroke-width:3.5;stroke-linecap:round}
+.tech .cs{fill:var(--card2);stroke-width:3}
+.tech .mast{fill:var(--muted);opacity:.55}
+.tech .leader{stroke:var(--bad);stroke-width:1.2;fill:none}
+
+/* ===================== Información técnica ===================== */
+.prose{max-width:92ch}
+.prose h3{font-size:16px;margin-bottom:8px}
+.prose p,.prose li{color:var(--muted)}
+.prose p+p{margin-top:8px}
+.prose ul{margin:6px 0 0;padding-left:20px;display:grid;gap:4px}
+.prose code,td code{font-family:var(--font-mono);background:var(--card2);padding:1px 6px;border-radius:5px;color:var(--ink);font-size:.93em}
+.prose strong{color:var(--ink)}
+.print-only{display:none}
+
+/* ===================== Adaptable ===================== */
+@media (max-width:1000px){
+  .app{grid-template-columns:1fr}
+  .side{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}
+  .side.collapsed .sbox,.side.collapsed .btn-row{display:none}
+  .grid2{grid-template-columns:1fr}
+}
+@media (min-width:1001px){#side-toggle{display:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ===================== Impresión (exportar a PDF) ===================== */
+@media print{
+  body::before,.side,.tabs,.topbar .acts,.btn,.viewer-ctrl,.hint,#err{display:none!important}
+  .app{display:block}
+  body{background:#fff;color:#000}
+  .main{padding:0}
+  .card,.metric{box-shadow:none;break-inside:avoid}
+  .print-only{display:block;margin-bottom:12px;font-size:12px;color:#333}
+  .panel{animation:none}
+  .svgwrap{overflow:visible}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ===================== PANEL LATERAL ===================== -->
+<aside class="side" id="side">
+  <div class="brand">
+    <svg viewBox="0 0 40 40" aria-hidden="true">
+      <rect x="1" y="1" width="38" height="38" rx="9" fill="none" stroke="var(--line)" stroke-width="2"/>
+      <path d="M20 33V15M20 15l-8-8M20 15l8-8" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" fill="none"/>
+      <path d="M9 22a14 14 0 0 1 4-9M31 22a14 14 0 0 0-4-9" stroke="var(--c1)" stroke-width="2" stroke-linecap="round" fill="none"/>
+    </svg>
+    <div><b>AntennaLab RF</b><span>Cálculo y diseño de antenas</span></div>
+	<div><b>E.Serra</b><span>2026 /IA</span></div>
+  </div>
+
+  <section class="sbox">
+    <h3>Frecuencia de diseño</h3>
+    <div class="seg" role="radiogroup" aria-label="Método de entrada">
+      <input type="radio" name="mode" id="m-single" value="single" checked><label for="m-single">Una frecuencia</label>
+      <input type="radio" name="mode" id="m-range" value="range"><label for="m-range">Rango</label>
+    </div>
+    <div id="in-single" class="fields">
+      <label class="fld"><span>Frecuencia</span>
+        <div class="row"><input type="number" id="f-val" value="145" min="0" step="any"><select id="f-unit" aria-label="Unidad"><option>Hz</option><option>kHz</option><option selected>MHz</option><option>GHz</option></select></div>
+      </label>
+    </div>
+    <div id="in-range" class="fields" hidden>
+      <label class="fld"><span>Frecuencia mínima</span>
+        <div class="row"><input type="number" id="fmin-val" value="144" min="0" step="any"><select id="fmin-unit" aria-label="Unidad mínima"><option>Hz</option><option>kHz</option><option selected>MHz</option><option>GHz</option></select></div>
+      </label>
+      <label class="fld"><span>Frecuencia máxima</span>
+        <div class="row"><input type="number" id="fmax-val" value="146" min="0" step="any"><select id="fmax-unit" aria-label="Unidad máxima"><option>Hz</option><option>kHz</option><option selected>MHz</option><option>GHz</option></select></div>
+      </label>
+    </div>
+    <label class="fld"><span>Banda de ejemplo</span><select id="preset"></select></label>
+    <div class="err" id="err" role="alert" hidden></div>
+  </section>
+
+  <section class="sbox">
+    <h3>Parámetros del material</h3>
+    <label class="fld"><span>Factor de velocidad (VF)</span><input type="number" id="vf" value="0.95" min="0.5" max="1" step="0.01"></label>
+    <label class="fld"><span>Diámetro del conductor (mm)</span><input type="number" id="dia" value="6" min="0.1" step="0.5"></label>
+    <label class="fld"><span>Eficiencia de radiación (%)</span><input type="number" id="eta" value="95" min="1" max="100" step="1"></label>
+    <label class="fld"><span>Rango de la escala polar</span>
+      <select id="dbrange"><option value="20">20 dB</option><option value="30">30 dB</option><option value="40" selected>40 dB</option></select>
+    </label>
+  </section>
+
+  <section class="sbox">
+    <h3>Resultado base</h3>
+    <div class="readout" id="readout">
+      <div><span>Frecuencia central</span><b id="ro-fc">–</b></div>
+      <div><span>Longitud de onda λ</span><b id="ro-lambda">–</b></div>
+      <div><span>Velocidad de propagación</span><b id="ro-v">–</b></div>
+      <div><span>Factor de velocidad</span><b id="ro-vf">–</b></div>
+      <div id="ro-bw-row" hidden><span>Ancho de banda pedido</span><b id="ro-bw">–</b></div>
+    </div>
+  </section>
+
+  <section class="sbox">
+    <h3>Exportar</h3>
+    <div class="btn-row">
+      <button class="btn primary" id="btn-pdf" type="button">PDF</button>
+      <button class="btn" id="btn-csv" type="button">CSV</button>
+    </div>
+    <p class="hint" style="margin:0">El PDF imprime la pestaña activa: elija «Guardar como PDF» en el diálogo. Cada gráfico tiene su propio botón PNG.</p>
+  </section>
+</aside>
+
+<!-- ===================== CONTENIDO ===================== -->
+<main class="main">
+  <div class="topbar">
+    <div>
+      <h1>Diseño de antenas</h1>
+      <p id="subtitle">Monopolo, dipolo y Yagi-Uda a partir de la frecuencia de trabajo.</p>
+    </div>
+    <div class="acts">
+      <button class="btn" id="side-toggle" type="button">Parámetros</button>
+      <button class="btn" id="theme-btn" type="button" aria-label="Cambiar tema claro u oscuro">Tema</button>
+    </div>
+  </div>
+  <div class="print-only" id="print-head"></div>
+
+  <nav class="tabs" role="tablist" aria-label="Secciones">
+    <button class="tab" role="tab" data-tab="mono" aria-selected="true">Antena monopolo</button>
+    <button class="tab" role="tab" data-tab="dip" aria-selected="false">Antena dipolo</button>
+    <button class="tab" role="tab" data-tab="yagi" aria-selected="false">Antena Yagi-Uda</button>
+    <button class="tab" role="tab" data-tab="cmp" aria-selected="false">Comparador</button>
+    <button class="tab" role="tab" data-tab="info" aria-selected="false">Información técnica</button>
+  </nav>
+
+  <!-- ---------- Monopolo ---------- -->
+  <section class="panel" id="tab-mono" role="tabpanel">
+    <div class="panel-head"><h2>Antena monopolo λ/4</h2>
+      <p>Radiador vertical de un cuarto de onda sobre un plano de tierra. El plano refleja la mitad inferior del patrón, de modo que el monopolo se comporta como medio dipolo con el doble de directividad.</p></div>
+    <div class="metrics" id="mono-metrics"></div>
+    <div class="card"><div class="card-h"><h3>Esquema técnico</h3><button class="btn sm" data-png="mono-svg" type="button">PNG</button></div>
+      <div class="svgwrap" id="mono-svg"></div></div>
+    <div id="mono-patterns" class="panel"></div>
+  </section>
+
+  <!-- ---------- Dipolo ---------- -->
+  <section class="panel" id="tab-dip" role="tabpanel" hidden>
+    <div class="panel-head"><h2>Antena dipolo de media onda</h2>
+      <p>Dos brazos colineales alimentados en el centro. Es la referencia práctica de ganancia (2,15 dBi) y la base del elemento excitado de la antena Yagi-Uda.</p></div>
+    <div class="metrics" id="dip-metrics"></div>
+    <div class="card"><div class="card-h"><h3>Esquema técnico</h3><button class="btn sm" data-png="dip-svg" type="button">PNG</button></div>
+      <div class="svgwrap" id="dip-svg"></div></div>
+    <div id="dip-patterns" class="panel"></div>
+  </section>
+
+  <!-- ---------- Yagi ---------- -->
+  <section class="panel" id="tab-yagi" role="tabpanel" hidden>
+    <div class="panel-head"><h2>Antena Yagi-Uda</h2>
+      <p>Reflector, dipolo excitado y directores a lo largo de un boom. Cambie el número de directores o la separación y todo el diseño se recalcula y se redibuja.</p></div>
+    <div class="card">
+      <div class="ctrl-grid">
+        <div class="slider"><label for="y-dirs">Número de directores</label>
+          <div class="row"><input type="range" id="y-dirs" min="1" max="20" step="1" value="5"><input type="number" id="y-dirs-num" min="1" max="20" step="1" value="5"></div></div>
+        <div class="slider"><label for="y-sp">Separación entre elementos (× λ)</label>
+          <div class="row"><input type="range" id="y-sp" min="0.15" max="0.25" step="0.005" value="0.2"><input type="number" id="y-sp-num" min="0.15" max="0.25" step="0.005" value="0.2"></div></div>
+        <label class="chk-line"><input type="checkbox" id="y-taper"> Acortar cada director un 0,5 % respecto al anterior</label>
+      </div>
+    </div>
+    <div class="metrics" id="yagi-metrics"></div>
+    <div class="card"><div class="card-h"><h3>Tabla de elementos</h3><span class="tag" id="yagi-count"></span></div>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Elemento</th><th class="num">Longitud</th><th class="num">Separación</th><th class="num">Posición en el boom</th></tr></thead>
+        <tbody id="yagi-table"></tbody></table></div></div>
+    <div class="card"><div class="card-h"><h3>Vista superior</h3><button class="btn sm" data-png="yagi-top" type="button">PNG</button></div>
+      <div class="svgwrap" id="yagi-top"></div>
+      <div class="legend"><span><i style="background:var(--c3)"></i>Reflector</span><span><i style="background:var(--c2)"></i>Dipolo excitado</span><span><i style="background:var(--c1)"></i>Directores</span><span><i style="background:var(--bad);height:9px;width:9px;border-radius:50%"></i>Punto de alimentación</span></div></div>
+    <div class="card"><div class="card-h"><h3>Vista lateral</h3><button class="btn sm" data-png="yagi-side" type="button">PNG</button></div>
+      <div class="svgwrap" id="yagi-side"></div></div>
+    <div id="yagi-patterns" class="panel"></div>
+  </section>
+
+  <!-- ---------- Comparador ---------- -->
+  <section class="panel" id="tab-cmp" role="tabpanel" hidden>
+    <div class="panel-head"><h2>Comparador de antenas</h2>
+      <p>Las tres antenas se calculan con la misma frecuencia y los mismos parámetros del panel lateral. La Yagi usa el número de directores y la separación elegidos en su pestaña.</p></div>
+    <div class="card"><div class="tablewrap"><table>
+      <thead><tr><th>Antena</th><th class="num">Ganancia</th><th class="num">Directividad</th><th class="num">Impedancia</th><th class="num">ROE (50 Ω)</th><th class="num">Ancho de banda</th><th class="num">Dimensión máxima</th></tr></thead>
+      <tbody id="cmp-table"></tbody></table></div></div>
+    <div class="grid3">
+      <div class="card"><div class="card-h"><h3>Ganancia</h3><button class="btn sm" data-png="c-gain" type="button">PNG</button></div><canvas id="c-gain"></canvas></div>
+      <div class="card"><div class="card-h"><h3>Directividad</h3><button class="btn sm" data-png="c-dir" type="button">PNG</button></div><canvas id="c-dir"></canvas></div>
+      <div class="card"><div class="card-h"><h3>Tamaño</h3><button class="btn sm" data-png="c-size" type="button">PNG</button></div><canvas id="c-size"></canvas></div>
+      <div class="card"><div class="card-h"><h3>Impedancia</h3><button class="btn sm" data-png="c-z" type="button">PNG</button></div><canvas id="c-z"></canvas></div>
+      <div class="card"><div class="card-h"><h3>Ancho de banda</h3><button class="btn sm" data-png="c-bw" type="button">PNG</button></div><canvas id="c-bw"></canvas></div>
+    </div>
+    <div class="card"><div class="card-h"><h3>Gráfico de radar</h3><button class="btn sm" data-png="c-radar" type="button">PNG</button></div>
+      <div class="grid2"><canvas id="c-radar"></canvas>
+        <div class="prose"><h3>Cómo leer el radar</h3>
+          <p>Cada eje va de 0 a 1 y se normaliza entre las tres antenas:</p>
+          <ul>
+            <li><strong>Ganancia y directividad:</strong> valor dividido por el máximo.</li>
+            <li><strong>Compacidad:</strong> la dimensión más pequeña dividida por la de cada antena.</li>
+            <li><strong>Adaptación a 50 Ω:</strong> 1 − |Z − 50| / 50, con un mínimo de 0.</li>
+            <li><strong>Ancho de banda:</strong> valor dividido por el máximo.</li>
+          </ul>
+          <p>Un polígono grande indica un compromiso favorable en todos los ejes; ninguna antena gana en todos a la vez.</p></div></div></div>
+  </section>
+
+  <!-- ---------- Información técnica ---------- -->
+  <section class="panel" id="tab-info" role="tabpanel" hidden>
+    <div class="panel-head"><h2>Información técnica</h2><p>Fórmulas, modelos y límites de las estimaciones que usa la aplicación.</p></div>
+    <div class="card prose"><h3>Fórmulas implementadas</h3>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Magnitud</th><th>Expresión</th><th>Comentario</th></tr></thead>
+        <tbody>
+          <tr><td>Frecuencia central</td><td><code>fc = (fmin + fmax) / 2</code></td><td>En modo rango, todos los cálculos usan fc.</td></tr>
+          <tr><td>Longitud de onda</td><td><code>λ = 300 / f(MHz)</code> m</td><td>Espacio libre, c ≈ 3·10⁸ m/s.</td></tr>
+          <tr><td>Monopolo</td><td><code>L = 75 / f(MHz)</code> m</td><td>Longitud corregida = L × VF (efecto de extremo y diámetro).</td></tr>
+          <tr><td>Dipolo</td><td><code>L = 143 / f(MHz)</code> m</td><td>El 143 equivale a 150 × 0,95. Con otro VF se usa 150 × VF / f.</td></tr>
+          <tr><td>Yagi: reflector</td><td><code>Lr = Ldipolo × 1,05</code></td><td>Un 5 % más largo: comportamiento inductivo.</td></tr>
+          <tr><td>Yagi: directores</td><td><code>Ld = Ldipolo × 0,95</code></td><td>Un 5 % más cortos: comportamiento capacitivo.</td></tr>
+          <tr><td>Yagi: separación</td><td><code>s = 0,15 λ … 0,25 λ</code></td><td>Misma separación entre todos los elementos.</td></tr>
+          <tr><td>Directividad</td><td><code>D = 4π·Umax / ∮U dΩ</code></td><td>Integración numérica del patrón (60 × 120 muestras).</td></tr>
+          <tr><td>Ganancia</td><td><code>G = D + 10·log₁₀(η)</code></td><td>η es la eficiencia de radiación del panel lateral.</td></tr>
+          <tr><td>ROE</td><td><code>max(Z,50) / min(Z,50)</code></td><td>Impedancia resistiva frente a una línea de 50 Ω.</td></tr>
+        </tbody></table></div></div>
+    <div class="grid2">
+      <div class="card prose"><h3>Modelos usados</h3>
+        <ul>
+          <li><strong>Monopolo y dipolo:</strong> distribución de corriente sinusoidal, <code>E(θ) = cos(π/2·cosθ) / sinθ</code>. Sobre plano de tierra perfecto la mitad inferior es nula.</li>
+          <li><strong>Yagi:</strong> el elemento de dipolo se multiplica por un factor de haz <code>[(1+cosψ)/2]^q</code>. El exponente q se resuelve por bisección para que la directividad coincida con la ganancia empírica <code>G ≈ 3,81 + 4,27·ln(N)</code> dBi (N = número de elementos), corregida por la separación. El nivel trasero se fija con una relación frente/espalda de <code>12 + 3·ln(N)</code> dB, con máximo de 30 dB.</li>
+          <li><strong>Impedancia Yagi:</strong> <code>Z ≈ 73 / (1 + 0,45·(Nd + 1))</code> Ω, con Nd directores. Se adapta con un dipolo plegado, gamma match o hairpin.</li>
+          <li><strong>Ancho de banda:</strong> impedancia característica media <code>Za = 120·(ln(2L/d) − 1)</code> y <code>BW ≈ 3000 / Za</code> % para ROE &lt; 2. En la Yagi se divide además por <code>1 + 0,15·Nd</code>.</li>
+        </ul></div>
+      <div class="card prose"><h3>Límites de la estimación</h3>
+        <p>Los resultados son de predimensionado. No incluyen acoplamiento mutuo real entre elementos, efecto del suelo, soportes metálicos, pérdidas del balun ni tolerancias del conductor.</p>
+        <p>Los patrones de la Yagi son un modelo simplificado sin lóbulos laterales estructurados. Para el diseño final, valide con un simulador electromagnético (NEC, 4nec2, OpenEMS) y ajuste con un analizador de antenas.</p>
+        <p>Las longitudes cambian según el diámetro del conductor, la altura sobre el suelo y los aisladores. Corte siempre un poco largo y recorte hasta lograr la resonancia.</p></div>
+    </div>
+    <div class="grid2">
+      <div class="card prose"><h3>Consejos de construcción</h3>
+        <ul>
+          <li>Use un balun 1:1 o un choke de corriente en el dipolo para evitar que la malla del coaxial radie.</li>
+          <li>En el monopolo, cuatro radiales de λ/4 inclinados 135° acercan la impedancia a 50 Ω.</li>
+          <li>Aísle los extremos del dipolo y del reflector y los directores del boom con material dieléctrico o fíjelos en el centro eléctrico.</li>
+          <li>Con tubo metálico, el boom conductor modifica algo las longitudes: compruebe con un analizador.</li>
+          <li>La Yagi se alimenta con un dipolo plegado de unos 280 Ω y un transformador 4:1 hacia 70 Ω, o con una adaptación gamma.</li>
+        </ul></div>
+      <div class="card prose"><h3>Glosario</h3>
+        <ul>
+          <li><strong>dBi:</strong> ganancia respecto a una antena isótropa.</li>
+          <li><strong>ROE (VSWR):</strong> relación de onda estacionaria; 1:1 es adaptación perfecta.</li>
+          <li><strong>Ancho de haz (HPBW):</strong> ángulo en el que la potencia cae 3 dB respecto al máximo.</li>
+          <li><strong>Relación frente/espalda:</strong> diferencia en dB entre la radiación delante y detrás.</li>
+          <li><strong>Factor de velocidad (VF):</strong> cociente entre la velocidad efectiva de la onda y c.</li>
+          <li><strong>Balun:</strong> dispositivo que pasa de una línea desequilibrada (coaxial) a una carga equilibrada (dipolo).</li>
+        </ul></div>
+    </div>
+  </section>
+</main>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+/* =====================================================================
+   1. UTILIDADES
+   ===================================================================== */
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const PI = Math.PI, DEG = PI / 180;
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+const MONO = 'ui-monospace, "SF Mono", Consolas, monospace';
+const SANS = 'ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif';
+const UNIT = { Hz: 1, kHz: 1e3, MHz: 1e6, GHz: 1e9 };
+
+/** Número con formato español, sin separador de miles. */
+const nf = (x, d = 2) => Number.isFinite(x)
+  ? x.toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: false }) : '–';
+const nfv = (x, maxd = 6) => Number.isFinite(x)
+  ? x.toLocaleString('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: maxd, useGrouping: false }) : '–';
+
+/** Unidad de longitud adecuada para un valor en metros. */
+function lenUnit(m) {
+  const a = Math.abs(m);
+  if (a >= 1000) return { f: 1e-3, u: 'km', d: 3 };
+  if (a >= 1)    return { f: 1,    u: 'm',  d: 3 };
+  if (a >= 0.01) return { f: 100,  u: 'cm', d: 2 };
+  return { f: 1000, u: 'mm', d: 2 };
+}
+const fmtLen = m => { const u = lenUnit(m); return nf(m * u.f, u.d) + ' ' + u.u; };
+function fmtFreq(hz) {
+  if (hz >= 1e9) return nfv(hz / 1e9, 6) + ' GHz';
+  if (hz >= 1e6) return nfv(hz / 1e6, 6) + ' MHz';
+  if (hz >= 1e3) return nfv(hz / 1e3, 6) + ' kHz';
+  return nfv(hz, 3) + ' Hz';
+}
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+/** Descarga de un Blob. */
+function download(blob, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+/* =====================================================================
+   2. ESTADO Y LECTURA DE ENTRADAS
+   ===================================================================== */
+const state = {
+  mode: 'single', f: 145, unit: 'MHz',
+  fmin: 144, fminU: 'MHz', fmax: 146, fmaxU: 'MHz',
+  vf: 0.95, dia: 6, eta: 95, dbRange: 40,
+  dirs: 5, spacing: 0.20, taper: false, tab: 'mono'
+};
+let model = null;
+
+function readInputs() {
+  state.mode = $('input[name=mode]:checked').value;
+  state.f = parseFloat($('#f-val').value);       state.unit = $('#f-unit').value;
+  state.fmin = parseFloat($('#fmin-val').value); state.fminU = $('#fmin-unit').value;
+  state.fmax = parseFloat($('#fmax-val').value); state.fmaxU = $('#fmax-unit').value;
+  state.vf = parseFloat($('#vf').value);
+  state.dia = parseFloat($('#dia').value);
+  state.eta = parseFloat($('#eta').value);
+  state.dbRange = +$('#dbrange').value;
+  state.dirs = clamp(parseInt($('#y-dirs-num').value) || 1, 1, 20);
+  state.spacing = clamp(parseFloat($('#y-sp-num').value) || 0.2, 0.15, 0.25);
+  state.taper = $('#y-taper').checked;
+}
+
+/** Calcula frecuencia de diseño, longitud de onda y velocidad. */
+function computeBase() {
+  let fHz, fminHz = null, fmaxHz = null, reqBW = null;
+  if (state.mode === 'single') {
+    fHz = state.f * UNIT[state.unit];
+    if (!(fHz > 0)) return { err: 'Introduzca una frecuencia mayor que 0.' };
+  } else {
+    fminHz = state.fmin * UNIT[state.fminU];
+    fmaxHz = state.fmax * UNIT[state.fmaxU];
+    if (!(fminHz > 0) || !(fmaxHz > 0)) return { err: 'Introduzca frecuencias mínima y máxima mayores que 0.' };
+    if (fmaxHz < fminHz) return { err: 'La frecuencia máxima debe ser mayor o igual que la mínima.' };
+    fHz = (fminHz + fmaxHz) / 2;                       // f = (fmin + fmax) / 2
+    reqBW = (fmaxHz - fminHz) / fHz * 100;
+  }
+  if (!(state.vf >= 0.5 && state.vf <= 1)) return { err: 'El factor de velocidad debe estar entre 0,5 y 1.' };
+  if (!(state.dia > 0)) return { err: 'El diámetro del conductor debe ser mayor que 0.' };
+  if (!(state.eta >= 1 && state.eta <= 100)) return { err: 'La eficiencia debe estar entre 1 % y 100 %.' };
+  const fMHz = fHz / 1e6;
+  return { fHz, fMHz, fminHz, fmaxHz, reqBW, lambda: 300 / fMHz, v: 299792458 * state.vf };
+}
+
+/* =====================================================================
+   3. MODELOS DE RADIOFRECUENCIA
+   ===================================================================== */
+/** Factor de elemento de un dipolo corto en función de cos(α), α = ángulo respecto al eje del hilo. */
+function dipoleFactor(c) {
+  const s2 = 1 - c * c;
+  if (s2 < 1e-10) return 0;
+  return Math.abs(Math.cos(PI / 2 * c)) / Math.sqrt(s2);
+}
+/* Los patrones devuelven el campo normalizado (máximo = 1) en (θ desde +Z, φ desde +X). */
+const patDipole   = (th, ph) => dipoleFactor(Math.cos(th));                       // eje del hilo = Z
+const patMonopole = (th, ph) => th <= PI / 2 ? dipoleFactor(Math.cos(th)) : 0;    // plano de tierra en z = 0
+
+/** Patrón de la Yagi: eje de elementos = Y, boom y haz hacia +X. */
+function makeYagiPattern(q, b) {
+  return (th, ph) => {
+    const st = Math.sin(th);
+    const ed = dipoleFactor(st * Math.sin(ph));
+    const cp = st * Math.cos(ph);                           // cos ψ, ψ = ángulo respecto al boom
+    return ed * ((1 - b) * Math.pow(clamp((1 + cp) / 2, 0, 1), q) + b);
+  };
+}
+
+/** Directividad (lineal) por integración numérica: D = 4π·Umax / ∮U dΩ, con Umax = 1. */
+function directivity(pat, nT = 60, nP = 120) {
+  let sum = 0;
+  for (let i = 0; i < nT; i++) {
+    const th = (i + 0.5) * PI / nT, st = Math.sin(th);
+    for (let j = 0; j < nP; j++) { const e = pat(th, (j + 0.5) * 2 * PI / nP); sum += e * e * st; }
+  }
+  return 4 * PI / (sum * (PI / nT) * (2 * PI / nP));
+}
+const toDb = x => 10 * Math.log10(x);
+
+const D_DIPOLE   = toDb(directivity(patDipole));
+const D_MONOPOLE = toDb(directivity(patMonopole));
+
+/** Ancho de banda aproximado (% con ROE < 2) a partir de la longitud total equivalente. */
+function bwPercent(Leq) {
+  const d = Math.max(state.dia, 0.01) / 1000;
+  const Za = Math.max(60, 120 * (Math.log(2 * Leq / d) - 1));
+  return clamp(3000 / Za, 0.5, 40);
+}
+const etaDb = () => 10 * Math.log10(state.eta / 100);
+const swr50 = z => Math.max(z, 50) / Math.min(z, 50);
+
+function calcMonopole(b) {
+  const Lteo = 75 / b.fMHz;                 // L = 75 / f(MHz)
+  const Lcorr = Lteo * state.vf;            // longitud corregida
+  const bw = bwPercent(2 * Lcorr);
+  return {
+    Lteo, Lcorr, radial: Lcorr, groundD: 2 * Lcorr, Z: 36.5,
+    D: D_MONOPOLE, G: D_MONOPOLE + etaDb(), bw, bwHz: b.fHz * bw / 100,
+    swr: swr50(36.5), size: 2 * Lcorr
+  };
+}
+function calcDipole(b) {
+  const L = 143 / b.fMHz * (state.vf / 0.95);   // L = 143 / f(MHz) con VF = 0,95
+  const bw = bwPercent(L);
+  return {
+    L, arm: L / 2, Lteo: b.lambda / 2, Z: 73,
+    D: D_DIPOLE, G: D_DIPOLE + etaDb(), bw, bwHz: b.fHz * bw / 100,
+    swr: swr50(73), size: L
+  };
+}
+
+const yagiCache = { key: '', pat: null, q: 0 };
+function calcYagi(b) {
+  const nd = state.dirs, n = nd + 2;
+  const dip = 143 / b.fMHz * (state.vf / 0.95);
+  const s = state.spacing * b.lambda;
+  const els = [
+    { name: 'Reflector', short: 'R', len: dip * 1.05, sep: 0, pos: 0, kind: 'refl' },
+    { name: 'Dipolo excitado', short: 'DE', len: dip, sep: s, pos: s, kind: 'drv' }
+  ];
+  for (let k = 0; k < nd; k++) {
+    const factor = 0.95 * (state.taper ? Math.pow(0.995, k) : 1);
+    els.push({ name: 'Director ' + (k + 1), short: 'D' + (k + 1), len: dip * factor, sep: s, pos: s * (k + 2), kind: 'dir' });
+  }
+  const boom = s * (nd + 1);
+  const G = 3.81 + 4.27 * Math.log(n) - 60 * Math.pow(state.spacing - 0.2, 2);   // ganancia empírica, dBi
+  const FB = Math.min(30, 12 + 3 * Math.log(n));                                  // relación frente/espalda, dB
+  const D = G - etaDb();
+  const Z = 73 / (1 + 0.45 * (nd + 1));
+  const bw = Math.max(0.5, bwPercent(dip) / (1 + 0.15 * nd));
+  // Ajuste del exponente q del haz para que la directividad numérica iguale a D
+  const key = D.toFixed(3) + '|' + FB.toFixed(2);
+  if (key !== yagiCache.key) {
+    const bAmp = Math.pow(10, -FB / 20);
+    let lo = 0, hi = 3000;
+    for (let i = 0; i < 40; i++) {
+      const mid = (lo + hi) / 2;
+      (toDb(directivity(makeYagiPattern(mid, bAmp), 40, 80)) < D) ? lo = mid : hi = mid;
+    }
+    yagiCache.key = key; yagiCache.q = (lo + hi) / 2; yagiCache.pat = makeYagiPattern(yagiCache.q, bAmp);
+  }
+  return {
+    els, nd, n, s, boom, D, G, FB, Z, bw, bwHz: b.fHz * bw / 100, swr: swr50(Z),
+    dip, pat: yagiCache.pat, size: Math.max(boom, els[0].len)
+  };
+}
+
+/* =====================================================================
+   4. GRÁFICOS 2D EN CANVAS (polar, barras, radar)
+   ===================================================================== */
+/** Prepara un canvas con nitidez para pantallas HiDPI. Devuelve null si está oculto. */
+function prep(cv, aspect) {
+  const w = cv.clientWidth;
+  if (!w) return null;
+  const h = Math.round(w * aspect), dpr = Math.min(2, window.devicePixelRatio || 1);
+  const pw = Math.round(w * dpr), ph = Math.round(h * dpr);
+  if (cv.width !== pw || cv.height !== ph) { cv.width = pw; cv.height = ph; }
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = css('--card'); ctx.fillRect(0, 0, w, h);
+  return { ctx, w, h };
+}
+
+/** Ancho de haz a –3 dB del lóbulo principal (grados) o null si es omnidireccional. */
+function hpbw(f, N = 720) {
+  const v = new Float32Array(N); let m = 0, mx = -1, mn = 1e9;
+  for (let i = 0; i < N; i++) { v[i] = f(2 * PI * i / N); if (v[i] > mx) { mx = v[i]; m = i; } if (v[i] < mn) mn = v[i]; }
+  const th = mx * Math.SQRT1_2;
+  if (mn >= th) return null;
+  let r = 0, l = 0;
+  while (r < N && v[(m + r) % N] >= th) r++;
+  while (l < N && v[(m - l + N) % N] >= th) l++;
+  return (r + l - 1) * 360 / N;
+}
+
+/**
+ * Gráfico polar en dB. fn(a) devuelve el campo normalizado para el ángulo de datos a (rad).
+ * mode 'top': 0° arriba y sentido horario (corte vertical); 'az': 0° a la derecha y antihorario (azimut).
+ */
+function drawPolar(cv, fn, o) {
+  const p = prep(cv, 1); if (!p) return;
+  const { ctx, w, h } = p;
+  const ink = css('--ink'), mut = css('--muted'), grid = css('--grid');
+  const cx = w / 2, cy = h / 2 + 8, R = Math.min(w, h) / 2 - 36, range = state.dbRange;
+  const scr = a => o.mode === 'top' ? a : PI / 2 - a;
+  ctx.font = '11px ' + MONO; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  // Anillos de nivel
+  for (let k = 1; k <= 4; k++) {
+    ctx.beginPath(); ctx.arc(cx, cy, R * k / 4, 0, 2 * PI);
+    ctx.strokeStyle = grid; ctx.lineWidth = k === 4 ? 1.6 : 1; ctx.stroke();
+    ctx.fillStyle = mut;
+    ctx.fillText(nf(-range * (1 - k / 4), 0) + ' dB', cx + R * k / 4 * Math.sin(0.42) + 15, cy - R * k / 4 * Math.cos(0.42));
+  }
+  // Radios y etiquetas angulares
+  for (let d = 0; d < 360; d += 30) {
+    const s = scr(d * DEG);
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + R * Math.sin(s), cy - R * Math.cos(s));
+    ctx.strokeStyle = grid; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = mut; ctx.fillText(d + '°', cx + (R + 18) * Math.sin(s), cy - (R + 18) * Math.cos(s));
+  }
+  // Curva del patrón
+  const N = 360; let best = 0, bi = 0; const pts = [];
+  for (let i = 0; i <= N; i++) {
+    const a = 2 * PI * i / N, v = fn(a);
+    const fr = clamp((20 * Math.log10(Math.max(v, 1e-5)) + range) / range, 0, 1), s = scr(a);
+    pts.push([cx + R * fr * Math.sin(s), cy - R * fr * Math.cos(s)]);
+    if (v > best) { best = v; bi = i; }
+  }
+  ctx.beginPath(); pts.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.closePath();
+  ctx.fillStyle = o.color + '33'; ctx.fill();
+  ctx.strokeStyle = o.color; ctx.lineWidth = 2.2; ctx.lineJoin = 'round'; ctx.stroke();
+  ctx.beginPath(); ctx.arc(pts[bi][0], pts[bi][1], 4.5, 0, 2 * PI); ctx.fillStyle = css('--bad'); ctx.fill();
+  // Títulos
+  ctx.textAlign = 'left'; ctx.fillStyle = ink; ctx.font = '600 12.5px ' + SANS; ctx.fillText(o.title, 12, 16);
+  ctx.textAlign = 'right'; ctx.fillStyle = mut; ctx.font = '12px ' + MONO; ctx.fillText(o.peak, w - 12, 16);
+}
+
+/** Gráfico de barras. o = { title, labels, values, colors, unit, dec } */
+function drawBars(cv, o) {
+  const p = prep(cv, 0.68); if (!p) return;
+  const { ctx, w, h } = p;
+  const ink = css('--ink'), mut = css('--muted'), grid = css('--grid');
+  const L = 46, Rr = 14, T = 18, B = 40, pw = w - L - Rr, ph = h - T - B;
+  const mx = Math.max(...o.values) * 1.2 || 1;
+  ctx.font = '11px ' + MONO; ctx.textBaseline = 'middle';
+  for (let k = 0; k <= 4; k++) {
+    const y = T + ph - ph * k / 4;
+    ctx.beginPath(); ctx.moveTo(L, y); ctx.lineTo(w - Rr, y); ctx.strokeStyle = grid; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = mut; ctx.textAlign = 'right'; ctx.fillText(nf(mx * k / 4, o.dec > 1 ? 1 : o.dec), L - 6, y);
+  }
+  const n = o.values.length, bw = pw / n * 0.52;
+  o.values.forEach((v, i) => {
+    const x = L + pw * (i + 0.5) / n - bw / 2, bh = ph * v / mx, y = T + ph - bh;
+    ctx.fillStyle = o.colors[i]; ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(x, y, bw, bh, [5, 5, 0, 0]); else ctx.rect(x, y, bw, bh);
+    ctx.fill();
+    ctx.fillStyle = ink; ctx.textAlign = 'center'; ctx.font = '600 12px ' + MONO;
+    ctx.fillText(nf(v, o.dec) + (o.unit ? ' ' + o.unit : ''), x + bw / 2, y - 10);
+    ctx.fillStyle = mut; ctx.font = '12px ' + SANS; ctx.fillText(o.labels[i], x + bw / 2, h - B + 20);
+  });
+}
+
+/** Gráfico de radar. axes: nombres; series: [{name,color,values(0..1)}]. */
+function drawRadar(cv, axes, series) {
+  const p = prep(cv, 0.95); if (!p) return;
+  const { ctx, w, h } = p;
+  const ink = css('--ink'), mut = css('--muted'), grid = css('--grid');
+  const cx = w / 2, cy = h / 2 + 8, R = Math.min(w, h) / 2 - 58, n = axes.length;
+  const ang = i => -PI / 2 + 2 * PI * i / n;
+  for (let k = 1; k <= 4; k++) {
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) { const x = cx + R * k / 4 * Math.cos(ang(i)), y = cy + R * k / 4 * Math.sin(ang(i)); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+    ctx.closePath(); ctx.strokeStyle = grid; ctx.lineWidth = 1; ctx.stroke();
+  }
+  ctx.font = '12px ' + SANS; ctx.textBaseline = 'middle';
+  for (let i = 0; i < n; i++) {
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + R * Math.cos(ang(i)), cy + R * Math.sin(ang(i))); ctx.strokeStyle = grid; ctx.stroke();
+    const c = Math.cos(ang(i)); ctx.fillStyle = ink;
+    ctx.textAlign = Math.abs(c) < 0.2 ? 'center' : c > 0 ? 'left' : 'right';
+    ctx.fillText(axes[i], cx + (R + 14) * c, cy + (R + 14) * Math.sin(ang(i)) + (Math.sin(ang(i)) > 0.5 ? 8 : Math.sin(ang(i)) < -0.5 ? -8 : 0));
+  }
+  series.forEach(s => {
+    ctx.beginPath();
+    s.values.forEach((v, i) => { const x = cx + R * v * Math.cos(ang(i)), y = cy + R * v * Math.sin(ang(i)); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+    ctx.closePath(); ctx.fillStyle = s.color + '30'; ctx.fill(); ctx.strokeStyle = s.color; ctx.lineWidth = 2.4; ctx.stroke();
+    s.values.forEach((v, i) => { ctx.beginPath(); ctx.arc(cx + R * v * Math.cos(ang(i)), cy + R * v * Math.sin(ang(i)), 3.5, 0, 2 * PI); ctx.fillStyle = s.color; ctx.fill(); });
+  });
+  ctx.textBaseline = 'middle'; let x = 14;
+  series.forEach(s => {
+    ctx.fillStyle = s.color; ctx.fillRect(x, 16, 16, 5); ctx.fillStyle = ink; ctx.textAlign = 'left'; ctx.font = '12.5px ' + SANS;
+    ctx.fillText(s.name, x + 22, 19); x += 22 + ctx.measureText(s.name).width + 18;
+  });
+}
+
+/* =====================================================================
+   5. VISOR 3D INTERACTIVO (Canvas 2D, proyección propia, sin librerías)
+   ===================================================================== */
+const CMAP = [[0, [32, 62, 170]], [.25, [22, 150, 224]], [.5, [44, 202, 142]], [.75, [246, 202, 52]], [1, [240, 72, 52]]];
+function cmap(t) {
+  t = clamp(t, 0, 1);
+  for (let i = 1; i < CMAP.length; i++) if (t <= CMAP[i][0]) {
+    const a = CMAP[i - 1], b = CMAP[i], u = (t - a[0]) / (b[0] - a[0]);
+    return [a[1][0] + (b[1][0] - a[1][0]) * u, a[1][1] + (b[1][1] - a[1][1]) * u, a[1][2] + (b[1][2] - a[1][2]) * u];
+  }
+  return CMAP[CMAP.length - 1][1];
+}
+const VIEWS = { iso: [35 * DEG, 25 * DEG], top: [0, 90 * DEG], front: [0, 0], side: [-90 * DEG, 0] };
+
+class Viewer3D {
+  constructor(cv, ctrl) {
+    Object.assign(this, { cv, az: 35 * DEG, el: 25 * DEG, zoom: 1, persp: true, auto: false, mode: 'power', dirty: true, NT: 44, NP: 88, pat: null, glyph: null, tween: null });
+    this.buildControls(ctrl); this.bind();
+  }
+  buildControls(c) {
+    c.innerHTML = `
+      <button class="btn sm" data-v="iso" type="button">Isométrica</button>
+      <button class="btn sm" data-v="top" type="button">Superior</button>
+      <button class="btn sm" data-v="front" type="button">Frontal</button>
+      <button class="btn sm" data-v="side" type="button">Lateral</button>
+      <label class="chk"><input type="checkbox" data-k="persp" checked> Perspectiva</label>
+      <label class="chk"><input type="checkbox" data-k="auto"> Giro automático</label>
+      <label class="chk">Escala radial
+        <select data-k="mode"><option value="power">Potencia lineal</option><option value="field">Campo lineal</option><option value="db">Logarítmica (40 dB)</option></select></label>
+      <button class="btn sm" data-z="-1" type="button" aria-label="Alejar">−</button>
+      <button class="btn sm" data-z="1" type="button" aria-label="Acercar">+</button>`;
+    c.addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b) return;
+      if (b.dataset.v) this.goTo(...VIEWS[b.dataset.v]);
+      if (b.dataset.z) { this.zoom = clamp(this.zoom * (b.dataset.z > 0 ? 1.2 : 1 / 1.2), .4, 3); this.dirty = true; }
+    });
+    c.addEventListener('change', e => {
+      const k = e.target.dataset.k; if (!k) return;
+      if (k === 'mode') { this.mode = e.target.value; this.rebuild(); }
+      else { this[k] = e.target.checked; this.dirty = true; }
+    });
+  }
+  bind() {
+    const cv = this.cv; let drag = null;
+    cv.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY }; this.tween = null; cv.setPointerCapture(e.pointerId); cv.classList.add('grabbing'); });
+    cv.addEventListener('pointermove', e => {
+      if (!drag) return;
+      this.az += (e.clientX - drag.x) * 0.008;
+      this.el = clamp(this.el + (e.clientY - drag.y) * 0.008, -PI / 2, PI / 2);
+      drag = { x: e.clientX, y: e.clientY }; this.dirty = true;
+    });
+    const end = () => { drag = null; cv.classList.remove('grabbing'); };
+    cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+    cv.addEventListener('wheel', e => { e.preventDefault(); this.zoom = clamp(this.zoom * Math.exp(-e.deltaY * 0.0015), .4, 3); this.dirty = true; }, { passive: false });
+  }
+  goTo(az, el) {
+    let d = ((az - this.az + PI) % (2 * PI) + 2 * PI) % (2 * PI) - PI;     // camino angular más corto
+    this.tween = { t0: performance.now(), az0: this.az, el0: this.el, az1: this.az + d, el1: el, dur: 450 };
+  }
+  setPattern(pat, glyph) { this.pat = pat; this.glyph = glyph; this.rebuild(); }
+  radial(e) {
+    if (this.mode === 'power') return e * e;
+    if (this.mode === 'field') return e;
+    return clamp((20 * Math.log10(Math.max(e, 1e-6)) + 40) / 40, 0, 1);
+  }
+  rebuild() {
+    if (!this.pat) return;
+    const { NT, NP } = this, n = (NT + 1) * (NP + 1);
+    this.P = new Float32Array(n * 3); this.R = new Float32Array(n);
+    let k = 0;
+    for (let i = 0; i <= NT; i++) {
+      const th = i * PI / NT, st = Math.sin(th), ct = Math.cos(th);
+      for (let j = 0; j <= NP; j++, k++) {
+        const ph = j * 2 * PI / NP, r = this.radial(this.pat(th, ph));
+        this.R[k] = r; this.P[3 * k] = r * st * Math.cos(ph); this.P[3 * k + 1] = r * st * Math.sin(ph); this.P[3 * k + 2] = r * ct;
+      }
+    }
+    this.dirty = true;
+  }
+  tick(now) {
+    if (!this.cv.clientWidth) return;                      // pestaña oculta
+    if (this.tween) {
+      const t = this.tween, u = clamp((now - t.t0) / t.dur, 0, 1), e = u < .5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
+      this.az = t.az0 + (t.az1 - t.az0) * e; this.el = t.el0 + (t.el1 - t.el0) * e; this.dirty = true;
+      if (u >= 1) this.tween = null;
+    }
+    if (this.auto && !this.tween) { this.az += 0.006; this.dirty = true; }
+    if (this.dirty) { this.dirty = false; this.draw(); }
+  }
+  draw() {
+    const p = prep(this.cv, 0.72); if (!p || !this.P) return;
+    const { ctx, w, h } = p;
+    const cx = w / 2, cy = h / 2, S = Math.min(w, h) * 0.40 * this.zoom, D = 4;
+    const ca = Math.cos(this.az), sa = Math.sin(this.az), ce = Math.cos(this.el), se = Math.sin(this.el);
+    // Proyección: gira alrededor de Z (azimut), inclina (elevación) y aplica perspectiva opcional
+    const cam = (x, y, z) => { const x1 = x * ca - y * sa, y1 = x * sa + y * ca; return [x1, y1 * se + z * ce, -y1 * ce + z * se]; };
+    const scr = (c) => { const f = this.persp ? D / (D - c[2]) : 1; return [cx + c[0] * f * S, cy - c[1] * f * S]; };
+    const line = (a, b, col, wd, dash) => {
+      const A = scr(cam(...a)), B = scr(cam(...b));
+      ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]);
+      ctx.strokeStyle = col; ctx.lineWidth = wd; ctx.setLineDash(dash || []); ctx.stroke(); ctx.setLineDash([]);
+    };
+    // Plano de tierra (monopolo)
+    if (this.glyph && this.glyph.ground) {
+      ctx.beginPath();
+      for (let i = 0; i <= 64; i++) { const a = 2 * PI * i / 64, q = scr(cam(Math.cos(a) * .95, Math.sin(a) * .95, 0)); i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); }
+      ctx.closePath(); ctx.fillStyle = css('--ground'); ctx.fill(); ctx.strokeStyle = css('--muted'); ctx.lineWidth = 1; ctx.stroke();
+    }
+    // Vértices proyectados
+    const { NT, NP, P, R } = this, n = R.length;
+    const CX = new Float32Array(n), CY = new Float32Array(n), CZ = new Float32Array(n), SX = new Float32Array(n), SY = new Float32Array(n);
+    for (let k = 0; k < n; k++) {
+      const c = cam(P[3 * k], P[3 * k + 1], P[3 * k + 2]); CX[k] = c[0]; CY[k] = c[1]; CZ[k] = c[2];
+      const s = scr(c); SX[k] = s[0]; SY[k] = s[1];
+    }
+    // Caras ordenadas de atrás hacia delante (algoritmo del pintor)
+    const faces = [], depth = [];
+    for (let i = 0; i < NT; i++) for (let j = 0; j < NP; j++) {
+      const a = i * (NP + 1) + j, b = a + NP + 1, c = b + 1, d = a + 1;
+      if (Math.max(R[a], R[b], R[c], R[d]) < 0.004) continue;
+      depth.push((CZ[a] + CZ[b] + CZ[c] + CZ[d]) / 4); faces.push(a);
+    }
+    const order = faces.map((_, i) => i).sort((u, v) => depth[u] - depth[v]);
+    ctx.lineJoin = 'round'; ctx.lineWidth = 0.7;
+    for (const fi of order) {
+      const a = faces[fi], b = a + NP + 1, c = b + 1, d = a + 1;
+      const e1 = [CX[b] - CX[a], CY[b] - CY[a], CZ[b] - CZ[a]], e2 = [CX[d] - CX[a], CY[d] - CY[a], CZ[d] - CZ[a]];
+      const nx = e1[1] * e2[2] - e1[2] * e2[1], ny = e1[2] * e2[0] - e1[0] * e2[2], nz = e1[0] * e2[1] - e1[1] * e2[0];
+      const facing = Math.abs(nz) / (Math.hypot(nx, ny, nz) || 1), m = 0.42 + 0.58 * facing;
+      const col = cmap((R[a] + R[b] + R[c] + R[d]) / 4), s = `rgb(${col[0] * m | 0},${col[1] * m | 0},${col[2] * m | 0})`;
+      ctx.beginPath(); ctx.moveTo(SX[a], SY[a]); ctx.lineTo(SX[b], SY[b]); ctx.lineTo(SX[c], SY[c]); ctx.lineTo(SX[d], SY[d]); ctx.closePath();
+      ctx.fillStyle = s; ctx.strokeStyle = s; ctx.fill(); ctx.stroke();
+    }
+    // Ejes y silueta de la antena
+    ctx.font = '12px ' + MONO; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    [['X', [1.25, 0, 0], css('--bad')], ['Y', [0, 1.25, 0], css('--ok')], ['Z', [0, 0, 1.25], css('--c1')]].forEach(([t, v, col]) => {
+      line([0, 0, 0], v, col, 1.4, [4, 3]); const q = scr(cam(...v)); ctx.fillStyle = col; ctx.fillText(t, q[0] + 8, q[1] - 8);
+    });
+    if (this.glyph) this.glyph.lines.forEach(l => line(l.a, l.b, l.c === 'accent' ? css('--accent') : css('--ink'), l.w || 3));
+    // Barra de color y lectura de vista
+    const bx = w - 26, by0 = h * .18, bh = h * .52;
+    for (let i = 0; i < bh; i++) { const c = cmap(1 - i / bh); ctx.fillStyle = `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`; ctx.fillRect(bx, by0 + i, 10, 1.5); }
+    ctx.fillStyle = css('--muted'); ctx.textAlign = 'right'; ctx.fillText('máx', bx - 5, by0 + 4); ctx.fillText('mín', bx - 5, by0 + bh - 2);
+    ctx.textAlign = 'left'; ctx.fillText(`azimut ${nf(((this.az / DEG % 360) + 360) % 360, 0)}°   elevación ${nf(this.el / DEG, 0)}°   zoom ${nf(this.zoom, 2)}×`, 12, h - 14);
+  }
+}
+
+/* Siluetas de las antenas dentro del visor */
+const glyphMono = { ground: true, lines: [{ a: [0, 0, 0], b: [0, 0, .5], c: 'accent', w: 4 }] };
+const glyphDip = { lines: [{ a: [0, 0, -.45], b: [0, 0, .45], c: 'accent', w: 4 }] };
+function glyphYagi(y) {
+  const n = y.els.length, Lm = y.els[0].len, lines = [{ a: [-.5, 0, 0], b: [.5, 0, 0], w: 2 }];
+  y.els.forEach((e, i) => { const x = -.42 + .84 * i / (n - 1), hh = e.len / Lm * .36; lines.push({ a: [x, -hh, 0], b: [x, hh, 0], c: e.kind === 'drv' ? 'accent' : null, w: e.kind === 'drv' ? 4 : 3 }); });
+  return { lines };
+}
+
+/* =====================================================================
+   6. DIBUJOS TÉCNICOS SVG
+   ===================================================================== */
+const f1 = x => (+x).toFixed(1);
+/** Punta de flecha con vértice en (x,y) apuntando en la dirección ang. */
+function ah(x, y, ang) {
+  const s = 8, a = 0.38;
+  return `<polygon class="arrow" points="${f1(x)},${f1(y)} ${f1(x - s * Math.cos(ang - a))},${f1(y - s * Math.sin(ang - a))} ${f1(x - s * Math.cos(ang + a))},${f1(y - s * Math.sin(ang + a))}"/>`;
+}
+/** Cota horizontal; ext = coordenada y desde la que parten las líneas de referencia. */
+function dimH(x1, x2, y, text, ext) {
+  let s = '';
+  if (ext != null) s += `<line class="ext" x1="${f1(x1)}" y1="${ext}" x2="${f1(x1)}" y2="${y + 5}"/><line class="ext" x1="${f1(x2)}" y1="${ext}" x2="${f1(x2)}" y2="${y + 5}"/>`;
+  s += `<line class="dim" x1="${f1(x1)}" y1="${y}" x2="${f1(x2)}" y2="${y}"/>${ah(x1, y, PI)}${ah(x2, y, 0)}`;
+  if (text) s += `<text class="dimtxt" x="${f1((x1 + x2) / 2)}" y="${y - 7}" text-anchor="middle">${text}</text>`;
+  return s;
+}
+/** Cota vertical con texto girado; fromX = coordenada x desde la que parten las líneas de referencia. */
+function dimV(x, yT, yB, text, fromX) {
+  let s = `<line class="ext" x1="${fromX}" y1="${f1(yT)}" x2="${x + 6}" y2="${f1(yT)}"/><line class="ext" x1="${fromX}" y1="${f1(yB)}" x2="${x + 6}" y2="${f1(yB)}"/>`;
+  s += `<line class="dim" x1="${x}" y1="${f1(yT)}" x2="${x}" y2="${f1(yB)}"/>${ah(x, yT, -PI / 2)}${ah(x, yB, PI / 2)}`;
+  if (text) s += `<text class="dimtxt" transform="translate(${x + 17} ${f1((yT + yB) / 2)}) rotate(-90)" text-anchor="middle">${text}</text>`;
+  return s;
+}
+const svgWrap = (W, H, body, label, fixed) =>
+  `<svg class="tech" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${label}"${fixed ? ` style="width:${W}px;max-width:none"` : ''}>${body}</svg>`;
+
+function svgMonopole(m) {
+  const W = 680, H = 545, cx = 320, gy = 405, sc = 270 / Math.max(m.Lteo, m.Lcorr);
+  const hC = m.Lcorr * sc, hT = m.Lteo * sc;
+  let s = `<text class="ttl" x="16" y="26">Monopolo λ/4 sobre plano de tierra</text>`;
+  s += `<ellipse class="gnd" cx="${cx}" cy="${gy}" rx="225" ry="42"/>`;
+  for (let k = 0; k < 16; k++) { const a = k * PI / 8; s += `<line class="gnd-l" x1="${cx}" y1="${gy}" x2="${f1(cx + 225 * Math.cos(a))}" y2="${f1(gy + 42 * Math.sin(a))}"/>`; }
+  s += `<text class="lbl" x="${cx - 215}" y="${gy - 52}">Plano de tierra / radiales</text>`;
+  if (Math.abs(hT - hC) > 1) s += `<line class="ghost" x1="${cx}" y1="${gy - hC}" x2="${cx}" y2="${gy - hT}"/>`;
+  s += `<line class="wire" x1="${cx}" y1="${gy}" x2="${cx}" y2="${gy - hC}"/>`;
+  s += `<text class="lbl" x="${cx - 14}" y="${gy - Math.max(hC, hT) - 12}" text-anchor="end">Radiador vertical</text>`;
+  s += `<path class="coax" d="M${cx} ${gy} V${gy + 62} H70"/><text class="lbl" x="76" y="${gy + 54}">Coaxial 50 Ω (vivo al radiador, malla al plano)</text>`;
+  s += `<circle class="feed" cx="${cx}" cy="${gy}" r="7"/>`;
+  s += `<path class="leader" d="M${cx - 150} ${gy - 78} L${cx - 9} ${gy - 8}"/>`;
+  s += `<text class="lbl" x="${cx - 255}" y="${gy - 84}">Punto de alimentación, Z ≈ 36,5 Ω</text>`;
+  s += dimV(cx + 62, gy - hC, gy, `L corregida = ${fmtLen(m.Lcorr)}`, cx + 10);
+  s += dimV(cx + 128, gy - hT, gy, `λ/4 = 75/f = ${fmtLen(m.Lteo)}`, cx + 10);
+  s += dimH(cx - 225, cx + 225, gy + 110, `Plano de tierra Ø = ${fmtLen(m.groundD)}`, gy);
+  return svgWrap(W, H, s, 'Esquema técnico del monopolo');
+}
+
+function svgDipole(d) {
+  const W = 740, H = 335, x1 = 60, x2 = 680, xm = 370, wy = 150, g = 8;
+  let s = `<text class="ttl" x="16" y="26">Dipolo de media onda</text>`;
+  s += `<path class="coax" d="M${xm - g} ${wy} V78 M${xm + g} ${wy} V78"/>`;
+  s += `<circle class="src" cx="${xm}" cy="64" r="15"/><path d="M${xm - 8} 64q4-9 8 0t8 0" fill="none" stroke="var(--c1)" stroke-width="2"/>`;
+  s += `<text class="lbl" x="${xm + 26}" y="68">Coaxial 50 Ω con balun 1:1</text>`;
+  s += `<line class="wire" x1="${x1}" y1="${wy}" x2="${xm - g}" y2="${wy}"/><line class="wire" x1="${xm + g}" y1="${wy}" x2="${x2}" y2="${wy}"/>`;
+  s += `<circle class="cs refl" cx="${x1}" cy="${wy}" r="6" style="stroke:var(--muted)"/><circle class="cs refl" cx="${x2}" cy="${wy}" r="6" style="stroke:var(--muted)"/>`;
+  s += `<circle class="feed" cx="${xm}" cy="${wy}" r="6"/>`;
+  s += `<text class="lbl" x="${(x1 + xm) / 2}" y="${wy - 16}" text-anchor="middle">Brazo 1</text><text class="lbl" x="${(xm + x2) / 2}" y="${wy - 16}" text-anchor="middle">Brazo 2</text>`;
+  s += `<path class="leader" d="M${xm + 70} ${wy - 40} L${xm + 8} ${wy - 6}"/><text class="lbl" x="${xm + 74}" y="${wy - 44}">Alimentación, Z ≈ 73 Ω</text>`;
+  let pth = ''; for (let i = 0; i <= 48; i++) { const x = x1 + (x2 - x1) * i / 48; pth += (i ? 'L' : 'M') + f1(x) + ' ' + f1(wy + 44 * Math.sin(PI * i / 48)); }
+  s += `<path class="curve" d="${pth}"/><text class="lbl" x="${x2}" y="${wy + 66}" text-anchor="end">Distribución de corriente</text>`;
+  s += dimH(x1, xm - g, 242, `L/2 = ${fmtLen(d.arm)}`, wy + 56);
+  s += dimH(xm + g, x2, 242, `L/2 = ${fmtLen(d.arm)}`, wy + 56);
+  s += dimH(x1, x2, 295, `L total = 143/f = ${fmtLen(d.L)}`, 250);
+  return svgWrap(W, H, s, 'Esquema técnico del dipolo');
+}
+
+/** Datos comunes de dimensiones para las vistas de la Yagi. */
+function yagiGeom(y) {
+  const n = y.els.length, step = 60, x0 = 90, W = Math.max(600, x0 * 2 + (n - 1) * step);
+  return { n, step, x0, W, xs: y.els.map((_, i) => x0 + i * step), unit: lenUnit(y.els[0].len) };
+}
+function svgYagiTop(y) {
+  const g = yagiGeom(y), { n, x0, W, xs } = g, by = 190, half = 100, H = 425, Lm = y.els[0].len, U = g.unit, xl = xs[n - 1];
+  let s = `<text class="ttl" x="16" y="26">Vista superior: elementos horizontales, boom y haz hacia la derecha</text>`;
+  s += `<text class="lbl" x="${W - 14}" y="26" text-anchor="end">Máxima radiación ➜</text>`;
+  s += `<line class="boom" x1="${x0 - 30}" y1="${by}" x2="${xl + 30}" y2="${by}"/>`;
+  y.els.forEach((e, i) => {
+    const x = xs[i], hp = e.len / Lm * half;
+    if (e.kind === 'drv') s += `<line class="drv" x1="${x}" y1="${by - hp}" x2="${x}" y2="${by - 7}"/><line class="drv" x1="${x}" y1="${by + 7}" x2="${x}" y2="${by + hp}"/><circle class="feed" cx="${x}" cy="${by}" r="6"/>`;
+    else s += `<line class="${e.kind}" x1="${x}" y1="${by - hp}" x2="${x}" y2="${by + hp}"/>`;
+    s += `<text class="lbl" x="${x}" y="${by - half - 14}" text-anchor="middle">${e.short}</text>`;
+    s += `<text class="dimtxt" x="${x}" y="${by + half + 22}" text-anchor="middle">${nf(e.len * U.f, U.d)}</text>`;
+  });
+  s += `<text class="lbl" x="${x0 - 74}" y="${by + half + 22}">L (${U.u})</text>`;
+  s += dimV(x0 - 44, by - half, by + half, `Reflector = ${fmtLen(Lm)}`, x0 - 4);
+  const sU = lenUnit(y.s), sy = by + half + 66;
+  for (let i = 0; i < n - 1; i++) s += dimH(xs[i], xs[i + 1], sy, nf(y.s * sU.f, sU.d), by + half + 36);
+  s += `<text class="lbl" x="${x0 - 74}" y="${sy + 4}">s (${sU.u})</text>`;
+  s += dimH(x0, xl, 392, `Boom = ${fmtLen(y.boom)}  (separación s = ${nf(state.spacing, 3)} λ)`, sy + 6);
+  return svgWrap(W, H, s, 'Vista superior de la antena Yagi', true);
+}
+function svgYagiSide(y) {
+  const g = yagiGeom(y), { n, x0, W, xs } = g, by = 105, H = 245, xl = xs[n - 1], mx = (x0 + xl) / 2;
+  let s = `<text class="ttl" x="16" y="26">Vista lateral: los elementos se ven en sección sobre el boom</text>`;
+  s += `<rect class="mast" x="${mx - 8}" y="${by + 8}" width="16" height="78" rx="3"/><text class="lbl" x="${mx + 16}" y="${by + 60}">Mástil</text>`;
+  s += `<line class="boom" x1="${x0 - 30}" y1="${by}" x2="${xl + 30}" y2="${by}"/>`;
+  y.els.forEach((e, i) => {
+    s += `<circle class="cs ${e.kind}" cx="${xs[i]}" cy="${by}" r="7"/><text class="lbl" x="${xs[i]}" y="${by - 20}" text-anchor="middle">${e.short}</text>`;
+  });
+  const sU = lenUnit(y.s);
+  s += dimH(xs[0], xs[1], by + 112, nf(y.s * sU.f, sU.d) + ' ' + sU.u, by + 12);
+  s += dimH(x0, xl, by + 158, `Boom = ${fmtLen(y.boom)}`, by + 118);
+  s += `<text class="lbl" x="16" y="${H - 8}">Elementos y boom de Ø ${nfv(state.dia, 2)} mm. Polarización horizontal con los elementos paralelos al suelo.</text>`;
+  return svgWrap(W, H, s, 'Vista lateral de la antena Yagi', true);
+}
+
+/* =====================================================================
+   7. RENDERIZADO DE PESTAÑAS
+   ===================================================================== */
+const viewers = {};
+
+/** Bloque con patrones polares 2D y visor 3D para una antena. */
+function patternBlock(p) {
+  return `
+  <div class="card"><div class="card-h"><h3>Patrón de radiación 2D</h3><span class="tag">dB relativos al máximo</span></div>
+    <div class="grid2">
+      <figure><figcaption>Corte horizontal (azimut)<button class="btn sm" data-png="${p}-h" type="button">PNG</button></figcaption><canvas id="${p}-h"></canvas><div class="stats" id="${p}-h-s"></div></figure>
+      <figure><figcaption>Corte vertical (elevación, plano XZ)<button class="btn sm" data-png="${p}-e" type="button">PNG</button></figcaption><canvas id="${p}-e"></canvas><div class="stats" id="${p}-e-s"></div></figure>
+    </div></div>
+  <div class="card"><div class="card-h"><h3>Patrón de radiación 3D</h3><button class="btn sm" data-png="${p}-3d" type="button">PNG</button></div>
+    <div class="viewer-ctrl" id="${p}-3d-c"></div>
+    <canvas id="${p}-3d" class="cv3d" aria-label="Patrón de radiación 3D interactivo"></canvas>
+    <p class="hint">Arrastre para rotar, use la rueda del ratón o los botones + y − para el zoom, y los botones de vista para cambiar de perspectiva.</p></div>`;
+}
+
+function setMetrics(sel, items) {
+  const el = $(sel);
+  el.innerHTML = items.map(m => `<div class="metric"><span class="k">${m.k}</span><span class="v">${m.v}${m.u ? `<small>${m.u}</small>` : ''}</span>${m.n ? `<span class="n">${m.n}</span>` : ''}</div>`).join('');
+  el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+}
+/** Métrica de cobertura del rango cuando se introduce fmin–fmax. */
+function coverage(bw) {
+  const r = model.b.reqBW; if (r == null) return [];
+  const ok = bw >= r;
+  return [{ k: 'Cobertura del rango', v: ok ? 'Cubre' : 'Insuficiente', n: `Pedido ${nf(r, 2)} % frente a ${nf(bw, 2)} % de la antena` }];
+}
+
+/** Dibuja los dos cortes polares y sus estadísticas. */
+function polarPair(p, pat, color, G, extra) {
+  const fH = a => pat(PI / 2, a);
+  const fE = t => { const u = ((t % (2 * PI)) + 2 * PI) % (2 * PI); return u <= PI ? pat(u, 0) : pat(2 * PI - u, PI); };
+  const peak = 'G = ' + nf(G, 2) + ' dBi';
+  drawPolar($('#' + p + '-h'), fH, { title: 'Azimut, θ = 90°', mode: 'az', color, peak });
+  drawPolar($('#' + p + '-e'), fE, { title: 'Elevación, plano XZ', mode: 'top', color, peak });
+  const hh = hpbw(fH), he = hpbw(fE), fmt = v => v == null ? 'omnidireccional' : nf(v, 0) + '°';
+  $('#' + p + '-h-s').textContent = 'Ancho de haz –3 dB: ' + fmt(hh) + (extra ? '   Frente/espalda: ' + extra + ' dB' : '');
+  $('#' + p + '-e-s').textContent = 'Ancho de haz –3 dB: ' + fmt(he);
+}
+
+function renderMono() {
+  const { b, mono: m } = model;
+  setMetrics('#mono-metrics', [
+    { k: 'Longitud λ/4 teórica', v: fmtLen(m.Lteo), n: 'L = 75 / f(MHz)' },
+    { k: 'Longitud corregida', v: fmtLen(m.Lcorr), n: 'L × VF, con VF = ' + nf(state.vf, 2) },
+    { k: 'Longitud de onda λ', v: fmtLen(b.lambda), n: 'λ = 300 / f(MHz)' },
+    { k: 'Impedancia aproximada', v: '36,5 + j0', u: 'Ω', n: 'Cerca de 50 Ω con radiales a 135°' },
+    { k: 'ROE frente a 50 Ω', v: nf(m.swr, 2) + ':1' },
+    { k: 'Ganancia típica', v: nf(m.G, 2), u: 'dBi', n: 'Directividad ' + nf(m.D, 2) + ' dBi, η = ' + nf(state.eta, 0) + ' %' },
+    { k: 'Ancho de banda (ROE < 2)', v: nf(m.bw, 2), u: '%', n: '≈ ' + fmtFreq(m.bwHz) },
+    { k: 'Polarización', v: 'Vertical', n: 'Lineal' },
+    { k: 'Plano de tierra', v: 'Ø ' + fmtLen(m.groundD), n: 'Radiales de ' + fmtLen(m.radial) + '; mejor si es ≥ λ/2' },
+    ...coverage(m.bw)
+  ]);
+  $('#mono-svg').innerHTML = svgMonopole(m);
+  polarPair('mono', patMonopole, css('--c1'), m.G);
+  viewers.mono.setPattern(patMonopole, glyphMono);
+}
+function renderDip() {
+  const { b, dip: d } = model;
+  setMetrics('#dip-metrics', [
+    { k: 'Longitud total', v: fmtLen(d.L), n: 'L = 143 / f(MHz)' },
+    { k: 'Longitud de cada brazo', v: fmtLen(d.arm), n: 'L / 2' },
+    { k: 'Longitud de onda λ', v: fmtLen(b.lambda), n: 'Referencia teórica λ/2 = ' + fmtLen(d.Lteo) },
+    { k: 'Impedancia', v: '73 + j0', u: 'Ω', n: 'En resonancia, espacio libre' },
+    { k: 'ROE frente a 50 Ω', v: nf(d.swr, 2) + ':1', n: 'Mejora con un balun 1:1,5' },
+    { k: 'Ganancia', v: nf(d.G, 2), u: 'dBi', n: 'Directividad ' + nf(d.D, 2) + ' dBi, η = ' + nf(state.eta, 0) + ' %' },
+    { k: 'Ancho de banda aproximado', v: nf(d.bw, 2), u: '%', n: '≈ ' + fmtFreq(d.bwHz) + ' con Ø ' + nfv(state.dia, 2) + ' mm' },
+    { k: 'Polarización', v: 'Lineal', n: 'Paralela al eje del hilo' },
+    ...coverage(d.bw)
+  ]);
+  $('#dip-svg').innerHTML = svgDipole(d);
+  polarPair('dip', patDipole, css('--c2'), d.G);
+  viewers.dip.setPattern(patDipole, glyphDip);
+}
+function renderYagi() {
+  const { b, yagi: y } = model;
+  const fB = a => y.pat(PI / 2, a), fbDb = 20 * Math.log10(fB(0) / Math.max(fB(PI), 1e-6));
+  setMetrics('#yagi-metrics', [
+    { k: 'Reflector', v: fmtLen(y.els[0].len), n: 'Dipolo × 1,05' },
+    { k: 'Dipolo excitado', v: fmtLen(y.dip), n: 'L = 143 / f(MHz)' },
+    { k: y.nd === 1 ? 'Director' : 'Directores (' + y.nd + ')', v: y.nd === 1 ? fmtLen(y.els[2].len) : fmtLen(y.els[2].len) + ' a ' + fmtLen(y.els[y.els.length - 1].len), n: 'Dipolo × 0,95' + (state.taper ? ' con reducción progresiva' : '') },
+    { k: 'Espaciado entre elementos', v: fmtLen(y.s), n: nf(state.spacing, 3) + ' λ' },
+    { k: 'Longitud total del boom', v: fmtLen(y.boom), n: (y.nd + 1) + ' intervalos' },
+    { k: 'Ganancia estimada', v: nf(y.G, 2), u: 'dBi', n: y.n + ' elementos, estimación empírica' },
+    { k: 'Relación frente/espalda', v: nf(fbDb, 1), u: 'dB', n: 'Medida sobre el patrón del modelo' },
+    { k: 'Impedancia', v: nf(y.Z, 1), u: 'Ω', n: 'ROE ' + nf(y.swr, 2) + ':1; requiere adaptación' },
+    { k: 'Ancho de banda aproximado', v: nf(y.bw, 2), u: '%', n: '≈ ' + fmtFreq(y.bwHz) },
+    ...coverage(y.bw)
+  ]);
+  $('#yagi-count').textContent = y.els.length + ' elementos';
+  $('#yagi-table').innerHTML = y.els.map(e => {
+    const col = e.kind === 'refl' ? '--c3' : e.kind === 'drv' ? '--c2' : '--c1';
+    return `<tr><td><span class="dot" style="background:var(${col})"></span>${e.name}</td><td class="num">${fmtLen(e.len)}</td><td class="num">${e.sep ? fmtLen(e.sep) : '–'}</td><td class="num">${fmtLen(e.pos)}</td></tr>`;
+  }).join('');
+  $('#yagi-top').innerHTML = svgYagiTop(y);
+  $('#yagi-side').innerHTML = svgYagiSide(y);
+  polarPair('yagi', y.pat, css('--c3'), y.G, nf(fbDb, 1));
+  viewers.yagi.setPattern(y.pat, glyphYagi(y));
+}
+function cmpData() {
+  const { mono: m, dip: d, yagi: y } = model;
+  return [
+    { name: 'Monopolo', color: css('--c1'), G: m.G, D: m.D, Z: m.Z, swr: m.swr, bw: m.bw, size: m.size },
+    { name: 'Dipolo', color: css('--c2'), G: d.G, D: d.D, Z: d.Z, swr: d.swr, bw: d.bw, size: d.size },
+    { name: 'Yagi ' + y.n + ' el.', color: css('--c3'), G: y.G, D: y.D, Z: y.Z, swr: y.swr, bw: y.bw, size: y.size }
+  ];
+}
+function renderCmp() {
+  const A = cmpData(), labels = A.map(a => a.name), colors = A.map(a => a.color);
+  $('#cmp-table').innerHTML = A.map(a => `<tr><td><span class="dot" style="background:${a.color}"></span>${a.name}</td><td class="num">${nf(a.G, 2)} dBi</td><td class="num">${nf(a.D, 2)} dBi</td><td class="num">${nf(a.Z, 1)} Ω</td><td class="num">${nf(a.swr, 2)}:1</td><td class="num">${nf(a.bw, 2)} %</td><td class="num">${fmtLen(a.size)}</td></tr>`).join('');
+  const U = lenUnit(Math.max(...A.map(a => a.size)));
+  drawBars($('#c-gain'), { labels, colors, values: A.map(a => a.G), unit: 'dBi', dec: 2 });
+  drawBars($('#c-dir'),  { labels, colors, values: A.map(a => a.D), unit: 'dBi', dec: 2 });
+  drawBars($('#c-size'), { labels, colors, values: A.map(a => a.size * U.f), unit: U.u, dec: U.d > 2 ? 2 : U.d });
+  drawBars($('#c-z'),    { labels, colors, values: A.map(a => a.Z), unit: 'Ω', dec: 1 });
+  drawBars($('#c-bw'),   { labels, colors, values: A.map(a => a.bw), unit: '%', dec: 2 });
+  const mx = k => Math.max(...A.map(a => a[k])), minSize = Math.min(...A.map(a => a.size));
+  drawRadar($('#c-radar'), ['Ganancia', 'Directividad', 'Compacidad', 'Adaptación 50 Ω', 'Ancho de banda'],
+    A.map(a => ({ name: a.name, color: a.color, values: [a.G / mx('G'), a.D / mx('D'), minSize / a.size, Math.max(0, 1 - Math.abs(a.Z - 50) / 50), a.bw / mx('bw')] })));
+}
+
+function renderReadout() {
+  const { b } = model;
+  $('#ro-fc').textContent = fmtFreq(b.fHz);
+  $('#ro-lambda').textContent = fmtLen(b.lambda);
+  $('#ro-v').textContent = nf(b.v / 1e6, 2) + ' Mm/s';
+  $('#ro-vf').textContent = nf(state.vf, 2);
+  $('#ro-bw-row').hidden = b.reqBW == null;
+  if (b.reqBW != null) $('#ro-bw').textContent = nf(b.reqBW, 2) + ' %';
+  $('#subtitle').textContent = (b.reqBW != null ? 'Rango ' + fmtFreq(b.fminHz) + ' a ' + fmtFreq(b.fmaxHz) + ', frecuencia central ' : 'Frecuencia de diseño ') + fmtFreq(b.fHz) + ' (λ = ' + fmtLen(b.lambda) + ').';
+  $('#print-head').textContent = 'AntennaLab RF – ' + $('#subtitle').textContent + ' VF = ' + nf(state.vf, 2) + '. ' + new Date().toLocaleDateString('es-ES');
+}
+
+function renderActive() {
+  if (!model) return;
+  ({ mono: renderMono, dip: renderDip, yagi: renderYagi, cmp: renderCmp, info: () => {} })[state.tab]();
+}
+
+/* =====================================================================
+   8. EXPORTACIÓN (PNG, CSV, PDF)
+   ===================================================================== */
+const fileTag = () => (model ? nfv(model.b.fMHz, 4).replace(',', '_') + 'MHz' : 'antena');
+
+function exportPNG(id) {
+  const el = document.getElementById(id); if (!el) return;
+  if (el.tagName === 'CANVAS') { el.toBlob(b => b && download(b, `antennalab_${id}_${fileTag()}.png`)); return; }
+  const svg = el.querySelector('svg'); if (!svg) return;
+  const clone = svg.cloneNode(true), src = svg.querySelectorAll('*'), dst = clone.querySelectorAll('*');
+  const props = ['fill', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-linecap', 'font-family', 'font-size', 'font-weight', 'opacity', 'text-anchor'];
+  src.forEach((n, i) => { const cs = getComputedStyle(n); props.forEach(p => dst[i].style.setProperty(p, cs.getPropertyValue(p))); });
+  const vb = svg.viewBox.baseVal, W = vb.width, H = vb.height;
+  clone.removeAttribute('style'); clone.setAttribute('width', W); clone.setAttribute('height', H);
+  const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  bg.setAttribute('width', W); bg.setAttribute('height', H); bg.setAttribute('fill', css('--card2'));
+  clone.insertBefore(bg, clone.firstChild);
+  const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(clone)], { type: 'image/svg+xml;charset=utf-8' }));
+  const img = new Image();
+  img.onload = () => {
+    const cv = document.createElement('canvas'); cv.width = W * 2; cv.height = H * 2;
+    const c = cv.getContext('2d'); c.scale(2, 2); c.drawImage(img, 0, 0, W, H);
+    cv.toBlob(b => b && download(b, `antennalab_${id}_${fileTag()}.png`)); URL.revokeObjectURL(url);
+  };
+  img.src = url;
+}
+
+function exportCSV() {
+  if (!model) return;
+  const { b, mono: m, dip: d, yagi: y } = model, rows = [['Sección', 'Parámetro', 'Valor', 'Unidad']];
+  const add = (s, k, v, u = '') => rows.push([s, k, typeof v === 'number' ? +v.toPrecision(7) : v, u]);
+  add('General', 'Modo de entrada', state.mode === 'single' ? 'Una frecuencia' : 'Rango');
+  if (b.reqBW != null) { add('General', 'Frecuencia mínima', b.fminHz, 'Hz'); add('General', 'Frecuencia máxima', b.fmaxHz, 'Hz'); }
+  add('General', 'Frecuencia de diseño', b.fHz, 'Hz'); add('General', 'Longitud de onda', b.lambda, 'm');
+  add('General', 'Velocidad de propagación', b.v, 'm/s'); add('General', 'Factor de velocidad', state.vf);
+  add('General', 'Diámetro del conductor', state.dia, 'mm'); add('General', 'Eficiencia', state.eta, '%');
+  add('Monopolo', 'Longitud λ/4 teórica', m.Lteo, 'm'); add('Monopolo', 'Longitud corregida', m.Lcorr, 'm');
+  add('Monopolo', 'Impedancia', m.Z, 'Ω'); add('Monopolo', 'ROE (50 Ω)', m.swr); add('Monopolo', 'Directividad', m.D, 'dBi');
+  add('Monopolo', 'Ganancia', m.G, 'dBi'); add('Monopolo', 'Ancho de banda', m.bw, '%'); add('Monopolo', 'Polarización', 'Vertical lineal');
+  add('Monopolo', 'Diámetro del plano de tierra', m.groundD, 'm');
+  add('Dipolo', 'Longitud total', d.L, 'm'); add('Dipolo', 'Longitud de cada brazo', d.arm, 'm');
+  add('Dipolo', 'Impedancia', d.Z, 'Ω'); add('Dipolo', 'ROE (50 Ω)', d.swr); add('Dipolo', 'Directividad', d.D, 'dBi');
+  add('Dipolo', 'Ganancia', d.G, 'dBi'); add('Dipolo', 'Ancho de banda', d.bw, '%');
+  add('Yagi', 'Número de directores', y.nd); add('Yagi', 'Separación', state.spacing, 'λ'); add('Yagi', 'Separación', y.s, 'm');
+  add('Yagi', 'Longitud del boom', y.boom, 'm'); add('Yagi', 'Ganancia estimada', y.G, 'dBi');
+  add('Yagi', 'Relación frente/espalda', y.FB, 'dB'); add('Yagi', 'Impedancia', y.Z, 'Ω'); add('Yagi', 'Ancho de banda', y.bw, '%');
+  y.els.forEach(e => { add('Yagi elementos', e.name + ' longitud', e.len, 'm'); add('Yagi elementos', e.name + ' separación', e.sep, 'm'); add('Yagi elementos', e.name + ' posición', e.pos, 'm'); });
+  const q = v => { const s = String(v).replace('.', ','); return /[;"\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const csv = '\ufeff' + rows.map(r => r.map(q).join(';')).join('\r\n');
+  download(new Blob([csv], { type: 'text/csv;charset=utf-8' }), `antennalab_calculos_${fileTag()}.csv`);
+}
+
+function exportPDF() {
+  const prev = document.documentElement.dataset.theme;
+  const restore = () => { document.documentElement.dataset.theme = prev; renderActive(); window.removeEventListener('afterprint', restore); };
+  window.addEventListener('afterprint', restore);
+  document.documentElement.dataset.theme = 'light';
+  renderActive();
+  setTimeout(() => window.print(), 150);
+}
+
+/* =====================================================================
+   9. INICIALIZACIÓN Y EVENTOS
+   ===================================================================== */
+const PRESETS = [
+  ['Personalizada', null], ['Radiodifusión FM, 98 MHz', [98, 'MHz']], ['Banda ciudadana CB, 27,125 MHz', [27.125, 'MHz']],
+  ['Banda de 10 m, 28,5 MHz', [28.5, 'MHz']], ['Aviación VHF, 121,5 MHz', [121.5, 'MHz']], ['Banda de 2 m, 145 MHz', [145, 'MHz']],
+  ['Banda de 70 cm, 433,5 MHz', [433.5, 'MHz']], ['ISM 868 MHz', [868, 'MHz']], ['GPS L1, 1,57542 GHz', [1.57542, 'GHz']],
+  ['Wi-Fi 2,4 GHz', [2.45, 'GHz']], ['Wi-Fi 5 GHz', [5.5, 'GHz']], ['Onda media, 1000 kHz', [1000, 'kHz']]
+];
+
+let raf = 0;
+function scheduleUpdate() { cancelAnimationFrame(raf); raf = requestAnimationFrame(update); }
+function update() {
+  readInputs();
+  const b = computeBase(), err = $('#err');
+  if (b.err) { err.textContent = b.err; err.hidden = false; return; }
+  err.hidden = true;
+  model = { b, mono: calcMonopole(b), dip: calcDipole(b), yagi: calcYagi(b) };
+  renderReadout(); renderActive();
+}
+
+function activate(tab) {
+  state.tab = tab;
+  $$('.tab').forEach(t => t.setAttribute('aria-selected', t.dataset.tab === tab));
+  $$('.panel[role=tabpanel]').forEach(p => p.hidden = p.id !== 'tab-' + tab);
+  requestAnimationFrame(renderActive);
+}
+
+function init() {
+  // Bloques de patrones y visores 3D
+  ['mono', 'dip', 'yagi'].forEach(p => { $('#' + p + '-patterns').innerHTML = patternBlock(p); });
+  ['mono', 'dip', 'yagi'].forEach(p => { viewers[p] = new Viewer3D($('#' + p + '-3d'), $('#' + p + '-3d-c')); });
+  // Presets
+  $('#preset').innerHTML = PRESETS.map((p, i) => `<option value="${i}">${p[0]}</option>`).join('');
+  $('#preset').value = 5;
+  $('#preset').addEventListener('change', e => {
+    const p = PRESETS[+e.target.value][1]; if (!p) return;
+    $('#m-single').checked = true; $('#f-val').value = p[0]; $('#f-unit').value = p[1]; syncMode(); scheduleUpdate();
+  });
+  // Modo de entrada
+  const syncMode = () => { const r = $('#m-range').checked; $('#in-single').hidden = r; $('#in-range').hidden = !r; };
+  $$('input[name=mode]').forEach(i => i.addEventListener('change', () => { syncMode(); scheduleUpdate(); }));
+  // Entradas generales
+  ['f-val', 'f-unit', 'fmin-val', 'fmin-unit', 'fmax-val', 'fmax-unit', 'vf', 'dia', 'eta', 'dbrange', 'y-taper']
+    .forEach(id => $('#' + id).addEventListener('input', () => { if (id.startsWith('f')) $('#preset').value = 0; scheduleUpdate(); }));
+  // Controles de la Yagi (control deslizante y número sincronizados)
+  [['y-dirs', 'y-dirs-num'], ['y-sp', 'y-sp-num']].forEach(([a, b]) => {
+    $('#' + a).addEventListener('input', () => { $('#' + b).value = $('#' + a).value; scheduleUpdate(); });
+    $('#' + b).addEventListener('input', () => { $('#' + a).value = $('#' + b).value; scheduleUpdate(); });
+  });
+  // Pestañas con teclado
+  const tabs = $$('.tab');
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => activate(t.dataset.tab));
+    t.addEventListener('keydown', e => {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      const n = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length]; n.focus(); activate(n.dataset.tab);
+    });
+  });
+  // Botones
+  document.addEventListener('click', e => { const b = e.target.closest('[data-png]'); if (b) exportPNG(b.dataset.png); });
+  $('#btn-csv').addEventListener('click', exportCSV);
+  $('#btn-pdf').addEventListener('click', exportPDF);
+  $('#side-toggle').addEventListener('click', () => $('#side').classList.toggle('collapsed'));
+  // Tema claro/oscuro
+  const setTheme = t => {
+    document.documentElement.dataset.theme = t;
+    $('#theme-btn').textContent = t === 'dark' ? 'Tema claro' : 'Tema oscuro';
+    try { localStorage.setItem('antennalab-theme', t); } catch (_) {}
+    renderActive(); Object.values(viewers).forEach(v => v.dirty = true);
+  };
+  let saved = null; try { saved = localStorage.getItem('antennalab-theme'); } catch (_) {}
+  setTheme(saved || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'));
+  $('#theme-btn').addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+  // Cambio de tamaño
+  let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { renderActive(); Object.values(viewers).forEach(v => v.dirty = true); }, 120); });
+  // Bucle de animación de los visores 3D
+  const loop = t => { Object.values(viewers).forEach(v => v.tick(t)); requestAnimationFrame(loop); };
+  requestAnimationFrame(loop);
+  syncMode(); update();
+}
+init();
+})();
+</script>
+</body>
+</html>
