@@ -1,0 +1,33 @@
+WALKIE-TALKIE · simulador en red local
+=======================================
+
+Que hace: varios usuarios abren la misma direccion (la IP del equipo que ejecuta el
+servidor), eligen un canal (1-16) y hablan por turnos, como en un walkie real.
+
+Requisitos: Node.js 16 o superior. No hay que instalar paquetes ni openssl: el servidor
+crea solo el certificado HTTPS (carpeta "certs"). Si alguien escribe http:// en lugar de
+https:// con el mismo puerto, se le redirige automaticamente.
+
+1) En el equipo "anfitrion", dentro de esta carpeta:
+      node server.js
+   Opciones:   PORT=9000 node server.js      otro puerto
+               CODE=1234 node server.js      exige un codigo de sala
+               HTTP=1 node server.js         sin HTTPS (microfono solo en localhost)
+   (En Windows PowerShell:  $env:CODE="1234"; node server.js)
+
+2) El servidor muestra las direcciones, por ejemplo https://192.168.1.20:8443
+   Cada usuario la abre en su navegador (movil u ordenador, misma Wi-Fi o red).
+
+3) La primera vez el navegador avisa del certificado autofirmado: Avanzado > Continuar.
+   Es necesario: sin HTTPS los navegadores bloquean el microfono.
+
+4) Escriba su nombre, elija canal, ENTRAR, permita el microfono y mantenga pulsado
+   "PULSAR PARA HABLAR" (o la barra espaciadora). Solo habla uno a la vez por canal.
+
+Controles: CH arriba/abajo cambia de canal. LLAMADA suena en todo el canal. ROGER es el
+pitido de fin. SQUELCH es el ruido de apertura y cierre. FIJO: pulsar una vez para hablar
+y otra para soltar.
+
+Notas: el tiempo maximo por transmision es de 45 s. Si el cortafuegos del anfitrion lo
+bloquea, permita conexiones entrantes al puerto indicado. Es un simulador educativo para
+redes de confianza: el audio no esta cifrado de extremo a extremo ni hay cuentas de usuario.
