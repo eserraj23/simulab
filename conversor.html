@@ -4,116 +4,98 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Conversor de Sistemas Numéricos</title>
+  <meta name="description" content="Convierte entre binario, octal, decimal y hexadecimal. Funciona sin conexión.">
   <style>
-    :root{
-      --bg:#0d1b2a; --panel:#1b263b; --panel-2:#223350;
-      --accent:#00b4d8; --accent-2:#0077b6; --text:#e0e1dd; --muted:#90a4ae;
-      --ok:#2ecc71; --err:#ef476f; --amber:#ffd166;
-    }
+    :root{--bg:#0d1b2a;--panel:#1b263b;--panel-2:#223350;--accent:#00b4d8;--accent-2:#0077b6;--text:#e0e1dd;--muted:#90a4ae;--ok:#2ecc71;--err:#ef476f}
     *{box-sizing:border-box;margin:0;padding:0}
-    body{
-      font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;
-      background:radial-gradient(1200px 600px at 50% -10%,#16324f 0%,var(--bg) 60%);
-      color:var(--text);min-height:100vh;display:flex;flex-direction:column;line-height:1.5;
-    }
-    header{text-align:center;padding:2.2rem 1rem 1.2rem}
-    header h1{font-size:1.7rem;letter-spacing:.5px}
+    html,body{height:100%}
+    body{font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;background:radial-gradient(1200px 600px at 50% -10%,#16324f 0%,var(--bg) 60%);color:var(--text);min-height:100vh;display:flex;flex-direction:column;line-height:1.4}
+    main{flex:1;width:100%;max-width:960px;margin:0 auto;padding:20px}
+    header{text-align:center;padding:28px 8px}
+    header h1{font-size:1.6rem}
     header h1 span{color:var(--accent)}
-    header p{color:var(--muted);margin-top:.4rem;font-size:.95rem}
-    main{flex:1;width:100%;max-width:860px;margin:0 auto;padding:1rem 1rem 2.5rem}
-
-    .card{background:var(--panel);border:1px solid #2c3e50;border-radius:16px;padding:1.4rem;box-shadow:0 10px 30px rgba(0,0,0,.25)}
-    .row{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;justify-content:space-between}
-    label.lbl{font-size:.75rem;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted)}
-
-    .seg{display:inline-flex;background:var(--panel-2);border:1px solid #33475f;border-radius:12px;padding:4px;gap:4px;flex-wrap:wrap}
-    .seg button{all:unset;cursor:pointer;padding:.5rem .95rem;border-radius:9px;font-weight:600;font-size:.9rem;color:var(--muted);transition:.12s}
-    .seg button:hover{color:var(--text)}
-    .seg button.active{background:var(--accent-2);color:#fff;box-shadow:0 3px 10px rgba(0,119,182,.4)}
-
-    .input-wrap{margin-top:1rem;position:relative}
-    #entrada{
-      width:100%;background:#0f1c2e;border:2px solid #33475f;border-radius:12px;color:var(--text);
-      font-family:"JetBrains Mono","SF Mono",Consolas,monospace;font-size:1.6rem;padding:.9rem 1rem;outline:none;transition:.2s;
-    }
-    #entrada:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(0,180,216,.15)}
-    #entrada.invalid{border-color:var(--err);box-shadow:0 0 0 4px rgba(239,71,111,.15)}
-    .hint{font-size:.85rem;color:var(--muted);margin-top:.5rem;min-height:1.2em}
-    .hint.err{color:var(--err)}
-
-    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:.9rem;margin-top:1.4rem}
-    .out{background:var(--panel-2);border:1px solid #33475f;border-radius:14px;padding:1rem;transition:.2s;position:relative}
-    .out.is-src{border-color:var(--accent);background:linear-gradient(180deg,rgba(0,180,216,.10),transparent)}
-    .out h3{font-size:.72rem;text-transform:uppercase;letter-spacing:1.4px;color:var(--accent);display:flex;align-items:center;gap:.45rem}
-    .out .val{font-family:"JetBrains Mono","SF Mono",Consolas,monospace;font-size:1.25rem;margin:.5rem 0 .35rem;word-break:break-all;min-height:1.4em}
-    .out .sub{font-size:.78rem;color:var(--muted)}
-    .copy{all:unset;cursor:pointer;position:absolute;top:.7rem;right:.7rem;padding:.25rem .55rem;border-radius:8px;
-      background:#0f1c2e;border:1px solid #33475f;font-size:.72rem;color:var(--muted);transition:.18s}
-    .copy:hover{color:var(--accent);border-color:var(--accent)}
+    .card{background:var(--panel);border:1px solid #2c3e50;border-radius:12px;padding:16px;box-shadow:0 8px 20px rgba(0,0,0,.25)}
+    .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+    .lbl{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+    .seg{display:inline-flex;background:var(--panel-2);border:1px solid #33475f;border-radius:10px;padding:6px;gap:6px}
+    .seg button{all:unset;cursor:pointer;padding:6px 10px;border-radius:8px;font-weight:700;font-size:.9rem;color:var(--muted)}
+    .seg button.active{background:var(--accent-2);color:#fff;box-shadow:0 3px 10px rgba(0,119,182,.3)}
+    .input-wrap{margin-top:12px;position:relative}
+    #entrada{width:100%;background:#0f1c2e;border:2px solid #33475f;border-radius:10px;color:var(--text);font-family:monospace;font-size:1.25rem;padding:12px 14px;outline:none}
+    #entrada:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(0,180,216,.08)}
+    #entrada.invalid{border-color:var(--err)}
+    .hint{font-size:.85rem;color:var(--muted);margin-top:8px;min-height:1.2em}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:14px}
+    .out{background:var(--panel-2);border:1px solid #33475f;border-radius:10px;padding:12px;position:relative}
+    .out.is-src{border-color:var(--accent);box-shadow:0 6px 18px rgba(0,180,216,.06)}
+    .out h3{font-size:.72rem;color:var(--accent);margin-bottom:6px}
+    .val{font-family:monospace;font-size:1.05rem;word-break:break-all;min-height:1.2em}
+    .sub{font-size:.78rem;color:var(--muted);margin-top:6px}
+    .copy{position:absolute;top:10px;right:10px;all:unset;cursor:pointer;padding:6px 8px;border-radius:8px;background:#0f1c2e;border:1px solid #33475f;color:var(--muted)}
     .copy.done{color:var(--ok);border-color:var(--ok)}
-
-    .tools{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1.3rem}
-    .btn{all:unset;cursor:pointer;padding:.6rem 1rem;border-radius:10px;font-weight:600;font-size:.88rem;
-      background:var(--panel-2);border:1px solid #33475f;color:var(--text);transition:.18s}
-    .btn:hover{border-color:var(--accent);color:var(--accent)}
-    .btn.danger:hover{border-color:var(--err);color:var(--err)}
-
-    details{margin-top:1.3rem;background:var(--panel-2);border:1px solid #33475f;border-radius:14px;padding:.9rem 1rem}
-    summary{cursor:pointer;font-weight:600;font-size:.9rem;color:var(--accent)}
-    #pesos{font-family:"JetBrains Mono","SF Mono",Consolas,monospace;font-size:.85rem;color:var(--muted);margin-top:.7rem;white-space:pre-wrap;word-break:break-word}
-
-    footer{text-align:center;padding:1rem;color:var(--muted);font-size:.8rem;border-top:1px solid #223350}
-    kbd{background:#0f1c2e;border:1px solid #33475f;border-bottom-width:2px;border-radius:5px;padding:.05rem .35rem;font-size:.75rem}
+    .tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .btn{all:unset;cursor:pointer;padding:8px 12px;border-radius:10px;background:var(--panel-2);border:1px solid #33475f;color:var(--text);font-weight:700}
+    .btn.danger{color:var(--err)}
+    details{margin-top:12px;background:var(--panel-2);border:1px solid #33475f;border-radius:8px;padding:10px}
+    #pesos{font-family:monospace;font-size:.85rem;color:var(--muted);white-space:pre-wrap}
+    footer{text-align:center;padding:12px;color:var(--muted);font-size:.8rem}
+    @media (max-width:480px){header h1{font-size:1.2rem} #entrada{font-size:1rem}}
   </style>
 </head>
 <body>
   <header>
     <h1>🔢 Conversor de <span>Sistemas Numéricos</span></h1>
-    <p>Binario · Octal · Decimal · Hexadecimal — conversión instantánea en las cuatro bases</p>
+    <p class="muted">Convierte entre binario, octal, decimal y hexadecimal — funciona sin conexión</p>
   </header>
 
   <main>
-    <section class="card">
+    <section class="card" aria-labelledby="titulo">
       <div class="row">
-        <label class="lbl">Entrada en base</label>
-        <div class="seg" id="bases">
-          <button data-base="2" title="Solo 0 y 1">BIN</button>
-          <button data-base="8" title="Cifras 0–7">OCT</button>
-          <button data-base="10" class="active" title="Cifras 0–9">DEC</button>
-          <button data-base="16" title="Cifras 0–9 y A–F">HEX</button>
+        <div>
+          <div class="lbl">Entrada en base</div>
+          <div class="seg" id="bases" role="tablist" aria-label="Seleccionar base de entrada">
+            <button data-base="2" title="Solo 0 y 1" aria-pressed="false">BIN</button>
+            <button data-base="8" title="Cifras 0–7" aria-pressed="false">OCT</button>
+            <button data-base="10" class="active" title="Cifras 0–9" aria-pressed="true">DEC</button>
+            <button data-base="16" title="Cifras 0–9 y A–F" aria-pressed="false">HEX</button>
+          </div>
+        </div>
+        <div style="min-width:160px;text-align:right">
+          <div class="lbl">Prefijos</div>
+          <div class="hint">Aceptados: <code>0b</code> <code>0o</code> <code>0x</code>, espacios y guiones bajos ignorados</div>
         </div>
       </div>
 
       <div class="input-wrap">
-        <input id="entrada" type="text" inputmode="text" autocomplete="off" spellcheck="false"
-               placeholder="Escribe un número…" aria-label="Número a convertir" value="2026">
-        <p class="hint" id="hint"></p>
+        <label for="entrada" class="lbl" style="display:block;margin-bottom:6px">Número a convertir</label>
+        <input id="entrada" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="Ej.: 2026, 0b1111110010 o 0x7EA" aria-describedby="hint" value="2026">
+        <p class="hint" id="hint">Escribe un número en la base seleccionada. Pulsa Esc para limpiar.</p>
       </div>
 
-      <div class="grid" id="salidas">
+      <div class="grid" id="salidas" aria-live="polite">
         <div class="out" data-base="2">
           <h3>🪙 Binario</h3>
           <div class="val">—</div>
           <div class="sub">base 2</div>
-          <button class="copy">copiar</button>
+          <button class="copy" aria-label="Copiar binario">copiar</button>
         </div>
         <div class="out" data-base="8">
           <h3>🐙 Octal</h3>
           <div class="val">—</div>
           <div class="sub">base 8</div>
-          <button class="copy">copiar</button>
+          <button class="copy" aria-label="Copiar octal">copiar</button>
         </div>
         <div class="out" data-base="10">
           <h3>🖐️ Decimal</h3>
           <div class="val">—</div>
           <div class="sub">base 10</div>
-          <button class="copy">copiar</button>
+          <button class="copy" aria-label="Copiar decimal">copiar</button>
         </div>
         <div class="out" data-base="16">
           <h3>💠 Hexadecimal</h3>
           <div class="val">—</div>
           <div class="sub">base 16</div>
-          <button class="copy">copiar</button>
+          <button class="copy" aria-label="Copiar hexadecimal">copiar</button>
         </div>
       </div>
 
@@ -127,84 +109,118 @@
         <summary>Ver descomposición por pesos posicionales</summary>
         <div id="pesos"></div>
       </details>
+
+      <div id="copy-status" aria-live="polite" style="position:absolute;left:-9999px;top:auto;height:1px;overflow:hidden"> </div>
     </section>
   </main>
 
   <footer>
-    Uso docente y formativo · Funciona sin conexión · Pulsa <kbd>Esc</kbd> para limpiar
+    Uso docente y formativo · Versión mejorada · Pulsa <kbd>Esc</kbd> para limpiar
   </footer>
 
   <script>
   (() => {
     const nombres = {2:'binario',8:'octal',10:'decimal',16:'hexadecimal'};
-    const permitidas = {2:/^[01]+$/i, 8:/^[0-7]+$/i, 10:/^[0-9]+$/i, 16:/^[0-9a-f]+$/i};
+    // permitidas apply after removing optional sign and prefix
+    const baseRegex = {2:/^[01]+$/i, 8:/^[0-7]+$/i, 10:/^[0-9]+$/i, 16:/^[0-9a-f]+$/i};
 
     const entrada = document.getElementById('entrada');
     const hint = document.getElementById('hint');
     const pesosDiv = document.getElementById('pesos');
     const tarjetas = [...document.querySelectorAll('.out')];
+    const basesEl = document.getElementById('bases');
     let base = 10, agrupa = false;
 
     function limpia(txt){
-      return (txt || '').trim().replace(/^0[xob]/i,'').replace(/\s|_/g,'');
+      if(!txt && txt !== '') return '';
+      // remove spaces and underscores, keep leading +/-, detect prefixes
+      return String(txt).trim().replace(/[\s_]+/g,'');
     }
 
-    function aBigInt(txt, b){
-      if(!txt) return null;
-      const cleaned = limpia(txt);
-      if(!permitidas[b].test(cleaned.toLowerCase())) return null;
-      const dig = cleaned.toUpperCase();
+    function stripPrefixAndSign(txt){
+      const s = String(txt).trim();
+      let sign = 1;
+      let t = s;
+      if(/^[-+]/.test(t)){ if(t[0] === '-') sign = -1; t = t.slice(1); }
+      const m = t.match(/^0(b|o|x)/i);
+      if(m){
+        const p = m[1].toLowerCase();
+        t = t.slice(2);
+        if(p === 'b') return {sign, prefix:2, t};
+        if(p === 'o') return {sign, prefix:8, t};
+        if(p === 'x') return {sign, prefix:16, t};
+      }
+      return {sign, prefix:null, t};
+    }
+
+    function aBigInt(input, forcedBase){
+      if(input == null) return null;
+      let raw = limpia(input);
+      if(raw === '') return null;
+      const {sign, prefix, t} = stripPrefixAndSign(raw);
+      let str = t;
+      const b = prefix || forcedBase;
+      if(!baseRegex[b].test(str.toLowerCase())) return null;
+      // convert manually to BigInt
       let n = 0n, B = BigInt(b);
-      for(const c of dig){
-        const v = parseInt(c, 36);
+      for(const ch of str.toUpperCase()){
+        const v = parseInt(ch, 36);
         if(Number.isNaN(v) || v >= b) return null;
         n = n * B + BigInt(v);
       }
-      return n;
+      return sign === -1 ? -n : n;
     }
 
-    function desdeBase(txt, b){ return aBigInt(txt, b); }
+    function formatBinaryGrouped(s){
+      // group from right into nibbles
+      return s.replace(/\B(?=(?:\d{4})+(?!\d))/g,' ');
+    }
 
     function formato(n, b){
+      if(n === null) return '—';
+      const neg = n < 0n;
+      const abs = neg ? -n : n;
       switch(b){
         case 2: {
-          let s = n.toString(2);
-          if(agrupa) s = s.replace(/(\d{1,4})(?=\d)/g,'$1 ').trim();
-          return s;
+          let s = abs.toString(2);
+          if(agrupa) s = formatBinaryGrouped(s);
+          return neg ? '-' + s : s;
         }
-        case 8: return n.toString(8);
-        case 10: return n.toString(10).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
-        case 16: return n.toString(16).toUpperCase();
+        case 8: return (neg ? '-' : '') + abs.toString(8);
+        case 10: return (neg ? '-' : '') + abs.toString(10).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+        case 16: return (neg ? '-' : '') + abs.toString(16).toUpperCase();
       }
     }
 
-    function descomp(txt, b){
-      if(!txt) return '';
-      const cleaned = limpia(txt).toUpperCase();
+    function descomp(originalInput, b){
+      if(!originalInput) return '';
+      const raw = limpia(originalInput);
+      const {sign, prefix, t} = stripPrefixAndSign(raw);
+      const cleaned = t.toUpperCase();
+      if(cleaned === '') return '';
       const digs = cleaned.split('');
       const L = digs.length;
-      const partes = digs.map((c,i) => {
-        const p = L-1-i;
-        return `${c}·${b}^${p}`;
-      });
+      const partes = digs.map((c,i)=> `${c}·${b}^${L-1-i}`);
       const total = partes.join(' + ');
-      const valor = desdeBase(cleaned,b);
+      const valor = aBigInt(raw, b);
       return `Entrada ${nombres[b]}: ${total}\n= ${valor === null ? '?' : valor.toString(10)} (dec)`;
     }
 
+    function cifras(b){ return b===2?'0–1':b===8?'0–7':b===10?'0–9':'0–9, A–F'; }
+
     function render(){
-      const raw = limpia(entrada.value);
+      const userRaw = entrada.value;
       entrada.classList.remove('invalid');
       hint.classList.remove('err');
-
-      if(raw === ''){
+      const cleaned = limpia(userRaw);
+      if(cleaned === ''){
         tarjetas.forEach(t => { t.querySelector('.val').textContent='—'; t.classList.remove('is-src'); });
         hint.textContent = 'Escribe un número en la base seleccionada arriba.';
         pesosDiv.textContent = '';
         return;
       }
 
-      const n = desdeBase(raw, base);
+      const n = aBigInt(userRaw, base);
       if(n === null){
         entrada.classList.add('invalid');
         hint.classList.add('err');
@@ -220,17 +236,17 @@
         t.classList.toggle('is-src', b === base);
       });
 
-      hint.textContent = `${formato(n,10)} en decimal · ${raw.length} cifra(s) en ${nombres[base]}`;
-      pesosDiv.textContent = descomp(raw, base);
+      hint.textContent = `${formato(n,10)} en decimal · ${String(limpia(userRaw)).length} cifra(s) en ${nombres[base]}`;
+      pesosDiv.textContent = descomp(userRaw, base);
     }
 
-    function cifras(b){ return b===2?'0–1':b===8?'0–7':b===10?'0–9':'0–9, A–F'; }
-
-    document.getElementById('bases').addEventListener('click', e => {
+    // eventos
+    basesEl.addEventListener('click', e => {
       const btn = e.target.closest('button'); if(!btn) return;
       base = Number(btn.dataset.base);
-      [...e.currentTarget.children].forEach(b => b.classList.toggle('active', b === btn));
-      entrada.placeholder = base===16 ? 'Ej.: 1F4' : base===2 ? 'Ej.: 111 1110 010' : base===8 ? 'Ej.: 3752' : 'Ej.: 2026';
+      [...basesEl.children].forEach(b => b.classList.toggle('active', b === btn));
+      [...basesEl.children].forEach(b => b.setAttribute('aria-pressed', b === btn ? 'true' : 'false'));
+      entrada.placeholder = base===16 ? 'Ej.: 1F4 o 0x1F4' : base===2 ? 'Ej.: 111 1110 010 o 0b...' : base===8 ? 'Ej.: 3752 o 0o...' : 'Ej.: 2026';
       render();
     });
 
@@ -244,35 +260,31 @@
     });
 
     document.getElementById('swap').addEventListener('click', () => {
-      const origen = tarjetas.find(t => Number(t.dataset.base) !== base);
+      // use the first non-empty output as input
+      const origen = tarjetas.find(t => t.querySelector('.val').textContent && t.querySelector('.val').textContent !== '—');
       if(!origen) return;
       const b = Number(origen.dataset.base);
       const val = origen.querySelector('.val').textContent.replace(/\s/g,'');
-      if(val === '—') return;
+      if(!val || val === '—') return;
       entrada.value = val; base = b;
-      [...document.getElementById('bases').children].forEach(x => x.classList.toggle('active', Number(x.dataset.base)===b));
+      [...basesEl.children].forEach(x => x.classList.toggle('active', Number(x.dataset.base)===b));
       render();
     });
 
     document.querySelectorAll('.copy').forEach(btn => {
       btn.addEventListener('click', async () => {
         const txt = btn.parentElement.querySelector('.val').textContent.replace(/\s/g,'');
-        if(txt === '—') return;
-        try {
-          await navigator.clipboard.writeText(txt);
-        } catch(e){
-          const ta = document.createElement('textarea');
-          ta.value = txt; document.body.appendChild(ta); ta.select();
-          try { document.execCommand('copy'); } catch (err) {}
-          ta.remove();
-        }
-        btn.textContent = '✓ copiado'; btn.classList.add('done');
-        setTimeout(() => { btn.textContent='copiar'; btn.classList.remove('done'); }, 1200);
+        if(!txt || txt === '—') return;
+        try { await navigator.clipboard.writeText(txt); document.getElementById('copy-status').textContent = `Copiado: ${txt}`; }
+        catch(e){ const ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); document.getElementById('copy-status').textContent = `Copiado: ${txt}` }catch(err){} ta.remove(); }
+        btn.classList.add('done'); btn.textContent = '✓ copiado';
+        setTimeout(()=>{ btn.classList.remove('done'); btn.textContent='copiar'; }, 1200);
       });
     });
 
     document.addEventListener('keydown', e => { if(e.key === 'Escape'){ entrada.value=''; render(); } });
 
+    // inicializa
     render();
   })();
   </script>
