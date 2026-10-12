@@ -1,0 +1,282 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2113.65">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 14.0px Helvetica}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 14.0px Helvetica; min-height: 17.0px}
+    span.s1 {font: 14.0px 'Apple Color Emoji'}
+    span.s2 {font: 14.0px 'Hiragino Sans'}
+    span.s3 {font: 14.0px 'Zapf Dingbats'}
+    span.s4 {font: 14.0px 'Lucida Grande'}
+  </style>
+</head>
+<body>
+<p class="p1">&lt;!DOCTYPE html&gt;</p>
+<p class="p1">&lt;html lang="es"&gt;</p>
+<p class="p1">&lt;head&gt;</p>
+<p class="p1">&lt;meta charset="UTF-8"&gt;</p>
+<p class="p1">&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;</p>
+<p class="p1">&lt;title&gt;Conversor de Sistemas Numéricos&lt;/title&gt;</p>
+<p class="p1">&lt;style&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>:root{</p>
+<p class="p1"><span class="Apple-converted-space">    </span>--bg:#0d1b2a; --panel:#1b263b; --panel-2:#223350;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>--accent:#00b4d8; --accent-2:#0077b6; --text:#e0e1dd; --muted:#90a4ae;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>--ok:#2ecc71; --err:#ef476f; --amber:#ffd166;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>*{box-sizing:border-box;margin:0;padding:0}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>body{</p>
+<p class="p1"><span class="Apple-converted-space">    </span>font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>background:radial-gradient(1200px 600px at 50% -10%,#16324f 0%,var(--bg) 60%);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>color:var(--text);min-height:100vh;display:flex;flex-direction:column;line-height:1.5;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>header{text-align:center;padding:2.2rem 1rem 1.2rem}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>header h1{font-size:1.7rem;letter-spacing:.5px}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>header h1 span{color:var(--accent)}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>header p{color:var(--muted);margin-top:.4rem;font-size:.95rem}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>main{flex:1;width:100%;max-width:860px;margin:0 auto;padding:1rem 1rem 2.5rem}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>.card{background:var(--panel);border:1px solid #2c3e50;border-radius:16px;padding:1.4rem;box-shadow:0 10px 30px rgba(0,0,0,.25)}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.row{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;justify-content:space-between}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>label.lbl{font-size:.75rem;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted)}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>/* Selector de base de entrada */</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.seg{display:inline-flex;background:var(--panel-2);border:1px solid #33475f;border-radius:12px;padding:4px;gap:4px;flex-wrap:wrap}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.seg button{all:unset;cursor:pointer;padding:.5rem .95rem;border-radius:9px;font-weight:600;font-size:.9rem;color:var(--muted);transition:.18s}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.seg button:hover{color:var(--text)}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.seg button.active{background:var(--accent-2);color:#fff;box-shadow:0 3px 10px rgba(0,119,182,.4)}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>/* Campo principal */</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.input-wrap{margin-top:1rem;position:relative}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>#entrada{</p>
+<p class="p1"><span class="Apple-converted-space">    </span>width:100%;background:#0f1c2e;border:2px solid #33475f;border-radius:12px;color:var(--text);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>font-family:"JetBrains Mono","SF Mono",Consolas,monospace;font-size:1.6rem;padding:.9rem 1rem;outline:none;transition:.2s;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>#entrada:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(0,180,216,.15)}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>#entrada.invalid{border-color:var(--err);box-shadow:0 0 0 4px rgba(239,71,111,.15)}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.hint{font-size:.85rem;color:var(--muted);margin-top:.5rem;min-height:1.2em}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.hint.err{color:var(--err)}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>/* Salidas */</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:.9rem;margin-top:1.4rem}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.out{background:var(--panel-2);border:1px solid #33475f;border-radius:14px;padding:1rem;transition:.2s;position:relative}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.out.is-src{border-color:var(--accent);background:linear-gradient(180deg,rgba(0,180,216,.10),transparent)}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.out h3{font-size:.72rem;text-transform:uppercase;letter-spacing:1.4px;color:var(--accent);display:flex;align-items:center;gap:.45rem}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.out .val{font-family:"JetBrains Mono","SF Mono",Consolas,monospace;font-size:1.25rem;margin:.5rem 0 .35rem;word-break:break-all;min-height:1.4em}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.out .sub{font-size:.78rem;color:var(--muted)}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.copy{all:unset;cursor:pointer;position:absolute;top:.7rem;right:.7rem;padding:.25rem .55rem;border-radius:8px;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>background:#0f1c2e;border:1px solid #33475f;font-size:.72rem;color:var(--muted);transition:.18s}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.copy:hover{color:var(--accent);border-color:var(--accent)}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.copy.done{color:var(--ok);border-color:var(--ok)}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>/* Herramientas */</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.tools{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1.3rem}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.btn{all:unset;cursor:pointer;padding:.6rem 1rem;border-radius:10px;font-weight:600;font-size:.88rem;</p>
+<p class="p1"><span class="Apple-converted-space">       </span>background:var(--panel-2);border:1px solid #33475f;color:var(--text);transition:.18s}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.btn:hover{border-color:var(--accent);color:var(--accent)}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>.btn.danger:hover{border-color:var(--err);color:var(--err)}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>/* Descomposición por pesos */</p>
+<p class="p1"><span class="Apple-converted-space">  </span>details{margin-top:1.3rem;background:var(--panel-2);border:1px solid #33475f;border-radius:14px;padding:.9rem 1rem}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>summary{cursor:pointer;font-weight:600;font-size:.9rem;color:var(--accent)}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>#pesos{font-family:"JetBrains Mono","SF Mono",Consolas,monospace;font-size:.85rem;color:var(--muted);</p>
+<p class="p1"><span class="Apple-converted-space">         </span>margin-top:.7rem;white-space:pre-wrap;word-break:break-word}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>footer{text-align:center;padding:1rem;color:var(--muted);font-size:.8rem;border-top:1px solid #223350}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>kbd{background:#0f1c2e;border:1px solid #33475f;border-bottom-width:2px;border-radius:5px;padding:.05rem .35rem;font-size:.75rem}</p>
+<p class="p1">&lt;/style&gt;</p>
+<p class="p1">&lt;/head&gt;</p>
+<p class="p1">&lt;body&gt;</p>
+<p class="p2"><br></p>
+<p class="p1">&lt;header&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;h1&gt;<span class="s1">🔢</span> Conversor de &lt;span&gt;Sistemas Numéricos&lt;/span&gt;&lt;/h1&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;p&gt;Binario · Octal · Decimal · Hexadecimal — conversión instantánea en las cuatro bases&lt;/p&gt;</p>
+<p class="p1">&lt;/header&gt;</p>
+<p class="p2"><br></p>
+<p class="p1">&lt;main&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;section class="card"&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="row"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;label class="lbl"&gt;Entrada en base&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="seg" id="bases"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;button data-base="2"<span class="Apple-converted-space">  </span>title="Solo 0 y 1"&gt;BIN&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;button data-base="8"<span class="Apple-converted-space">  </span>title="Cifras 0–7"&gt;OCT&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;button data-base="10" class="active" title="Cifras 0–9"&gt;DEC&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;button data-base="16" title="Cifras 0–9 y A–F"&gt;HEX&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="input-wrap"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;input id="entrada" type="text" inputmode="text" autocomplete="off" spellcheck="false"</p>
+<p class="p1"><span class="Apple-converted-space">             </span>placeholder="Escribe un número…" aria-label="Número a convertir" value="2026"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;p class="hint" id="hint"&gt;&lt;/p&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="grid" id="salidas"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="out" data-base="2"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;h3&gt;<span class="s1">🪙</span> Binario&lt;/h3&gt;&lt;div class="val"&gt;&lt;/div&gt;&lt;div class="sub"&gt;base 2&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;button class="copy"&gt;copiar&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="out" data-base="8"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;h3&gt;<span class="s1">🐙</span> Octal&lt;/h3&gt;&lt;div class="val"&gt;&lt;/div&gt;&lt;div class="sub"&gt;base 8&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;button class="copy"&gt;copiar&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="out" data-base="10"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;h3&gt;<span class="s1">🖐️</span> Decimal&lt;/h3&gt;&lt;div class="val"&gt;&lt;/div&gt;&lt;div class="sub"&gt;base 10&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;button class="copy"&gt;copiar&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="out" data-base="16"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;h3&gt;<span class="s1">💠</span> Hexadecimal&lt;/h3&gt;&lt;div class="val"&gt;&lt;/div&gt;&lt;div class="sub"&gt;base 16&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;button class="copy"&gt;copiar&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="tools"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;button class="btn" id="grpBin"&gt;Agrupar binario en nibbles&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;button class="btn" id="swap"&gt;<span class="s2">↔</span> Usar un resultado como entrada&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;button class="btn danger" id="clear"&gt;<span class="s3">✕</span> Limpiar&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;details open&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;summary&gt;Ver descomposición por pesos posicionales&lt;/summary&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div id="pesos"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/details&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/section&gt;</p>
+<p class="p1">&lt;/main&gt;</p>
+<p class="p2"><br></p>
+<p class="p1">&lt;footer&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>Uso docente y formativo · Funciona sin conexión · Pulsa &lt;kbd&gt;Esc&lt;/kbd&gt; para limpiar</p>
+<p class="p1">&lt;/footer&gt;</p>
+<p class="p2"><br></p>
+<p class="p1">&lt;script&gt;</p>
+<p class="p1">(() =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const nombres = {2:'binario',8:'octal',10:'decimal',16:'hexadecimal'};</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const permitidas = {2:/^+$/i, 8:/^[0-7]+$/i, 10:/^[0-9]+$/i, 16:/^[0-9a-f]+$/i};</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const entrada = document.getElementById('entrada');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const hint = document.getElementById('hint');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const pesosDiv = document.getElementById('pesos');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const tarjetas = [...document.querySelectorAll('.out')];</p>
+<p class="p1"><span class="Apple-converted-space">  </span>let base = 10, agrupa = false;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>// ---------- Utilidades con BigInt (sin límite práctico de tamaño) ----------</p>
+<p class="p1"><span class="Apple-converted-space">  </span>function limpia(txt){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>return txt.trim().replace(/^0[xob]/i,'').replace(/\s|_/g,'');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>function aBigInt(txt, b){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(!txt) return null;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(!permitidas[b].test(txt.toLowerCase())) return null;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>try { return BigInt(parseInt(b) + 'n' === '' ? 0 : ('0x'+'')); } catch(e){}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>// Conversión manual segura posición a posición</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const dig = txt.toUpperCase();</p>
+<p class="p1"><span class="Apple-converted-space">    </span>let n = 0n, B = BigInt(b);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>for(const c of dig){</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const v = parseInt(c, 36);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>if(Number.isNaN(v) || v &gt;= b) return null;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>n = n * B + BigInt(v);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>return n;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>function desdeBase(txt, b){ return aBigInt(txt, b); }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>function formato(n, b){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>switch(b){</p>
+<p class="p1"><span class="Apple-converted-space">      </span>case 2:<span class="Apple-converted-space">  </span>{ let s = n.toString(2); return agrupa ? s.replace(/(\d{1,4})(?=\d)/g,'$1 ').trim() : s; }</p>
+<p class="p1"><span class="Apple-converted-space">      </span>case 8:<span class="Apple-converted-space">  </span>return n.toString(8);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>case 10: return n.toString(10).replace(/\B(?=(\d{3})+(?!\d))/g,' ');</p>
+<p class="p1"><span class="Apple-converted-space">      </span>case 16: return n.toString(16).toUpperCase();</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>function bruto(n,b){ return b===2 ? n.toString(2) : b===8 ? n.toString(8) : b===10 ? n.toString(10) : n.toString(16).toUpperCase(); }</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>// ---------- Descomposición por pesos ----------</p>
+<p class="p1"><span class="Apple-converted-space">  </span>function descomp(txt, b){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(!txt) return '';</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const digs = txt.toUpperCase().split('');</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const L = digs.length;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const partes = digs.map((c,i) =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const v = parseInt(c,36), p = L-1-i;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>return `${c}·${b}^${p}`;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>});</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const total = partes.join('<span class="Apple-converted-space">  </span>+<span class="Apple-converted-space">  </span>');</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const valor = desdeBase(txt,b);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>return `Entrada ${nombres[b]}:<span class="Apple-converted-space">  </span>${total}\n= ${valor === null ? '?' : valor.toString(10)} (decimal)`;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>// ---------- Render ----------</p>
+<p class="p1"><span class="Apple-converted-space">  </span>function render(){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const raw = limpia(entrada.value);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>entrada.classList.remove('invalid');</p>
+<p class="p1"><span class="Apple-converted-space">    </span>hint.classList.remove('err');</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(raw === ''){</p>
+<p class="p1"><span class="Apple-converted-space">      </span>tarjetas.forEach(t =&gt; { t.querySelector('.val').textContent='—'; t.classList.remove('is-src'); });</p>
+<p class="p1"><span class="Apple-converted-space">      </span>hint.textContent = 'Escribe un número en la base seleccionada arriba.';</p>
+<p class="p1"><span class="Apple-converted-space">      </span>pesosDiv.textContent = '';</p>
+<p class="p1"><span class="Apple-converted-space">      </span>return;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const n = desdeBase(raw, base);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(n === null){</p>
+<p class="p1"><span class="Apple-converted-space">      </span>entrada.classList.add('invalid');</p>
+<p class="p1"><span class="Apple-converted-space">      </span>hint.classList.add('err');</p>
+<p class="p1"><span class="Apple-converted-space">      </span>hint.textContent = `Carácter no válido para base ${base} (${nombres[base]}). Cifras permitidas: ${cifras(base)}.`;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>tarjetas.forEach(t =&gt; t.classList.remove('is-src'));</p>
+<p class="p1"><span class="Apple-converted-space">      </span>pesosDiv.textContent = '';</p>
+<p class="p1"><span class="Apple-converted-space">      </span>return;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>tarjetas.forEach(t =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const b = Number(t.dataset.base);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>t.querySelector('.val').textContent = formato(n, b);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>t.classList.toggle('is-src', b === base);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>});</p>
+<p class="p1"><span class="Apple-converted-space">    </span>hint.textContent = `${formato(n,10)} en decimal · ${raw.length} cifra(s) en ${nombres[base]}`;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>pesosDiv.textContent = descomp(raw, base);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>function cifras(b){ return b===2?'0–1':b===8?'0–7':b===10?'0–9':'0–9, A–F'; }</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>// ---------- Eventos ----------</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById('bases').addEventListener('click', e =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const btn = e.target.closest('button'); if(!btn) return;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>base = Number(btn.dataset.base);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>[...e.currentTarget.children].forEach(b =&gt; b.classList.toggle('active', b === btn));</p>
+<p class="p1"><span class="Apple-converted-space">    </span>entrada.placeholder = base===16 ? 'Ej.: 1F4' : base===2 ? 'Ej.: 111 1110 010' : base===8 ? 'Ej.: 3752' : 'Ej.: 2026';</p>
+<p class="p1"><span class="Apple-converted-space">    </span>render();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>});</p>
+<p class="p1"><span class="Apple-converted-space">  </span>entrada.addEventListener('input', render);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById('clear').addEventListener('click', () =&gt; { entrada.value=''; entrada.focus(); render(); });</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById('grpBin').addEventListener('click', e =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>agrupa = !agrupa;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>e.target.textContent = agrupa ? 'Quitar separación en nibbles' : 'Agrupar binario en nibbles';</p>
+<p class="p1"><span class="Apple-converted-space">    </span>render();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>});</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.getElementById('swap').addEventListener('click', () =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const origen = tarjetas.find(t =&gt; Number(t.dataset.base) !== base);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(!origen) return;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const b = Number(origen.dataset.base);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const val = origen.querySelector('.val').textContent.replace(/\s/g,'');</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(val === '—') return;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>entrada.value = val; base = b;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>[...document.getElementById('bases').children].forEach(x =&gt; x.classList.toggle('active', Number(x.dataset.base)===b));</p>
+<p class="p1"><span class="Apple-converted-space">    </span>render();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>});</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.querySelectorAll('.copy').forEach(btn =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>btn.addEventListener('click', async () =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const txt = btn.parentElement.querySelector('.val').textContent.replace(/\s/g,'');</p>
+<p class="p1"><span class="Apple-converted-space">      </span>if(txt === '—') return;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>try { await navigator.clipboard.writeText(txt); }</p>
+<p class="p1"><span class="Apple-converted-space">      </span>catch(e){ const ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }</p>
+<p class="p1"><span class="Apple-converted-space">      </span>btn.textContent = '<span class="s4">✓</span> copiado'; btn.classList.add('done');</p>
+<p class="p1"><span class="Apple-converted-space">      </span>setTimeout(()=&gt;{ btn.textContent='copiar'; btn.classList.remove('done'); }, 1200);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>});</p>
+<p class="p1"><span class="Apple-converted-space">  </span>});</p>
+<p class="p1"><span class="Apple-converted-space">  </span>document.addEventListener('keydown', e =&gt; { if(e.key === 'Escape'){ entrada.value=''; render(); } });</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>render();</p>
+<p class="p1">})();</p>
+<p class="p1">&lt;/script&gt;</p>
+<p class="p1">&lt;/body</p>
+</body>
+</html>
