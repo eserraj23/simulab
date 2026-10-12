@@ -1,0 +1,1802 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NetLab — Simulador de Redes</title>
+<style>
+:root{--bg:#0a111e;--p1:#101a2c;--p2:#16233a;--p3:#1d2e4b;--line:#263b5c;--ink:#e6eefc;--muted:#8fa3c2;--acc:#35d0c0;--acc2:#4da3ff;--ok:#35d27f;--warn:#f0b35a;--err:#ff5d5d;--lw:230px;--rw:340px;--bh:250px;
+ --font:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;--mono:ui-monospace,"Cascadia Mono",Consolas,Menlo,monospace}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font:13px/1.4 var(--font);overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+button{background:var(--p3);border:1px solid var(--line);border-radius:6px;padding:5px 9px;cursor:pointer;white-space:nowrap}
+button:hover{border-color:var(--acc);background:#233a5e}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+button.on{background:var(--acc);color:#04201d;border-color:var(--acc);font-weight:600}
+button.pri{background:var(--acc2);border-color:var(--acc2);color:#04101f;font-weight:600}
+button.dng:hover{border-color:var(--err);color:var(--err)}
+button:disabled{opacity:.4;cursor:default}
+input,select,textarea{background:#0d1626;border:1px solid var(--line);border-radius:5px;padding:4px 6px;min-width:0;width:100%}
+input[type=checkbox]{width:auto}input[type=color]{padding:0;height:26px}
+input.bad{border-color:var(--err)}
+#app{display:grid;height:100%;grid-template-columns:var(--lw) 1fr var(--rw);grid-template-rows:46px 1fr var(--bh);grid-template-areas:"top top top" "left center right" "left bottom right"}
+#top{grid-area:top;display:flex;align-items:center;gap:6px;padding:0 10px;background:var(--p1);border-bottom:1px solid var(--line);overflow-x:auto}
+.brand{font-weight:700;font-size:15px;display:flex;align-items:center;gap:8px;margin-right:10px;white-space:nowrap}.brand span{font-weight:400;color:var(--muted)}
+.sp{flex:1}
+.pill{padding:3px 10px;border-radius:99px;border:1px solid var(--line);background:var(--p2);white-space:nowrap;display:flex;gap:6px;align-items:center}
+.pill i{width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block}
+.pill.run i{background:var(--ok);box-shadow:0 0 8px var(--ok)}.pill.pause i{background:var(--warn)}
+aside,section{position:relative;min-height:0}
+#left{grid-area:left;background:var(--p1);border-right:1px solid var(--line);display:flex;flex-direction:column}
+#right{grid-area:right;background:var(--p1);border-left:1px solid var(--line);overflow:auto}
+#bottom{grid-area:bottom;background:var(--p1);border-top:1px solid var(--line);display:flex;flex-direction:column;min-width:0}
+#center{grid-area:center;position:relative;min-width:0;min-height:0;overflow:hidden;background:#0b1322}
+.rsz{position:absolute;z-index:5;background:transparent}.rsz:hover{background:var(--acc)}
+#r1{right:-3px;top:0;bottom:0;width:6px;cursor:col-resize}#r2{left:-3px;top:0;bottom:0;width:6px;cursor:col-resize}#r3{top:-3px;left:0;right:0;height:6px;cursor:row-resize}
+#q{margin:8px;width:calc(100% - 16px)}
+#pal{overflow:auto;padding:0 8px 10px;flex:1}
+#pal h4{margin:12px 0 6px;font-size:12px;color:var(--muted);font-weight:600;cursor:pointer;user-select:none}
+.pi{display:flex;align-items:center;gap:8px;padding:5px 6px;border:1px solid transparent;border-radius:7px;cursor:grab;user-select:none}
+.pi:hover{background:var(--p2);border-color:var(--line)}.pi svg{width:30px;height:30px;flex:none;background:var(--p2);border-radius:6px;border:1px solid var(--line)}
+#ctb{position:absolute;z-index:4;left:8px;right:8px;top:8px;display:flex;gap:6px;flex-wrap:wrap;pointer-events:none}
+#ctb .g{display:flex;gap:3px;background:rgba(16,26,44,.92);border:1px solid var(--line);border-radius:8px;padding:3px;pointer-events:auto;align-items:center}
+#ctb button{padding:3px 8px;border-color:transparent;background:transparent}#ctb button:hover{background:var(--p3)}#ctb button.on{background:var(--acc)}
+#ctb select{width:auto;padding:3px 4px}
+#cv{position:absolute;inset:0;width:100%;height:100%;touch-action:none;outline:none;
+ --c-bg:#0b1322;--c-grid:#1b2a45;--c-fill:#14213a;--c-ink:#e6eefc;--c-muted:#8fa3c2;--c-acc:#35d0c0}
+#center[data-theme=light]{background:#f4f7fb}
+#center[data-theme=light] #cv{--c-bg:#f4f7fb;--c-grid:#d6dfec;--c-fill:#ffffff;--c-ink:#17233a;--c-muted:#5b6b86;--c-acc:#0a9a8c}
+#hint{position:absolute;left:10px;bottom:10px;background:rgba(16,26,44,.92);border:1px solid var(--line);border-radius:8px;padding:5px 10px;color:var(--muted);pointer-events:none;max-width:70%}
+.tabs{display:flex;gap:2px;padding:4px 6px 0;border-bottom:1px solid var(--line);overflow-x:auto;flex:none;background:var(--p1)}
+.tabs button{border:0;border-radius:6px 6px 0 0;background:transparent;padding:5px 10px;color:var(--muted)}
+.tabs button.on{background:var(--p2);color:var(--ink);box-shadow:inset 0 -2px var(--acc)}
+.tb{flex:1;overflow:auto;padding:8px 10px;min-height:0}
+#ev .e{font:12px var(--mono);padding:1px 0;white-space:pre-wrap}.e.ok{color:var(--ok)}.e.err{color:var(--err)}.e.warn{color:var(--warn)}.e .t{color:var(--muted)}
+.row{display:flex;gap:8px;align-items:end;flex-wrap:wrap;margin-bottom:8px}.row>label{flex:1;min-width:120px}
+label.f{display:block;margin-bottom:8px}label.f>span{display:block;color:var(--muted);font-size:11.5px;margin-bottom:2px}
+label.ck{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+.card{background:var(--p2);border:1px solid var(--line);border-radius:9px;padding:9px;margin-bottom:9px}
+.card h5{margin:0 0 6px;font-size:12.5px}.mut{color:var(--muted)}.mono{font-family:var(--mono);font-size:12px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}.three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+table{border-collapse:collapse;width:100%;font-size:12px}th,td{border-bottom:1px solid var(--line);padding:3px 5px;text-align:left;white-space:nowrap}th{color:var(--muted);font-weight:600;position:sticky;top:0;background:var(--p1)}
+td input,td select{padding:2px 4px;min-width:62px}
+.sw{overflow-x:auto}
+.tag{display:inline-block;padding:0 7px;border-radius:99px;font-size:11px;border:1px solid var(--line);background:var(--p3)}
+.msg{border-left:3px solid var(--line);padding:5px 9px;margin-bottom:6px;background:var(--p2);border-radius:0 6px 6px 0}
+.msg.err{border-color:var(--err)}.msg.warn{border-color:var(--warn)}.msg.ok{border-color:var(--ok)}.msg small{display:block;color:var(--muted)}
+.msg[data-d]{cursor:pointer}
+.out{font:12px var(--mono);background:#070d18;border:1px solid var(--line);border-radius:7px;padding:8px;min-height:60px;max-height:100%;overflow:auto;white-space:pre-wrap}
+.tools{display:grid;grid-template-columns:minmax(280px,360px) 1fr;gap:10px;height:100%}
+.pgrid{display:grid;grid-template-columns:1fr 1.3fr;gap:12px}
+.li{padding:5px 8px;border-radius:6px;cursor:pointer}.li:hover,.li.on{background:var(--p3)}
+#modal{position:fixed;inset:0;background:rgba(3,8,16,.66);display:none;align-items:center;justify-content:center;z-index:50}
+#modal.show{display:flex}
+.dlg{background:var(--p1);border:1px solid var(--line);border-radius:12px;width:min(640px,94vw);max-height:88vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.dlg h3{margin:0;padding:12px 16px;border-bottom:1px solid var(--line);font-size:15px}.dlg .bd{padding:14px 16px;overflow:auto}.dlg .ft{padding:10px 16px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end}
+#menu{position:fixed;z-index:60;background:var(--p2);border:1px solid var(--line);border-radius:8px;padding:4px;min-width:190px;display:none;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+#menu div{padding:5px 10px;border-radius:5px;cursor:pointer}#menu div:hover{background:var(--p3)}#menu hr{border:0;border-top:1px solid var(--line);margin:4px 0}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--p3);border:1px solid var(--acc);border-radius:8px;padding:8px 14px;z-index:70;display:none;max-width:80vw}
+#tip{position:fixed;z-index:65;background:var(--p2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;display:none;max-width:300px;font-size:12px}
+kbd{background:var(--p3);border:1px solid var(--line);border-radius:4px;padding:0 5px;font:11px var(--mono)}
+@media (max-width:1000px){:root{--lw:190px;--rw:290px}}
+@media print{#top,#left,#right,#bottom,#ctb,#hint,.rsz{display:none!important}#app{display:block}#center{position:static;height:100vh;background:#fff!important}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+<style id="svgcss"></style>
+</head>
+<body>
+<div id="app">
+  <header id="top">
+    <div class="brand"><svg width="22" height="22" viewBox="-12 -12 24 24" fill="none" stroke="#35d0c0" stroke-width="2"><circle cx="0" cy="-7" r="3"/><circle cx="-8" cy="7" r="3"/><circle cx="8" cy="7" r="3"/><path d="M0-4L-7 4M0-4L7 4M-5 7h10"/></svg>NetLab <span>— Simulador de Redes</span></div>
+    <button id="bNew" title="Nuevo proyecto (vacía el lienzo)">Nuevo proyecto</button>
+    <button id="bSave" title="Guardar como JSON (Ctrl+S)">Guardar proyecto</button>
+    <button id="bOpen" title="Abrir un proyecto JSON">Abrir proyecto</button>
+    <button id="bImg" title="Exportar el diagrama como SVG o PNG">Exportar imagen</button>
+    <button id="bCfg" title="Exportar informes y configuración">Exportar configuración</button>
+    <button id="bUndo" title="Deshacer (Ctrl+Z)">Deshacer</button>
+    <button id="bRedo" title="Rehacer (Ctrl+Y)">Rehacer</button>
+    <button id="bHelp" title="Ayuda y atajos (F1)">Ayuda</button>
+    <div class="sp"></div>
+    <label class="mut" style="display:flex;gap:6px;align-items:center;white-space:nowrap">Modo <select id="mode" style="width:auto"><option value="alumno">Alumno</option><option value="profesor">Profesor</option></select></label>
+    <div id="diagPill" class="pill" title="Errores y advertencias de configuración">✓ Sin problemas</div>
+    <div id="simPill" class="pill"><i></i><span>Simulación detenida</span></div>
+    <input type="file" id="fOpen" accept=".json,application/json" hidden>
+  </header>
+  <aside id="left"><div class="rsz" id="r1"></div><input id="q" placeholder="Buscar dispositivo…" aria-label="Buscar dispositivo"><div id="pal"></div></aside>
+  <main id="center" data-theme="dark">
+    <div id="ctb"></div>
+    <svg id="cv" tabindex="0" aria-label="Lienzo de diseño de red"></svg>
+    <div id="hint"></div>
+  </main>
+  <section id="bottom"><div class="rsz" id="r3"></div>
+    <div class="tabs" id="btabs"></div><div class="tb" id="btb"></div>
+  </section>
+  <aside id="right"><div class="rsz" id="r2"></div><div class="tabs" id="ptabs"></div><div class="tb" id="props"></div></aside>
+</div>
+<div id="modal"><div class="dlg" role="dialog" aria-modal="true"><h3 id="mT"></h3><div class="bd" id="mB"></div><div class="ft" id="mF"></div></div></div>
+<div id="menu"></div><div id="toast" role="status"></div><div id="tip"></div>
+<script>
+(()=>{'use strict';
+/* =====================================================================
+   1. UTILIDADES
+   ===================================================================== */
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clone = o => JSON.parse(JSON.stringify(o));
+const hex2 = n => (n & 255).toString(16).padStart(2, '0').toUpperCase();
+const seq = (p, n, s = 1) => Array.from({length: n}, (_, i) => p + (i + s));
+const E = (names, kind = 'eth', o = {}) => names.map(name => ({name, kind, ...o}));
+
+/* =====================================================================
+   2. MOTOR IPv4 (direcciones, máscaras, subredes)
+   ===================================================================== */
+const IP = {
+  parse(s) {
+    if (typeof s !== 'string') return null;
+    const m = s.trim().match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+    if (!m) return null;
+    const b = m.slice(1).map(Number);
+    if (b.some(x => x > 255)) return null;
+    return ((b[0] << 24) >>> 0) + (b[1] << 16) + (b[2] << 8) + b[3];
+  },
+  str: n => [n >>> 24, (n >>> 16) & 255, (n >>> 8) & 255, n & 255].join('.'),
+  maskOf: p => p >= 32 ? 0xFFFFFFFF : p <= 0 ? 0 : (0xFFFFFFFF << (32 - p)) >>> 0,
+  prefixOfMask(s) {                      // máscara decimal -> prefijo (null si no es contigua)
+    const n = IP.parse(s); if (n === null) return null;
+    let p = 0; while (p < 32 && ((n >>> (31 - p)) & 1)) p++;
+    return IP.maskOf(p) === n ? p : null;
+  },
+  net: (ip, p) => (ip & IP.maskOf(p)) >>> 0,
+  bcast: (ip, p) => (IP.net(ip, p) | (~IP.maskOf(p) >>> 0)) >>> 0,
+  same: (a, b, p) => IP.net(a, p) === IP.net(b, p),
+  isPrivate: n => (n >>> 24) === 10 || (n >>> 20) === 0xAC1 || (n >>> 16) === 0xC0A8,
+  isPublic: n => n !== null && !IP.isPrivate(n) && (n >>> 24) !== 0 && (n >>> 24) !== 127 && (n >>> 16) !== 0xA9FE && (n >>> 24) < 224,
+  calc(ip, p) {                          // calculadora de subredes
+    const m = IP.maskOf(p), n = IP.net(ip, p), b = IP.bcast(ip, p), hb = 32 - p, tot = Math.pow(2, hb);
+    const usable = p >= 31 ? (p === 32 ? 1 : 2) : tot - 2;
+    return {mask: IP.str(m), wild: IP.str(~m >>> 0), net: IP.str(n), bcast: IP.str(b), hostBits: hb, total: tot, usable,
+      first: IP.str(p >= 31 ? n : n + 1), last: IP.str(p >= 31 ? b : b - 1)};
+  }
+};
+
+/* =====================================================================
+   3. CATÁLOGO DE DISPOSITIVOS (modelo; los iconos están en la parte gráfica)
+   cls: router | switch | ap | pass | host | cloud | zone
+   ===================================================================== */
+const DEF = {
+  router:{n:'Router',cat:'net',cls:'router',c:'#26d0c0',pfx:'R',ports:()=>[...E(['WAN'],'wan',{group:'wan'}),...E(seq('LAN',4))]},
+  routerwifi:{n:'Router inalámbrico doméstico',cat:'net',cls:'router',home:true,radio:true,c:'#26d0c0',pfx:'RW',
+    ports:()=>[...E(['WAN'],'wan',{group:'wan'}),...E(seq('LAN',4),'eth',{group:'lan'}),...E(['WiFi'],'wifi',{group:'lan'})]},
+  switch:{n:'Switch Ethernet',cat:'net',cls:'switch',c:'#4da3ff',pfx:'SW',ports:()=>E(seq('Fa0/',8))},
+  switchmgmt:{n:'Switch gestionable',cat:'net',cls:'switch',managed:true,c:'#4da3ff',pfx:'SWG',ports:()=>[...E(seq('Gi0/',16)),...E(['Te1/1','Te1/2'],'fiber')]},
+  mlswitch:{n:'Switch multicapa',cat:'net',cls:'switch',managed:true,l3:true,c:'#7a8cff',pfx:'SWL3',ports:()=>[...E(seq('Gi0/',24)),...E(['Te1/1','Te1/2'],'fiber')]},
+  ap:{n:'Punto de acceso Wi-Fi',cat:'net',cls:'ap',radio:true,c:'#5ee08a',pfx:'AP',ports:()=>[...E(['Eth0']),...E(['WiFi'],'wifi')]},
+  firewall:{n:'Firewall',cat:'net',cls:'router',fw:true,c:'#ff6b6b',pfx:'FW',ports:()=>[...E(['WAN'],'wan',{group:'wan'}),...E(['LAN']),...E(['DMZ'])]},
+  modem:{n:'Módem',cat:'net',cls:'pass',c:'#f0b35a',pfx:'MOD',ports:()=>E(['Línea','LAN'])},
+  ont:{n:'ONT de fibra óptica',cat:'net',cls:'pass',c:'#f0b35a',pfx:'ONT',ports:()=>[...E(['Fibra'],'fiber'),...E(['LAN1'])]},
+  repeater:{n:'Repetidor Wi-Fi',cat:'net',cls:'ap',radio:true,c:'#5ee08a',pfx:'REP',ports:()=>[...E(['Eth0']),...E(['WiFi'],'wifi')]},
+  pc:{n:'Ordenador de sobremesa',cat:'host',cls:'host',c:'#b69cff',pfx:'PC',ports:()=>E(['eth0'])},
+  laptop:{n:'Portátil',cat:'host',cls:'host',c:'#b69cff',pfx:'PORT',ports:()=>[...E(['eth0']),...E(['wlan0'],'wifi')]},
+  server:{n:'Servidor',cat:'host',cls:'host',srv:true,c:'#ff9f5a',pfx:'SRV',open:'22,80,443',ports:()=>E(['eth0','eth1'])},
+  printer:{n:'Impresora de red',cat:'host',cls:'host',c:'#9fb3c8',pfx:'IMP',open:'631,9100',ports:()=>E(['eth0'])},
+  ipphone:{n:'Teléfono IP',cat:'host',cls:'host',c:'#c58bff',pfx:'TEL',open:'5060',ports:()=>E(['eth0'])},
+  ipcam:{n:'Cámara IP',cat:'host',cls:'host',c:'#ff8fb3',pfx:'CAM',open:'554',ports:()=>E(['eth0'])},
+  phone:{n:'Smartphone',cat:'host',cls:'host',c:'#b69cff',pfx:'MOV',ports:()=>E(['wlan0'],'wifi')},
+  tablet:{n:'Tablet',cat:'host',cls:'host',c:'#b69cff',pfx:'TAB',ports:()=>E(['wlan0'],'wifi')},
+  iot:{n:'Dispositivo IoT',cat:'host',cls:'host',c:'#7fd4ff',pfx:'IOT',ports:()=>E(['wlan0'],'wifi')},
+  cloud:{n:'Nube de Internet',cat:'infra',cls:'cloud',c:'#8ec5ff',pfx:'Internet',ports:()=>[...E(['ISP1'],'fiber'),...E(['ISP2','ISP3'])]},
+  extnet:{n:'Red externa',cat:'infra',cls:'cloud',c:'#8ec5ff',pfx:'RedExt',ports:()=>E(['Ext1','Ext2'])},
+  subnet:{n:'Subred',cat:'infra',cls:'zone',c:'#6f8fb0',pfx:'Subred',ports:()=>[]},
+  cabinet:{n:'Armario de comunicaciones',cat:'infra',cls:'zone',c:'#8a97a8',pfx:'Rack',ports:()=>[]},
+  patch:{n:'Panel de parcheo',cat:'infra',cls:'pass',c:'#f0b35a',pfx:'PP',ports:()=>[...E(seq('F',6)),...E(seq('T',6))]},
+  rj45:{n:'Conector RJ45',cat:'infra',cls:'pass',c:'#f0b35a',pfx:'RJ',ports:()=>E(['A','B'])},
+  fibra:{n:'Enlace de fibra óptica',cat:'infra',cls:'pass',c:'#ffcf5a',pfx:'FO',ports:()=>E(['A','B'],'fiber')}
+};
+const DV = d => DEF[d.type];
+const DNS_INET = () => [{name:'www.ejemplo.es',ip:'93.184.216.34'},{name:'aula.netlab.es',ip:'198.51.100.20'},{name:'dns.google',ip:'8.8.8.8'}];
+
+/* =====================================================================
+   4. ESTADO DEL PROYECTO Y ESTADO DE EJECUCIÓN (separados)
+   ===================================================================== */
+function blank() {
+  return {v:1, name:'Proyecto sin título', nextId:1, macSeq:1, devices:[], links:[],
+    vlans:[{id:1, name:'default', color:'#6f7f99'}],
+    settings:{grid:true, snap:true, size:20, theme:'dark', route:'ortho', showWifi:true, showZones:true, showName:true, showIp:true,
+      ll:{speed:true, type:false, ports:true, status:false, ip:false}, autosave:false, linkType:'eth'},
+    view:{x:60, y:60, k:1}, practice:null};
+}
+let S = blank();
+const RT = {sel:new Set(), selLink:null, tool:'select', sim:'stopped', events:[], clock:0, packets:[], hist:[], redo:[], tab:'general', mode:'alumno', hints:0};
+const dev = id => S.devices.find(d => d.id === id);
+const port = (d, pid) => d && d.ports.find(p => p.id === pid);
+const lnk = id => S.links.find(l => l.id === id);
+const VLAN_COLORS = ['#6f7f99','#ff7a59','#4da3ff','#5ee08a','#f0b35a','#c58bff','#ff8fb3','#26d0c0','#e8d44d'];
+
+function nextMac() { const s = S.macSeq++; return ['02','4E',hex2(s >> 16),hex2(s >> 8),hex2(s),'00'].join(':'); }
+function pmac(d, i) { const p = d.mac.split(':'); p[5] = hex2((parseInt(p[5], 16) + i) & 255); return p.join(':'); }
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+const effRange = a => a.radio.range * a.radio.power / 100;
+
+/* Crea un dispositivo con sus puertos y propiedades por defecto */
+function newDevice(type, x, y) {
+  const D = DEF[type], id = 'd' + (S.nextId++);
+  const names = new Set(S.devices.map(d => d.name)); let n = 1, name;
+  do { name = D.pfx + (D.cls === 'cloud' && n === 1 ? '' : n); n++; } while (names.has(name));
+  const pl = D.ports();
+  const d = {id, type, name, x, y, rot:0, on:true, color:'', desc:D.n, note:'', mac:nextMac(), runtime:0,
+    ports: pl.map((p, i) => ({id:'p' + i, speed:p.kind === 'fiber' ? '10G' : '1G', enabled:true, vlan:1, mode:'access', native:1, desc:'', ip:'', prefix:24, ...p}))};
+  if (D.cls === 'host') {
+    const onlyWifi = pl.every(p => p.kind === 'wifi');
+    Object.assign(d, {ip:'', prefix:24, gw:'', dns:'', dhcp:onlyWifi, lease:null, openPorts:D.open || '', dnsOn:false, dnsRecords:[]});
+    if (pl.some(p => p.kind === 'wifi')) d.wifi = {ssid:'', pass:''};
+  }
+  if (D.radio) d.radio = {ssid:name, band:'2.4', channel:6, width:20, sec:'WPA2', pass:'netlab2024', bcast:true, power:100, range:210, vlan:1, mgmtIp:''};
+  if (D.cls === 'router' || D.l3) Object.assign(d, {routes:[], dhcpPools:[], leases:[], nat:false, dnsOn:false, dnsRecords:[], block:[]});
+  if (D.l3) d.svis = [];
+  if (D.cls === 'cloud') Object.assign(d, {ip:type === 'cloud' ? '203.0.113.1' : '172.16.0.1', prefix:type === 'cloud' ? 24 : 16, dnsOn:true, dnsRecords:type === 'cloud' ? DNS_INET() : []});
+  if (D.cls === 'zone') Object.assign(d, {w:type === 'cabinet' ? 140 : 300, h:type === 'cabinet' ? 180 : 190, subnet:type === 'subnet' ? '192.168.1.0/24' : ''});
+  d.macTable = {}; d.arp = {};
+  if (type === 'routerwifi') { d.nat = true; }
+  return d;
+}
+function newLink(a, pa, b, pb, type) {
+  return {id:'l' + (S.nextId++), type:type || 'eth', a:{dev:a.id, port:pa}, b:{dev:b.id, port:pb}, down:false, label:'', style:''};
+}
+function resolvePort(d, sel) {
+  if (typeof sel === 'number') return d.ports[sel].id;
+  if (typeof sel === 'string') { const p = d.ports.find(p => p.name === sel); if (p) return p.id; }
+  const used = new Set(S.links.flatMap(l => [l.a, l.b]).filter(e => e.dev === d.id).map(e => e.port));
+  const p = d.ports.find(p => p.kind !== 'wifi' && !used.has(p.id)); return p ? p.id : null;
+}
+
+/* =====================================================================
+   5. ESTADO FÍSICO DE ENLACES Y WI-FI
+   ===================================================================== */
+const isAP = d => DV(d).radio && DV(d).cls !== 'host';
+function wifiProblem(a, pa, b, pb) {
+  if (pa.kind !== 'wifi' || pb.kind !== 'wifi') return 'Un enlace Wi-Fi requiere puertos inalámbricos en ambos extremos.';
+  let ap, cl;
+  if (isAP(a) && !isAP(b)) { ap = a; cl = b; } else if (isAP(b) && !isAP(a)) { ap = b; cl = a; }
+  else return 'Un enlace Wi-Fi debe unir un punto de acceso (o router Wi-Fi) con un cliente.';
+  const r = ap.radio;
+  if (!r.bcast) return `${ap.name} no está emitiendo (emisión del SSID desactivada).`;
+  if (!cl.wifi || cl.wifi.ssid !== r.ssid) return `${cl.name} no está configurado con el SSID «${r.ssid}».`;
+  if (r.sec !== 'Abierta' && cl.wifi.pass !== r.pass) return `Contraseña Wi-Fi incorrecta en ${cl.name}.`;
+  if (dist(ap, cl) > effRange(ap)) return `${cl.name} está fuera de la cobertura de ${ap.name}.`;
+  return null;
+}
+/* Devuelve el motivo por el que un enlace no funciona, o null si está operativo */
+function linkProblem(l) {
+  if (l.down) return 'El enlace está desactivado manualmente (down).';
+  const a = dev(l.a.dev), b = dev(l.b.dev); if (!a || !b) return 'Extremo inexistente.';
+  const pa = port(a, l.a.port), pb = port(b, l.b.port); if (!pa || !pb) return 'Puerto inexistente.';
+  if (!a.on) return `${a.name} está apagado.`;
+  if (!b.on) return `${b.name} está apagado.`;
+  if (!pa.enabled) return `El puerto ${pa.name} de ${a.name} está deshabilitado.`;
+  if (!pb.enabled) return `El puerto ${pb.name} de ${b.name} está deshabilitado.`;
+  const cu = k => k === 'eth' || k === 'wan';
+  if (l.type === 'eth' && !(cu(pa.kind) && cu(pb.kind))) return 'Cable de cobre conectado a un puerto que no es Ethernet (¿fibra o Wi-Fi?).';
+  if (l.type === 'fiber' && !(pa.kind === 'fiber' && pb.kind === 'fiber')) return 'La fibra óptica necesita puertos de fibra en ambos extremos (hay un puerto de cobre).';
+  if (l.type === 'wifi') return wifiProblem(a, pa, b, pb);
+  if (l.type === 'tunnel' && (pa.kind === 'wifi' || pb.kind === 'wifi')) return 'Un túnel lógico no puede usar puertos Wi-Fi.';
+  return null;
+}
+const linksAt = (d, pid) => S.links.filter(l => (l.a.dev === d.id && l.a.port === pid) || (l.b.dev === d.id && l.b.port === pid));
+function activePort(d) {                // puerto con enlace operativo (cobre antes que Wi-Fi)
+  for (const p of d.ports) if (p.enabled && linksAt(d, p.id).some(l => !linkProblem(l))) return {port:p, linked:true};
+  return {port:d.ports.find(p => p.kind !== 'wifi') || d.ports[0], linked:false};
+}
+function linkSpeed(l) {
+  const a = dev(l.a.dev), b = dev(l.b.dev), pa = port(a, l.a.port), pb = port(b, l.b.port);
+  if (l.type === 'wifi') return '300M';
+  const v = s => ({'10M':1,'100M':2,'1G':3,'10G':4}[s] || 3), r = ['10M','100M','1G','10G'];
+  return r[Math.min(v(pa.speed), v(pb.speed)) - 1];
+}
+
+/* =====================================================================
+   6. INTERFACES L3 (configuración IP de cada equipo)
+   ===================================================================== */
+function hostCfg(d) {
+  if (d.dhcp) return d.lease ? {ip:d.lease.ip, prefix:d.lease.prefix, gw:d.lease.gw, dns:d.lease.dns} : {ip:'', prefix:24, gw:'', dns:''};
+  return {ip:d.ip, prefix:d.prefix, gw:d.gw, dns:d.dns};
+}
+function mkIf(d, ref, o) {
+  const ipn = IP.parse(ref.ip || ''), pf = (ref.prefix === '' || ref.prefix == null) ? null : +ref.prefix;
+  return {id:o.id, name:o.name, ref, ip:ref.ip || '', ipn, prefix:pf, valid:ipn !== null && pf !== null && Number.isInteger(pf) && pf >= 0 && pf <= 32,
+    up:d.on && ref.enabled !== false, ports:o.ports || [], svi:o.svi || null, group:o.group || '', mac:o.mac, gw:o.gw || '', dns:o.dns || ''};
+}
+function ifaces(d) {
+  const D = DV(d);
+  if (D.cls === 'host') {
+    const c = hostCfg(d), ap = activePort(d).port;
+    return [mkIf(d, {ip:c.ip, prefix:c.prefix}, {id:'h', name:ap ? ap.name : 'eth0', ports:ap ? [ap.id] : [], mac:pmac(d, ap ? d.ports.indexOf(ap) : 0), gw:c.gw, dns:c.dns})];
+  }
+  if (D.cls === 'cloud') return [mkIf(d, d, {id:'c', name:'Internet', ports:d.ports.map(p => p.id), mac:pmac(d, 0)})];
+  if (D.cls === 'router') {
+    if (D.home) {
+      const lan = d.ports.filter(p => p.group === 'lan'), wan = d.ports.find(p => p.group === 'wan');
+      return [mkIf(d, wan, {id:wan.id, name:'WAN', ports:[wan.id], group:'wan', mac:pmac(d, 0)}),
+              mkIf(d, lan[0], {id:'lan', name:'LAN', ports:lan.map(p => p.id), group:'lan', mac:pmac(d, 1)})];
+    }
+    return d.ports.map((p, i) => mkIf(d, p, {id:p.id, name:p.name, ports:[p.id], group:p.group, mac:pmac(d, i)}));
+  }
+  if (D.cls === 'switch' && D.l3) return (d.svis || []).map((s, i) => mkIf(d, s, {id:'vlan' + s.vlan, name:'Vlan' + s.vlan, svi:s.vlan, mac:pmac(d, i + 1)}));
+  return [];
+}
+const canForward = d => DV(d).cls === 'router' || (DV(d).cls === 'switch' && DV(d).l3);
+
+/* =====================================================================
+   7. SIMULADOR DE CAPA 2: dominios de difusión, VLAN, aprendizaje MAC
+   ===================================================================== */
+function egressTag(p, v) {              // etiqueta de salida de la trama de la VLAN v por el puerto p (undefined = no sale)
+  if (p.mode === 'trunk') return v === (p.native || 1) ? null : v;
+  return p.vlan === v ? null : undefined;
+}
+function walk(starts, o = {}) {         // recorre el dominio de difusión; devuelve los extremos alcanzados
+  const idx = new Map();
+  for (const l of S.links) for (const e of [l.a, l.b]) { const k = e.dev + '|' + e.port; if (!idx.has(k)) idx.set(k, []); idx.get(k).push(l); }
+  const eps = [], seen = new Set(), q = starts.map(s => ({dev:s.dev, port:s.port, tag:s.tag ?? null, prev:null, link:null}));
+  const push = (d, p, tag, prev) => q.push({dev:d, port:p, tag, prev, link:null});
+  while (q.length) {
+    const cur = q.shift();
+    for (const l of (idx.get(cur.dev.id + '|' + cur.port) || [])) {
+      if (linkProblem(l)) continue;
+      const far = (l.a.dev === cur.dev.id && l.a.port === cur.port) ? l.b : l.a;
+      const pd = dev(far.dev), pp = port(pd, far.port), key = pd.id + '|' + pp.id + '|' + cur.tag;
+      if (seen.has(key)) continue; seen.add(key);
+      const node = {dev:pd, port:pp.id, tag:cur.tag, prev:cur, link:l}, D = DV(pd);
+      if (D.cls === 'switch') {
+        let v;
+        if (pp.mode === 'trunk') v = node.tag == null ? (pp.native || 1) : node.tag;
+        else { if (node.tag != null) continue; v = pp.vlan || 1; }
+        learn(pd, v, o, pp);
+        if ((pd.svis || []).some(s => s.vlan === v && s.enabled !== false)) eps.push({dev:pd, port:pp.id, svi:v, node});
+        for (const p2 of pd.ports) { if (p2.id === pp.id || !p2.enabled) continue; const t = egressTag(p2, v); if (t !== undefined) push(pd, p2.id, t, node); }
+      } else if (D.cls === 'ap') {
+        const vt = pd.radio.vlan === 1 ? null : pd.radio.vlan, wf = pd.ports.find(p => p.kind === 'wifi');
+        if (pp.kind === 'wifi') { learn(pd, pd.radio.vlan, o, pp); for (const p2 of pd.ports) if (p2.kind !== 'wifi' && p2.enabled) push(pd, p2.id, vt, node); }
+        else { if (node.tag !== vt) continue; learn(pd, pd.radio.vlan, o, pp); if (wf && wf.enabled) push(pd, wf.id, null, node); }
+      } else if (D.cls === 'router' && D.home && pp.group === 'lan') {
+        if (node.tag != null) continue;
+        eps.push({dev:pd, port:pp.id, svi:null, node});
+        for (const p2 of pd.ports) if (p2.group === 'lan' && p2.id !== pp.id && p2.enabled && !(pp.kind === 'wifi' && p2.kind === 'wifi')) push(pd, p2.id, null, node);
+      } else if (D.cls === 'pass') {
+        const i = pd.ports.indexOf(pp), n = pd.ports.length;
+        if (n % 2 === 0) { const j = i < n / 2 ? i + n / 2 : i - n / 2; if (pd.ports[j].enabled) push(pd, pd.ports[j].id, node.tag, node); }
+      } else if (D.cls === 'host' || D.cls === 'cloud' || D.cls === 'router') {
+        if (node.tag != null) continue;
+        eps.push({dev:pd, port:pp.id, svi:null, node});
+      }
+    }
+  }
+  return {eps};
+}
+function learn(sw, v, o, pp) {          // aprendizaje de la MAC de origen en el switch
+  if (!o.learn || !o.mac) return;
+  const k = v + '|' + o.mac;
+  if (!sw.macTable[k] || sw.macTable[k].port !== pp.id) {
+    sw.macTable[k] = {port:pp.id, vlan:v, mac:o.mac};
+    if (o.log) o.log(`${sw.name} aprende la MAC ${o.mac} en ${pp.name} (VLAN ${v})`);
+  }
+}
+function startFrames(d, f) {
+  if (f.svi) return d.ports.filter(p => p.enabled).map(p => ({dev:d, port:p.id, tag:egressTag(p, f.svi)})).filter(s => s.tag !== undefined);
+  return f.ports.map(pid => ({dev:d, port:pid, tag:null}));
+}
+function nodeSteps(node) {              // cadena de nodos -> lista de saltos [{link, from, to}]
+  const arr = []; for (let n = node; n; n = n.prev) if (n.link) arr.unshift({link:n.link.id, from:n.prev.dev.id, to:n.dev.id});
+  return arr;
+}
+/* Resolución ARP: busca en el dominio de difusión quién tiene la IP nh */
+function resolveL2(src, ifc, nh, o) {
+  const w = walk(startFrames(src, ifc), {learn:o.learn, mac:ifc.mac, log:o.log}), owners = [];
+  for (const ep of w.eps) {
+    if (ep.dev === src && (ep.svi ? ep.svi === ifc.svi : (!ifc.svi && ifc.ports.includes(ep.port)))) continue;
+    for (const f of ifaces(ep.dev)) {
+      if (!f.valid || !f.up || f.ipn !== nh) continue;
+      if (ep.svi ? f.svi === ep.svi : (!f.svi && f.ports.includes(ep.port))) { owners.push({ep, f, dev:ep.dev}); break; }
+    }
+  }
+  return {owner:owners[0] || null, dup:owners.length > 1, count:owners.length};
+}
+
+/* =====================================================================
+   8. SIMULADOR DE CAPA 3: rutas, NAT, ping, traceroute, TCP/UDP
+   ===================================================================== */
+function lookup(d, dst) {               // tabla de rutas: prefijo más largo, luego distancia administrativa y métrica
+  const F = ifaces(d).filter(f => f.valid && f.up); let best = null;
+  const cand = c => { if (!best || c.len > best.len || (c.len === best.len && (c.ad < best.ad || (c.ad === best.ad && c.metric < best.metric)))) best = c; };
+  for (const f of F) if (IP.same(f.ipn, dst, f.prefix)) cand({len:f.prefix, ad:0, metric:0, nh:dst, out:f, kind:'conectada'});
+  for (const r of d.routes || []) {
+    if (r.on === false) continue;
+    const n = IP.parse(r.net), pf = +r.prefix, nh = r.nh ? IP.parse(r.nh) : null;
+    if (n === null || !(pf >= 0 && pf <= 32) || (r.nh && nh === null) || !IP.same(n, dst, pf)) continue;
+    let out = nh !== null ? F.find(f => IP.same(f.ipn, nh, f.prefix)) : null;
+    if (!out && nh === null && r.iface) out = F.find(f => f.name === r.iface);
+    if (!out) continue;
+    cand({len:pf, ad:1, metric:+r.metric || 1, nh:nh ?? dst, out, kind:pf === 0 ? 'predeterminada' : 'estática'});
+  }
+  return best;
+}
+function listens(d, proto, p) {
+  if (p === 53 && d.dnsOn) return true;
+  const open = (d.openPorts || '').split(',').map(s => +s.trim()).filter(Boolean);
+  return open.includes(p);
+}
+const ipStr = n => IP.str(n);
+function arpTip(cur, nh) {
+  const ip = ipStr(nh), own = S.devices.filter(d => d !== cur && ifaces(d).some(f => f.valid && f.ipn === nh));
+  if (!own.length) return `Ningún equipo del proyecto tiene la IP ${ip}. Comprueba que el gateway o el destino están bien escritos y que el equipo tiene esa IP.`;
+  return `${own[0].name} tiene la IP ${ip}, pero no está en el mismo dominio de difusión que ${cur.name}: revisa cables (enlaces caídos), que los switches estén encendidos, que los puertos pertenezcan a la misma VLAN (o sean troncales) y que el equipo esté encendido.`;
+}
+function cloudAccepts(c, dst) {
+  const f = ifaces(c)[0];
+  if (c.type === 'cloud') {
+    if (dst === f.ipn || IP.isPublic(dst)) return {ok:true};
+    return {ok:false, reason:`Internet descarta el paquete: ${ipStr(dst)} es una dirección privada o no enrutable.`, tip:'Las direcciones privadas (10/8, 172.16/12, 192.168/16) no se enrutan en Internet.'};
+  }
+  return f.valid && IP.same(f.ipn, dst, f.prefix) ? {ok:true} : {ok:false, reason:`${ipStr(dst)} no pertenece a la red externa ${c.name}.`, tip:'Usa una dirección de la red configurada en la red externa.'};
+}
+/* Simula el envío de un paquete IPv4. Devuelve el resultado completo y la ruta de saltos. */
+function simulate(src, dstStr, o = {}) {
+  const log = o.log || null, proto = o.proto || 'ICMP';
+  const R = {ok:false, reason:'', tip:'', steps:[], rsteps:[], hops:[], rtt:0, dest:null, srcIP:null, refused:false, dup:false, xlat:null};
+  const fail = (r, t) => { R.reason = r; R.tip = t || ''; return R; };
+  const dst = typeof dstStr === 'number' ? dstStr : IP.parse(dstStr), dS = typeof dstStr === 'number' ? ipStr(dstStr) : dstStr;
+  if (dst === null) return fail(`«${dstStr}» no es una dirección IPv4 válida.`, 'Usa el formato a.b.c.d con valores de 0 a 255.');
+  if (!src.on) return fail(`${src.name} está apagado.`, 'Enciende el dispositivo desde sus propiedades.');
+  let cur = src, ttl = o.ttl ?? 64, curSrc = null, srcIf = null;
+  const c0 = DV(src).cls;
+  if (c0 === 'host' || c0 === 'cloud') {
+    srcIf = ifaces(src)[0];
+    if (!srcIf.valid) return fail(src.dhcp && !src.lease ? `${src.name} usa DHCP y no tiene concesión (sin servidor DHCP alcanzable; tendría una IP APIPA 169.254.x.x).` : `${src.name} no tiene una configuración IPv4 válida.`, 'Asigna IP y máscara válidas, o configura un servidor DHCP en su red.');
+    if (c0 === 'host' && !activePort(src).linked) return fail(`${src.name} no tiene enlace activo (cable desconectado, puerto apagado o Wi-Fi sin asociar).`, 'Conecta un cable o asocia el equipo a un SSID con la contraseña correcta.');
+    curSrc = srcIf.ipn;
+    if (srcIf.ipn === dst) { Object.assign(R, {ok:true, dest:{dev:src, iface:srcIf}, rtt:0.1}); return R; }
+  } else if (!canForward(src)) return fail(`${src.name} no puede originar tráfico IP.`, '');
+  else if (ifaces(src).some(f => f.valid && f.up && f.ipn === dst)) { Object.assign(R, {ok:true, dest:{dev:src}, rtt:0.1}); return R; }
+  for (let hop = 0; hop < 24; hop++) {
+    const cl = DV(cur).cls, isHost = (cl === 'host' || cl === 'cloud');
+    let out, nh, how;
+    if (isHost) {
+      out = srcIf;
+      if (IP.same(out.ipn, dst, out.prefix)) { nh = dst; how = 'directamente, misma subred'; }
+      else {
+        const gw = IP.parse(out.gw);
+        if (cl === 'cloud') return fail(src.type === 'cloud' && IP.isPrivate(dst) ? `Internet no sabe devolver el paquete a la IP privada ${dS}: falta NAT/PAT en el router de salida.` : `${cur.name} no tiene ruta de vuelta hacia ${dS}.`, 'Los equipos con IP privada necesitan que el router haga NAT para salir a Internet.');
+        if (!out.gw || gw === null) return fail(`${cur.name} necesita una puerta de enlace para llegar a ${dS} (otra subred) y no la tiene configurada.`, 'Configura como gateway la IP del router en su misma subred.');
+        if (!IP.same(out.ipn, gw, out.prefix)) return fail(`La puerta de enlace ${out.gw} de ${cur.name} está fuera de su subred (${ipStr(IP.net(out.ipn, out.prefix))}/${out.prefix}).`, 'El gateway debe pertenecer a la subred local: revisa la máscara y la dirección del gateway.');
+        nh = gw; how = `mediante el gateway ${out.gw}`;
+      }
+    } else {
+      const own = ifaces(cur).find(f => f.valid && f.up && f.ipn === dst);
+      if (own && hop > 0) { R.dest = {dev:cur, iface:own}; break; }
+      if (hop > 0) {
+        if (--ttl <= 0) return fail('TTL agotado: el paquete circula en un bucle de enrutamiento.', 'Revisa las rutas estáticas de los routers: dos de ellos se envían el paquete mutuamente.');
+        if (cur.block && cur.block.includes(proto)) return fail(`El firewall ${cur.name} bloquea el tráfico ${proto}.`, `Quita ${proto} de la lista de protocolos bloqueados del firewall.`);
+        log && log(`${cur.name} recibe un paquete destinado a otra subred (${dS}) y consulta su tabla de rutas`);
+      }
+      const rt = lookup(cur, dst);
+      if (!rt) return fail(`${cur.name} no tiene ruta hacia ${dS} (red de destino inalcanzable).`, 'Añade una ruta estática hacia esa red o una ruta predeterminada (0.0.0.0/0) con el siguiente salto correcto.');
+      out = rt.out; nh = rt.nh; how = `ruta ${rt.kind}`;
+      if (hop === 0) { curSrc = out.ipn; srcIf = null; }
+      if (hop > 0 && cur.nat && out.group === 'wan' && IP.isPrivate(curSrc)) {
+        R.xlat = {dev:cur, orig:curSrc, to:out.ipn}; log && log(`${cur.name} aplica NAT/PAT: ${ipStr(curSrc)} → ${out.ip}`); curSrc = out.ipn;
+      }
+    }
+    if (R.srcIP === null) R.srcIP = curSrc;
+    const res = resolveL2(cur, out, nh, o);
+    if (!res.owner) {
+      log && log(`${cur.name} envía ARP «¿quién tiene ${ipStr(nh)}?» y no recibe respuesta`, 'err');
+      return fail(`${cur.name} no obtiene respuesta ARP para ${ipStr(nh)} (${how}).`, arpTip(cur, nh));
+    }
+    if (res.dup) { R.dup = true; log && log(`⚠ Conflicto de IP: ${res.count} equipos responden al ARP de ${ipStr(nh)}`, 'warn'); }
+    const nStr = ipStr(nh), nd = res.owner.dev, nf = res.owner.f;
+    if (!cur.arp[nStr]) { log && log(`${cur.name} resuelve ARP: ${nStr} está en ${nf.mac}`); }
+    cur.arp[nStr] = nf.mac; nd.arp[ipStr(out.ipn)] = out.mac;
+    R.steps.push(...nodeSteps(res.owner.ep.node));
+    R.hops.push({dev:nd, ip:nf.ip, name:nd.name});
+    const ncl = DV(nd).cls;
+    if (ncl === 'cloud') {
+      const ok = cloudAccepts(nd, dst); if (!ok.ok) return fail(ok.reason, ok.tip);
+      R.dest = {dev:nd, iface:nf, virtual:nh !== dst, ip:dst}; break;
+    }
+    if (nh === dst) { R.dest = {dev:nd, iface:nf}; break; }
+    if (!canForward(nd)) return fail(`El siguiente salto ${nd.name} (${nf.ip}) es un equipo final y no reenvía paquetes.`, 'Comprueba que el gateway es la IP de un router o switch multicapa.');
+    cur = nd; srcIf = null;
+  }
+  if (!R.dest) return fail('No se pudo alcanzar el destino (demasiados saltos).', '');
+  const D = R.dest.dev;
+  log && log(`El paquete ${proto} llega a ${D.name}${R.dest.virtual ? ' (Internet)' : ''} correctamente`, 'ok');
+  if (o.port && DV(D).cls !== 'cloud' && !listens(D, proto, o.port)) {
+    R.refused = true; R.ok = true;
+    R.reason = proto === 'TCP' ? `${D.name} responde RST: no hay ningún servicio escuchando en el puerto TCP ${o.port}.` : `${D.name} responde ICMP «puerto inaccesible» (UDP ${o.port}).`;
+    R.tip = 'La red funciona; el problema es el servicio del destino (puertos abiertos en sus propiedades).';
+    R.rtt = +(R.steps.length * 0.4 + 0.5).toFixed(1); return R;
+  }
+  if (!o.noReply) {                     // trayecto de vuelta
+    const back = simulate(D, curSrc, {noReply:true, proto, seed:o.seed, learn:o.learn});
+    if (!back.ok) return Object.assign(fail(`La petición llega a ${D.name}, pero la respuesta no regresa: ${back.reason}`, back.tip), {reqOk:true});
+    R.rsteps = [...back.steps];
+    if (R.xlat) {
+      const b2 = simulate(R.xlat.dev, R.xlat.orig, {noReply:true, proto});
+      if (!b2.ok) return Object.assign(fail(`La respuesta llega a ${R.xlat.dev.name} pero no puede entregarla al origen: ${b2.reason}`, b2.tip), {reqOk:true});
+      R.rsteps.push(...b2.steps);
+    }
+  }
+  const n = R.steps.length + R.rsteps.length;
+  R.rtt = +(n * 0.35 + 0.4 + (R.dest.virtual ? 9 + (R.srcIP % 7) : 0) + ((R.srcIP + dst) % 5) / 10).toFixed(1);
+  R.ok = true; return R;
+}
+const hostIP = d => { const f = ifaces(d)[0]; return f && f.valid ? f.ip : ''; };
+
+/* =====================================================================
+   9. DHCP (Discover / Offer / Request / Ack) y DNS
+   ===================================================================== */
+function dhcpFind(host) {
+  const ap = activePort(host); if (!ap.linked) return null;
+  const ifc = ifaces(host)[0], w = walk([{dev:host, port:ap.port.id, tag:null}], {mac:ifc.mac});
+  for (const ep of w.eps) {
+    const d = ep.dev; if (d === host || !d.dhcpPools) continue;
+    for (const f of ifaces(d)) {
+      if (!f.valid || !f.up) continue;
+      if (!(ep.svi ? f.svi === ep.svi : (!f.svi && f.ports.includes(ep.port)))) continue;
+      const pool = d.dhcpPools.find(p => p.on && p.iface === f.id);
+      if (pool) return {dev:d, pool, f, ep};
+    }
+  }
+  return null;
+}
+function dhcpAlloc(sv, host, mac) {
+  const {pool, f, dev:r} = sv, a = IP.parse(pool.start), b = IP.parse(pool.end);
+  if (a === null || b === null || a > b) return {err:'El rango DHCP configurado no es válido (inicio > fin o IP incorrecta).'};
+  const used = new Set(); S.devices.forEach(d => { if (d !== host) ifaces(d).forEach(i => { if (i.valid) used.add(i.ipn); }); });
+  const other = n => r.leases.some(l => l.iface === f.id && l.mac !== mac && l.ip === ipStr(n));
+  const ok = n => IP.same(n, f.ipn, f.prefix) && n !== IP.net(f.ipn, f.prefix) && n !== IP.bcast(f.ipn, f.prefix) && !used.has(n) && !other(n);
+  let ip = null; const mine = r.leases.find(l => l.mac === mac && l.iface === f.id), mn = mine ? IP.parse(mine.ip) : null;
+  if (mn !== null && mn >= a && mn <= b && ok(mn)) ip = mn;
+  else for (let n = a; n <= b && n - a < 70000; n++) if (ok(n)) { ip = n; break; }
+  if (ip === null) return {err:`El rango DHCP ${pool.start}–${pool.end} está agotado o fuera de la subred de ${r.name}.`};
+  r.leases = r.leases.filter(l => !(l.mac === mac && l.iface === f.id));
+  r.leases.push({mac, ip:ipStr(ip), host:host.name, iface:f.id, secs:+pool.lease || 86400});
+  return {lease:{ip:ipStr(ip), prefix:f.prefix, gw:pool.gw || f.ip, dns:pool.dns || (r.dnsOn ? f.ip : ''), server:f.ip}};
+}
+function doDhcp(host, log) {
+  const R = {ok:false, msg:'', steps:[]};
+  const sv = dhcpFind(host);
+  if (!host.on) { R.msg = `${host.name} está apagado.`; return R; }
+  log && log(`${host.name} envía DHCPDISCOVER (difusión)`);
+  if (!sv) { R.msg = `Ningún servidor DHCP respondió a ${host.name}: no hay servidor en su dominio de difusión, el servidor está desactivado o falta enlace.`; host.lease = null; log && log(R.msg, 'err'); return R; }
+  const ifc = ifaces(host)[0], al = dhcpAlloc(sv, host, ifc.mac);
+  if (al.err) { R.msg = al.err; log && log(al.err, 'err'); return R; }
+  R.steps = nodeSteps(sv.ep.node);
+  log && log(`${sv.dev.name} responde DHCPOFFER con ${al.lease.ip}`);
+  log && log(`${host.name} envía DHCPREQUEST pidiendo ${al.lease.ip}`);
+  host.lease = al.lease;
+  log && log(`${sv.dev.name} confirma con DHCPACK: ${al.lease.ip}/${al.lease.prefix}, gateway ${al.lease.gw}`, 'ok');
+  Object.assign(R, {ok:true, lease:al.lease, server:sv.dev, msg:`${host.name} obtiene ${al.lease.ip}/${al.lease.prefix} de ${sv.dev.name}`});
+  return R;
+}
+function runDhcpAll(log) { S.devices.filter(d => DV(d).cls === 'host' && d.dhcp).forEach(h => doDhcp(h, log)); }
+/* DNS: consulta UDP/53 al servidor configurado en el host */
+function resolveDNS(host, name, log) {
+  const c = hostCfg(host), R = {ok:false, msg:'', steps:[]};
+  if (!c.dns) { R.msg = `${host.name} no tiene servidor DNS configurado.`; return R; }
+  const q = simulate(host, c.dns, {proto:'UDP', port:53, log});
+  R.steps = q.steps; R.rsteps = q.rsteps;
+  if (!q.ok) { R.msg = `No se puede contactar con el DNS ${c.dns}: ${q.reason}`; R.tip = q.tip; return R; }
+  if (q.refused) { R.msg = `El equipo ${q.dest.dev.name} (${c.dns}) no ofrece servicio DNS.`; return R; }
+  const D = q.dest.dev, find = d => (d.dnsRecords || []).find(r => r.name.toLowerCase() === name.toLowerCase());
+  let rec = find(D), via = D.name;
+  if (!rec && DV(D).cls === 'router') {               // el router reenvía a Internet si lo alcanza
+    const cl = S.devices.find(d => d.type === 'cloud');
+    if (cl && simulate(D, cl.ip, {noReply:false}).ok) { rec = find(cl); via = `${D.name} → Internet`; }
+  }
+  if (!rec) { R.msg = `NXDOMAIN: «${name}» no tiene registro en ${D.name}.`; return R; }
+  Object.assign(R, {ok:true, ip:rec.ip, msg:`${name} → ${rec.ip} (respuesta de ${via})`}); return R;
+}
+
+/* =====================================================================
+   10. DIAGNÓSTICO DE CONFIGURACIÓN
+   ===================================================================== */
+function diagnose() {
+  const out = [], add = (sev, d, msg, tip) => out.push({sev, d, msg, tip});
+  const all = [];
+  for (const d of S.devices) {
+    const D = DV(d);
+    if (D.cls === 'host') {
+      const c = hostCfg(d);
+      if (d.dhcp) { if (!d.lease) add('warn', d, 'Usa DHCP y todavía no tiene concesión.', 'Inicia la simulación o usa la herramienta DHCP; comprueba que hay un servidor DHCP en su red.'); }
+      else if (!c.ip) add('warn', d, 'No tiene dirección IP configurada.', 'Asigna una IP en las propiedades o activa DHCP.');
+      if (!(d.dhcp && !d.lease) && c.ip) cfgCheck(d, c.ip, c.prefix, c.gw, add, 'host');
+    }
+    if (D.cls === 'router' || D.cls === 'cloud' || (D.l3 && d.svis.length)) ifaces(d).forEach(f => { if (f.ip || D.cls === 'cloud') cfgCheck(d, f.ip, f.prefix, null, add, f.name); });
+    for (const f of ifaces(d)) if (f.valid && f.up) all.push({d, f});
+    if (D.radio && d.radio.sec !== 'Abierta' && d.radio.pass.length < 8) add('warn', d, 'La contraseña Wi-Fi tiene menos de 8 caracteres.', 'WPA2/WPA3 exigen entre 8 y 63 caracteres.');
+    if (D.cls === 'switch' || D.cls === 'ap') for (const p of d.ports) if (p.mode === 'access' && p.vlan !== 1 && !S.vlans.some(v => v.id === p.vlan)) add('warn', d, `El puerto ${p.name} está en la VLAN ${p.vlan}, que no existe.`, 'Crea la VLAN en el gestor de VLAN o cambia el puerto de VLAN.');
+    for (const pool of d.dhcpPools || []) {
+      const f = ifaces(d).find(x => x.id === pool.iface), a = IP.parse(pool.start), b = IP.parse(pool.end);
+      if (!pool.on) continue;
+      if (!f || !f.valid) add('err', d, `El servidor DHCP usa una interfaz sin IP válida (${pool.iface}).`, 'Configura primero la IP de esa interfaz.');
+      else if (a === null || b === null || a > b) add('err', d, 'Rango DHCP incorrecto (IP no válida o inicio mayor que el final).', 'Introduce un rango dentro de la subred de la interfaz.');
+      else if (!IP.same(a, f.ipn, f.prefix) || !IP.same(b, f.ipn, f.prefix)) add('err', d, `El rango DHCP ${pool.start}–${pool.end} está fuera de la subred ${ipStr(IP.net(f.ipn, f.prefix))}/${f.prefix}.`, 'Ajusta el rango para que pertenezca a la subred de la interfaz.');
+    }
+  }
+  for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) {           // IPs duplicadas en el mismo dominio
+    const A = all[i], B = all[j]; if (A.f.ipn !== B.f.ipn || A.d === B.d) continue;
+    const w = walk(startFrames(A.d, A.f), {});
+    if (w.eps.some(ep => ep.dev === B.d && (ep.svi ? B.f.svi === ep.svi : B.f.ports.includes(ep.port))))
+      add('err', A.d, `IP duplicada ${A.f.ip}: también la usa ${B.d.name}.`, 'Cambia la IP de uno de los equipos o usa DHCP para evitar conflictos.');
+  }
+  for (const d of S.devices) if (DV(d).cls === 'router' || DV(d).l3) { const fs = ifaces(d).filter(f => f.valid);
+    for (let i = 0; i < fs.length; i++) for (let j = i + 1; j < fs.length; j++) if (IP.net(fs[i].ipn, fs[i].prefix) === IP.net(fs[j].ipn, fs[j].prefix)) add('warn', d, `Las interfaces ${fs[i].name} y ${fs[j].name} están en la misma subred.`, 'Cada interfaz de un router debe estar en una subred distinta.'); }
+  for (const h of S.devices) if (DV(h).cls === 'host' && h.dhcp && h.on && activePort(h).linked && !dhcpFind(h)) add('warn', h, 'Usa DHCP pero no hay servidor DHCP activo en su red.', 'Activa un pool DHCP en el router de esa red (pestaña DHCP).');
+  for (const l of S.links) {
+    const p = linkProblem(l), a = dev(l.a.dev), b = dev(l.b.dev), nm = `${a.name} ↔ ${b.name}`;
+    if (p && !l.down) add(/apagado|deshabilitado/.test(p) ? 'warn' : 'err', a, `Enlace ${nm}: ${p}`, 'Corrige el tipo de cable, la configuración Wi-Fi o enciende/activa el extremo.');
+    else if (p) add('warn', a, `Enlace ${nm} desactivado manualmente.`, 'Actívalo de nuevo desde el menú contextual del enlace.');
+    const pa = port(a, l.a.port), pb = port(b, l.b.port);
+    if (!p && DV(a).cls === 'switch' && DV(b).cls === 'switch') {
+      if (pa.mode !== pb.mode) add('warn', a, `Enlace ${nm}: un extremo es troncal y el otro de acceso.`, 'Configura ambos puertos como troncal para transportar varias VLAN.');
+      else if (pa.mode === 'trunk' && pa.native !== pb.native) add('warn', a, `Enlace ${nm}: VLAN nativa distinta en cada extremo.`, 'Usa la misma VLAN nativa en ambos lados del troncal.');
+      else if (pa.mode === 'access' && pa.vlan !== pb.vlan) add('warn', a, `Enlace ${nm}: VLAN de acceso distinta en cada extremo.`, 'Pon ambos puertos en la misma VLAN o conviértelos en troncales.');
+    }
+  }
+  const aps = S.devices.filter(d => DV(d).radio && DV(d).cls !== 'host' && d.radio.bcast);
+  for (let i = 0; i < aps.length; i++) for (let j = i + 1; j < aps.length; j++) {
+    const A = aps[i], B = aps[j];
+    if (A.radio.band === B.radio.band && dist(A, B) < effRange(A) + effRange(B) && (A.radio.band === '5' ? A.radio.channel === B.radio.channel : Math.abs(A.radio.channel - B.radio.channel) < 5))
+      add('warn', A, `${A.name} y ${B.name} se solapan y usan canales que interfieren (${A.radio.channel}/${B.radio.channel}).`, 'En 2,4 GHz usa canales 1, 6 y 11; en 5 GHz canales distintos.');
+  }
+  return out;
+}
+function cfgCheck(d, ip, prefix, gw, add, label) {
+  const n = IP.parse(ip), p = prefix === '' || prefix == null ? NaN : +prefix, w = label === 'host' ? '' : ` (${label})`;
+  if (n === null) return add('err', d, `Dirección IP no válida${w}: «${ip}».`, 'Formato a.b.c.d con cada número entre 0 y 255.');
+  if (!(p >= 0 && p <= 32) || !Number.isInteger(p)) return add('err', d, `Máscara/prefijo incorrecto${w}.`, 'Usa una máscara contigua como 255.255.255.0 (/24).');
+  if (p < 31 && (n === IP.net(n, p) || n === IP.bcast(n, p))) add('err', d, `${ip}/${p}${w} es la dirección de ${n === IP.net(n, p) ? 'red' : 'broadcast'} de su subred, no un host.`, 'Elige una dirección entre la primera y la última de host de la subred.');
+  if (gw) {
+    const g = IP.parse(gw);
+    if (g === null) add('err', d, `Gateway no válido: «${gw}».`, 'Escribe la IP del router en formato a.b.c.d.');
+    else if (!IP.same(n, g, p)) add('err', d, `El gateway ${gw} está fuera de la subred local ${ipStr(IP.net(n, p))}/${p}.`, 'El gateway debe estar en la misma subred que el equipo.');
+    else if (g === n) add('err', d, 'El gateway coincide con la propia IP del equipo.', 'Usa la IP del router como gateway.');
+  }
+}
+
+/* =====================================================================
+   11. TABLAS (IP, MAC, DHCP, rutas, ARP) para el panel y la exportación
+   ===================================================================== */
+function tables() {
+  const ip = [['Equipo','Interfaz','IP','Prefijo','Máscara','Gateway','DNS','MAC','Estado']], mac = [['Switch','VLAN','MAC','Puerto']],
+    dh = [['Servidor','Interfaz','Cliente','MAC','IP','Concesión (s)']], rt = [['Router','Destino','Prefijo','Siguiente salto','Interfaz','Métrica','Tipo']], arp = [['Equipo','IP','MAC']];
+  for (const d of S.devices) {
+    for (const f of ifaces(d)) ip.push([d.name, f.name, f.ip, f.prefix ?? '', f.valid ? IP.str(IP.maskOf(f.prefix)) : '', f.gw, f.dns, f.mac, !d.on ? 'apagado' : f.up ? 'activo' : 'inactivo']);
+    for (const k in d.macTable || {}) { const m = d.macTable[k]; mac.push([d.name, m.vlan, m.mac, port(d, m.port)?.name || '']); }
+    for (const l of d.leases || []) dh.push([d.name, l.iface, l.host, l.mac, l.ip, l.secs]);
+    if (canForward(d)) {
+      for (const f of ifaces(d)) if (f.valid && f.up) rt.push([d.name, ipStr(IP.net(f.ipn, f.prefix)), f.prefix, '—', f.name, 0, 'conectada']);
+      for (const r of d.routes || []) rt.push([d.name, r.net, r.prefix, r.nh || '—', r.iface || '', r.metric || 1, +r.prefix === 0 ? 'predeterminada' : 'estática']);
+    }
+    for (const k in d.arp || {}) arp.push([d.name, k, d.arp[k]]);
+  }
+  return {ip, mac, dhcp:dh, rutas:rt, arp};
+}
+/* =====================================================================
+   12. CONSTRUCTOR DE TOPOLOGÍAS (plantillas y prácticas)
+   ===================================================================== */
+const Bld = {
+  add(type, x, y, name, props) { const d = newDevice(type, x, y); if (name) d.name = name; if (props) Object.assign(d, props); S.devices.push(d); return d; },
+  link(a, pa, b, pb, type) { const l = newLink(a, resolvePort(a, pa), b, resolvePort(b, pb), type); S.links.push(l); return l; },
+  p(d, name, props) { const p = d.ports.find(p => p.name === name); Object.assign(p, props); return p; },
+  wifi(cl, ap) { cl.wifi = {ssid:ap.radio.ssid, pass:ap.radio.pass}; return Bld.link(cl, cl.ports.find(p => p.kind === 'wifi').name, ap, 'WiFi', 'wifi'); },
+  ip(d, ip, prefix, gw, dns) { Object.assign(d, {ip, prefix, gw:gw || '', dns:dns || '', dhcp:false}); return d; },
+  pool(r, iface, a, b, dns) { r.dhcpPools.push({iface, start:a, end:b, gw:'', dns:dns || '', lease:86400, on:true}); },
+  vlan(id, name) { if (!S.vlans.some(v => v.id === id)) S.vlans.push({id, name, color:VLAN_COLORS[S.vlans.length % VLAN_COLORS.length]}); }
+};
+function resetProject(keep = true) { const st = S.settings; S = blank(); if (keep) S.settings = st; RT.sel.clear(); RT.selLink = null; RT.packets = []; RT.hist = []; RT.redo = []; }
+const GRID = 20;
+
+/* =====================================================================
+   13. PLANTILLAS PREDISEÑADAS (10)
+   ===================================================================== */
+const TPL = [
+  {n:'1. Dos ordenadores conectados directamente', f() {
+    const a = Bld.add('pc', 200, 220, 'PC1'), b = Bld.add('pc', 560, 220, 'PC2');
+    Bld.ip(a, '192.168.1.10', 24); Bld.ip(b, '192.168.1.20', 24); Bld.link(a, 0, b, 0);
+  }},
+  {n:'2. Red local con switch y cuatro ordenadores', f() {
+    const sw = Bld.add('switch', 400, 220, 'SW1'), xs = [160, 320, 480, 640];
+    xs.forEach((x, i) => { const p = Bld.add('pc', x, 420, 'PC' + (i + 1)); Bld.ip(p, '192.168.1.' + (10 + i), 24); Bld.link(p, 0, sw, i); });
+  }},
+  {n:'3. Red doméstica con router, Wi-Fi y equipos móviles', f() {
+    const net = Bld.add('cloud', 780, 100, 'Internet'), r = Bld.add('routerwifi', 460, 260, 'RouterCasa');
+    Object.assign(r.radio, {ssid:'CasaNetLab', pass:'casa12345', range:230});
+    Object.assign(r.ports[0], {ip:'203.0.113.2', prefix:24}); Object.assign(r.ports[1], {ip:'192.168.0.1', prefix:24});
+    r.routes.push({net:'0.0.0.0', prefix:0, nh:'203.0.113.1', iface:'', metric:1}); r.dnsOn = true; Bld.pool(r, 'lan', '192.168.0.100', '192.168.0.150');
+    Bld.link(r, 'WAN', net, 'ISP2');
+    const pc = Bld.add('pc', 240, 440, 'PC-Salón'); Bld.ip(pc, '192.168.0.10', 24, '192.168.0.1', '192.168.0.1'); Bld.link(pc, 0, r, 'LAN1');
+    const lp = Bld.add('laptop', 620, 400, 'Portátil'), ph = Bld.add('phone', 660, 260, 'Móvil'), tb = Bld.add('tablet', 340, 380, 'Tablet');
+    [lp, ph, tb].forEach(c => { c.dhcp = true; Bld.wifi(c, r); });
+  }},
+  {n:'4. Dos subredes conectadas por un router', f() {
+    const r = Bld.add('router', 420, 120, 'R1'), s1 = Bld.add('switch', 220, 280, 'SW1'), s2 = Bld.add('switch', 620, 280, 'SW2');
+    Object.assign(r.ports[1], {ip:'192.168.1.1', prefix:24}); Object.assign(r.ports[2], {ip:'192.168.2.1', prefix:24});
+    Bld.link(r, 'LAN1', s1, 0); Bld.link(r, 'LAN2', s2, 0);
+    [[s1, 100, 1], [s1, 320, 1], [s2, 520, 2], [s2, 740, 2]].forEach(([s, x, n], i) => {
+      const p = Bld.add('pc', x, 460, 'PC' + (i + 1)); Bld.ip(p, `192.168.${n}.${10 + i}`, 24, `192.168.${n}.1`); Bld.link(p, 0, s, 1 + (i % 2));
+    });
+  }},
+  {n:'5. Red empresarial con router, switch y servidor', f() {
+    const r = Bld.add('router', 460, 100, 'R-Oficina'), sw = Bld.add('switchmgmt', 460, 260, 'SW-Core'), sv = Bld.add('server', 760, 400, 'SRV-Intranet');
+    Object.assign(r.ports[1], {ip:'192.168.10.1', prefix:24}); Bld.pool(r, 'p1', '192.168.10.100', '192.168.10.150', '192.168.10.10');
+    Bld.link(r, 'LAN1', sw, 0); Bld.ip(sv, '192.168.10.10', 24, '192.168.10.1', '192.168.10.10');
+    sv.dnsOn = true; sv.dnsRecords = [{name:'intranet.empresa.local', ip:'192.168.10.10'}]; Bld.link(sv, 0, sw, 1);
+    [180, 360, 540].forEach((x, i) => { const p = Bld.add('pc', x, 420, 'PC' + (i + 1)); p.dhcp = true; Bld.link(p, 0, sw, 2 + i); });
+  }},
+  {n:'6. Red con VLAN (aislamiento)', f() {
+    const sw = Bld.add('switchmgmt', 420, 200, 'SW-VLAN'); Bld.vlan(10, 'Ventas'); Bld.vlan(20, 'Soporte');
+    [[10, 11, 140], [10, 12, 320], [20, 13, 520], [20, 14, 700]].forEach(([v, h, x], i) => {
+      const p = Bld.add('pc', x, 400, 'PC' + (i + 1)); Bld.ip(p, '192.168.10.' + h, 24); Bld.link(p, 0, sw, i); sw.ports[i].vlan = v;
+    });
+    S.devices.push(Object.assign(newDevice('subnet', 90, 330), {name:'Zona VLAN 10 (Ventas)', w:340, h:150, subnet:'VLAN 10'}));
+    S.devices.push(Object.assign(newDevice('subnet', 480, 330), {name:'Zona VLAN 20 (Soporte)', w:340, h:150, subnet:'VLAN 20'}));
+  }},
+  {n:'7. Dos routers y tres redes', f() {
+    const r1 = Bld.add('router', 300, 200, 'R1'), r2 = Bld.add('router', 620, 200, 'R2'), s1 = Bld.add('switch', 140, 340, 'SW1'), s2 = Bld.add('switch', 780, 340, 'SW2');
+    Object.assign(r1.ports[1], {ip:'192.168.1.1', prefix:24}); Object.assign(r1.ports[2], {ip:'10.0.0.1', prefix:30});
+    Object.assign(r2.ports[1], {ip:'10.0.0.2', prefix:30}); Object.assign(r2.ports[2], {ip:'192.168.2.1', prefix:24});
+    r1.routes.push({net:'192.168.2.0', prefix:24, nh:'10.0.0.2', iface:'', metric:1}); r2.routes.push({net:'192.168.1.0', prefix:24, nh:'10.0.0.1', iface:'', metric:1});
+    Bld.link(r1, 'LAN2', r2, 'LAN1'); Bld.link(r1, 'LAN1', s1, 0); Bld.link(r2, 'LAN2', s2, 0);
+    [[s1, 80, 1, 1], [s1, 240, 1, 2], [s2, 700, 2, 1], [s2, 860, 2, 2]].forEach(([s, x, n, k]) => {
+      const p = Bld.add('pc', x, 480, `PC${n}${k}`); Bld.ip(p, `192.168.${n}.${10 + k}`, 24, `192.168.${n}.1`); Bld.link(p, 0, s, k);
+    });
+  }},
+  {n:'8. Oficina con dos switches y un punto de acceso', f() {
+    const r = Bld.add('router', 460, 80, 'R-Edificio'), s1 = Bld.add('switch', 460, 220, 'SW1'), s2 = Bld.add('switch', 760, 300, 'SW2'), ap = Bld.add('ap', 780, 440, 'AP-Oficina');
+    Object.assign(r.ports[1], {ip:'192.168.50.1', prefix:24}); Bld.pool(r, 'p1', '192.168.50.100', '192.168.50.200', '192.168.50.1'); r.dnsOn = true;
+    Object.assign(ap.radio, {ssid:'Oficina', pass:'oficina2024', range:200});
+    Bld.link(r, 'LAN1', s1, 0); Bld.link(s1, 1, s2, 0); Bld.link(s2, 1, ap, 'Eth0');
+    [[200, 380], [380, 380]].forEach(([x, y], i) => { const p = Bld.add('pc', x, y, 'PC' + (i + 1)); p.dhcp = true; Bld.link(p, 0, s1, 2 + i); });
+    const p3 = Bld.add('pc', 940, 340, 'PC3'); p3.dhcp = true; Bld.link(p3, 0, s2, 2);
+    const lp = Bld.add('laptop', 640, 500, 'Portátil'), ph = Bld.add('phone', 920, 520, 'Móvil'); [lp, ph].forEach(c => { c.dhcp = true; Bld.wifi(c, ap); });
+  }},
+  {n:'9. Salida a Internet mediante ONT y router', f() {
+    const net = Bld.add('cloud', 120, 200, 'Internet'), ont = Bld.add('ont', 320, 200, 'ONT1'), r = Bld.add('router', 540, 200, 'R-Fibra'), sw = Bld.add('switch', 760, 200, 'SW1');
+    Object.assign(r.ports[0], {ip:'203.0.113.2', prefix:24}); Object.assign(r.ports[1], {ip:'192.168.1.1', prefix:24});
+    r.nat = true; r.dnsOn = true; r.routes.push({net:'0.0.0.0', prefix:0, nh:'203.0.113.1', iface:'', metric:1}); Bld.pool(r, 'p1', '192.168.1.100', '192.168.1.150');
+    Bld.link(net, 'ISP1', ont, 'Fibra', 'fiber'); Bld.link(ont, 'LAN1', r, 'WAN'); Bld.link(r, 'LAN1', sw, 0);
+    [680, 860].forEach((x, i) => { const p = Bld.add('pc', x, 400, 'PC' + (i + 1)); p.dhcp = true; Bld.link(p, 0, sw, 1 + i); });
+  }},
+  {n:'10. Red de tres plantas con switches y puntos de acceso', f() {
+    const core = Bld.add('mlswitch', 460, 80, 'SW-Core'); [10, 20, 30].forEach((v, i) => { Bld.vlan(v, 'Planta ' + (i + 1)); core.svis.push({vlan:v, ip:'192.168.' + v + '.1', prefix:24, enabled:true}); });
+    [10, 20, 30].forEach((v, i) => {
+      const x = 160 + i * 300, sw = Bld.add('switch', x, 260, 'SW-P' + (i + 1)), ap = Bld.add('ap', x + 110, 420, 'AP-P' + (i + 1)), pa = Bld.add('pc', x - 80, 420, `PC-P${i + 1}A`), pb = Bld.add('pc', x + 20, 420, `PC-P${i + 1}B`);
+      Bld.link(core, 'Gi0/' + (i + 1), sw, 0); Bld.p(core, 'Gi0/' + (i + 1), {mode:'trunk'}); sw.ports[0].mode = 'trunk';
+      sw.ports[1].vlan = v; sw.ports[2].vlan = v; sw.ports[3].mode = 'trunk';
+      Object.assign(ap.radio, {ssid:'Planta' + (i + 1), pass:'planta12345', vlan:v, channel:[1, 6, 11][i], range:150});
+      Bld.link(sw, 3, ap, 'Eth0'); Bld.link(pa, 0, sw, 1); Bld.link(pb, 0, sw, 2);
+      Bld.ip(pa, `192.168.${v}.11`, 24, `192.168.${v}.1`); Bld.ip(pb, `192.168.${v}.12`, 24, `192.168.${v}.1`);
+      const ph = Bld.add('phone', x + 110, 540, 'MOV-P' + (i + 1)); Bld.ip(ph, `192.168.${v}.50`, 24, `192.168.${v}.1`); Bld.wifi(ph, ap);
+    });
+  }}
+];
+
+/* =====================================================================
+   14. PRÁCTICAS GUIADAS CON COMPROBACIÓN
+   ===================================================================== */
+function pingAll(list) {                // devuelve el primer fallo entre todos los pares
+  for (let i = 0; i < list.length; i++) for (let j = 0; j < list.length; j++) if (i !== j) { const r = simulate(list[i], hostIP(list[j])); if (!r.ok) return {a:list[i], b:list[j], r}; }
+  return null;
+}
+const byName = n => S.devices.find(d => d.name === n);
+const PRACT = [
+  {id:'p1', t:'Conectar cuatro ordenadores en la misma subred', d:'Conecta PC1–PC4 al switch SW1 y asígnales direcciones de la misma subred (por ejemplo 192.168.1.10–13 /24). Después comprueba que todos se ven entre sí.',
+    hints:['Usa el botón «Conectar» o arrastra desde un puerto del PC hasta un puerto del switch.', 'Todas las IP deben compartir la dirección de red: 192.168.1.x con máscara 255.255.255.0.', 'Cada equipo debe tener una IP distinta: .10, .11, .12 y .13.'],
+    sol:'Cuatro cables PC→SW1 y las IP 192.168.1.10, .11, .12 y .13 con máscara /24.',
+    setup() { const sw = Bld.add('switch', 400, 200, 'SW1'); [160, 320, 480, 640].forEach((x, i) => Bld.add('pc', x, 420, 'PC' + (i + 1))); },
+    check() {
+      const pcs = [1, 2, 3, 4].map(i => byName('PC' + i)), sw = byName('SW1');
+      for (const p of pcs) if (!S.links.some(l => (l.a.dev === p.id && l.b.dev === sw.id) || (l.b.dev === p.id && l.a.dev === sw.id))) return {ok:false, msg:`${p.name} no está conectado a SW1. Falta el cable.`};
+      for (const p of pcs) if (!IP.parse(p.ip) || !(p.prefix >= 0)) return {ok:false, msg:`${p.name} no tiene una IP válida.`};
+      const f = pingAll(pcs); if (f) return {ok:false, msg:`${f.a.name} no llega a ${f.b.name}: ${f.r.reason}`};
+      return {ok:true, msg:'Correcto: los cuatro equipos están en la misma subred, conectados al mismo switch y se comunican entre sí.'};
+    }},
+  {id:'p2', t:'Detectar una dirección IP duplicada', d:'Dos ordenadores comparten la misma IP. Localiza cuál y cambia la dirección de uno de ellos para que todos se comuniquen sin conflicto.',
+    hints:['Abre «Diagnóstico» en el panel inferior: indica los equipos con IP duplicada.', 'Compara las IP de PC1, PC2 y PC3 en sus propiedades.', 'Cambia la IP de PC3 a una libre, por ejemplo 192.168.1.12.'],
+    sol:'PC1 y PC3 tenían 192.168.1.10; basta con poner otra IP (p. ej. 192.168.1.12) a PC3.',
+    setup() { const sw = Bld.add('switch', 400, 200, 'SW1'); [[160, 10], [400, 11], [640, 10]].forEach(([x, h], i) => { const p = Bld.add('pc', x, 400, 'PC' + (i + 1)); Bld.ip(p, '192.168.1.' + h, 24); Bld.link(p, 0, sw, i); }); },
+    check() {
+      const pcs = [1, 2, 3].map(i => byName('PC' + i)), ips = pcs.map(p => p.ip);
+      if (new Set(ips).size < 3) return {ok:false, msg:'Todavía hay dos equipos con la misma IP: ' + ips.join(', ') + '.'};
+      if (diagnose().some(x => x.msg.startsWith('IP duplicada'))) return {ok:false, msg:'El diagnóstico aún detecta una IP duplicada.'};
+      const f = pingAll(pcs); if (f) return {ok:false, msg:`${f.a.name} no llega a ${f.b.name}: ${f.r.reason}`};
+      return {ok:true, msg:'Correcto: cada equipo tiene una IP única. Con IP duplicada el ARP recibe dos respuestas y la comunicación es impredecible.'};
+    }},
+  {id:'p3', t:'Corregir una máscara incorrecta', d:'PC1 (192.168.1.10/24) y PC2 (192.168.1.20) están en el mismo switch pero no se comunican. Encuentra el error de configuración y corrígelo.',
+    hints:['Haz un ping de PC1 a PC2 y lee la explicación del fallo.', 'Compara la máscara de ambos equipos en la pestaña Red.', 'PC2 usa 255.255.255.240 (/28): pon /24 como PC1.'],
+    sol:'PC2 tenía máscara /28, lo que la coloca en la subred 192.168.1.16/28 y no sabe devolver la respuesta a 192.168.1.10. Con /24 funciona.',
+    setup() { const sw = Bld.add('switch', 400, 200, 'SW1'), a = Bld.add('pc', 260, 400, 'PC1'), b = Bld.add('pc', 540, 400, 'PC2'); Bld.ip(a, '192.168.1.10', 24); Bld.ip(b, '192.168.1.20', 28); Bld.link(a, 0, sw, 0); Bld.link(b, 0, sw, 1); },
+    check() {
+      const a = byName('PC1'), b = byName('PC2'), f = pingAll([a, b]);
+      if (f) return {ok:false, msg:`${f.a.name} no llega a ${f.b.name}: ${f.r.reason}`};
+      return {ok:true, msg:`Correcto: con la máscara /${b.prefix} ambos equipos pertenecen a la misma subred y se responden mutuamente.`};
+    }},
+  {id:'p4', t:'Configurar un servidor DHCP', d:'Los tres PCs usan DHCP pero R1 no tiene ningún servidor. Crea un pool en la LAN 192.168.1.0/24 (rango 192.168.1.100–150) y comprueba que los equipos reciben dirección.',
+    hints:['Selecciona R1 y abre la pestaña DHCP.', 'Añade un pool para la interfaz LAN1 y actívalo.', 'Rango: inicio 192.168.1.100, fin 192.168.1.150. Pulsa «Renovar DHCP» en los PCs o inicia la simulación.'],
+    sol:'En R1 → DHCP: pool en LAN1, inicio 192.168.1.100, fin 192.168.1.150, activado.',
+    setup() { const r = Bld.add('router', 400, 100, 'R1'), sw = Bld.add('switch', 400, 260, 'SW1'); Object.assign(r.ports[1], {ip:'192.168.1.1', prefix:24}); Bld.link(r, 'LAN1', sw, 0);
+      [200, 400, 600].forEach((x, i) => { const p = Bld.add('pc', x, 440, 'PC' + (i + 1)); p.dhcp = true; Bld.link(p, 0, sw, 1 + i); }); },
+    check() {
+      const r = byName('R1'), pool = r.dhcpPools.find(p => p.on);
+      if (!pool) return {ok:false, msg:'R1 no tiene ningún pool DHCP activado.'};
+      runDhcpAll();
+      for (const n of ['PC1', 'PC2', 'PC3']) { const h = byName(n); if (!h.lease) return {ok:false, msg:`${n} no obtiene IP: revisa el rango y la interfaz del pool.`}; }
+      const ips = ['PC1', 'PC2', 'PC3'].map(n => byName(n).lease.ip), a = IP.parse(pool.start), b = IP.parse(pool.end);
+      if (new Set(ips).size < 3 || ips.some(i => IP.parse(i) < a || IP.parse(i) > b)) return {ok:false, msg:'Las IP concedidas no son únicas o salen del rango.'};
+      const f = pingAll(['PC1', 'PC2', 'PC3'].map(byName)); if (f) return {ok:false, msg:`${f.a.name} no llega a ${f.b.name}: ${f.r.reason}`};
+      return {ok:true, msg:`Correcto: DHCP asignó ${ips.join(', ')} mediante Discover, Offer, Request y Ack.`};
+    }},
+  {id:'p5', t:'Comunicar dos subredes mediante un router', d:'Hay dos LAN (192.168.1.0/24 y 192.168.2.0/24) unidas por R1, pero R1 no tiene IP en sus interfaces. Configúralo para que PC1 llegue a PC3.',
+    hints:['Los PCs ya usan como gateway 192.168.x.1.', 'Asigna a R1 la IP 192.168.1.1/24 en LAN1 y 192.168.2.1/24 en LAN2.', 'Comprueba qué LAN del router está conectada a cada switch.'],
+    sol:'R1 LAN1 = 192.168.1.1/24 y LAN2 = 192.168.2.1/24 (las IP de gateway de los PCs).',
+    setup() { const r = Bld.add('router', 420, 100, 'R1'), s1 = Bld.add('switch', 220, 260, 'SW1'), s2 = Bld.add('switch', 620, 260, 'SW2'); Bld.link(r, 'LAN1', s1, 0); Bld.link(r, 'LAN2', s2, 0);
+      [[s1, 120, 1, 0], [s1, 320, 1, 1], [s2, 520, 2, 0], [s2, 720, 2, 1]].forEach(([s, x, n], i) => { const p = Bld.add('pc', x, 440, 'PC' + (i + 1)); Bld.ip(p, `192.168.${n}.${10 + i}`, 24, `192.168.${n}.1`); Bld.link(p, 0, s, 1 + (i % 2)); }); },
+    check() {
+      const a = byName('PC1'), c = byName('PC3'), r1 = simulate(a, hostIP(c)), r2 = simulate(byName('PC4'), hostIP(byName('PC2')));
+      if (!r1.ok) return {ok:false, msg:`PC1 no llega a PC3: ${r1.reason}`};
+      if (!r2.ok) return {ok:false, msg:`PC4 no llega a PC2: ${r2.reason}`};
+      return {ok:true, msg:'Correcto: el router conecta ambas subredes; el tráfico entre ellas necesita enrutamiento de capa 3.'};
+    }},
+  {id:'p6', t:'Crear dos VLAN y comprobar su aislamiento', d:'PC1–PC4 comparten subred y switch. Crea las VLAN 10 y 20: PC1 y PC2 en la 10, PC3 y PC4 en la 20. Deben verse por parejas pero no entre VLAN.',
+    hints:['Abre el gestor de VLAN (barra del lienzo) y crea 10 y 20.', 'Selecciona SW-VLAN → pestaña Puertos y asigna la VLAN de acceso a cada puerto.', 'PC1 y PC2 están en los puertos 1 y 2; PC3 y PC4 en los 3 y 4.'],
+    sol:'Puertos Gi0/1 y Gi0/2 → VLAN 10; Gi0/3 y Gi0/4 → VLAN 20. Sin router de capa 3 no hay comunicación entre VLAN.',
+    setup() { const sw = Bld.add('switchmgmt', 420, 200, 'SW-VLAN'); [140, 320, 520, 700].forEach((x, i) => { const p = Bld.add('pc', x, 420, 'PC' + (i + 1)); Bld.ip(p, '192.168.10.' + (11 + i), 24); Bld.link(p, 0, sw, i); }); },
+    check() {
+      if (!S.vlans.some(v => v.id === 10) || !S.vlans.some(v => v.id === 20)) return {ok:false, msg:'Faltan las VLAN 10 y/o 20 en el gestor de VLAN.'};
+      const [a, b, c, d] = [1, 2, 3, 4].map(i => byName('PC' + i));
+      if (simulate(a, hostIP(b)).ok === false) return {ok:false, msg:'PC1 y PC2 deben comunicarse (misma VLAN 10): ' + simulate(a, hostIP(b)).reason};
+      if (simulate(c, hostIP(d)).ok === false) return {ok:false, msg:'PC3 y PC4 deben comunicarse (misma VLAN 20): ' + simulate(c, hostIP(d)).reason};
+      if (simulate(a, hostIP(c)).ok) return {ok:false, msg:'PC1 todavía llega a PC3: siguen en la misma VLAN. Aísla las VLAN.'};
+      return {ok:true, msg:'Correcto: las VLAN separan dominios de difusión. PC1↔PC3 falla en el ARP porque pertenecen a VLAN distintas.'};
+    }},
+  {id:'p7', t:'Detectar una conexión física incorrecta', d:'PC1 y PC2 están en switches distintos y no se comunican. El problema está en el cableado entre los switches. Corrígelo.',
+    hints:['Mira el color del enlace entre SW1 y SW2 y el panel de Diagnóstico.', 'El enlace es de fibra óptica pero usa puertos de cobre.', 'Selecciona el enlace y cambia su tipo a «Ethernet de cobre».'],
+    sol:'El enlace SW1–SW2 era de fibra óptica conectado a puertos de cobre. Cambiarlo a Ethernet (o usar los puertos Te1/1 de ambos).',
+    setup() { const s1 = Bld.add('switchmgmt', 240, 200, 'SW1'), s2 = Bld.add('switchmgmt', 600, 200, 'SW2'), a = Bld.add('pc', 160, 420, 'PC1'), b = Bld.add('pc', 680, 420, 'PC2');
+      Bld.ip(a, '192.168.1.10', 24); Bld.ip(b, '192.168.1.20', 24); Bld.link(a, 0, s1, 0); Bld.link(b, 0, s2, 0); Bld.link(s1, 'Gi0/2', s2, 'Gi0/2', 'fiber'); },
+    check() {
+      const bad = S.links.find(l => linkProblem(l));
+      if (bad) return {ok:false, msg:'Aún hay un enlace con problemas: ' + linkProblem(bad)};
+      const f = pingAll(['PC1', 'PC2'].map(byName)); if (f) return {ok:false, msg:`${f.a.name} no llega a ${f.b.name}: ${f.r.reason}`};
+      return {ok:true, msg:'Correcto: el medio físico debe coincidir con el tipo de puerto (cobre con cobre, fibra con puertos SFP).'};
+    }},
+  {id:'p8', t:'Encontrar un gateway erróneo', d:'PC1 llega a su router pero no a PC2, que está en otra subred. Busca el error en la configuración de PC1.',
+    hints:['Haz ping de PC1 al router (192.168.1.1) y luego a PC2.', 'Revisa la puerta de enlace de PC1: ¿es la IP real del router?', 'El gateway debe ser 192.168.1.1, no 192.168.1.254.'],
+    sol:'PC1 tenía como gateway 192.168.1.254, que no existe. El correcto es 192.168.1.1.',
+    setup() { const r = Bld.add('router', 400, 100, 'R1'), s1 = Bld.add('switch', 220, 260, 'SW1'), s2 = Bld.add('switch', 600, 260, 'SW2'), a = Bld.add('pc', 220, 440, 'PC1'), b = Bld.add('pc', 600, 440, 'PC2');
+      Object.assign(r.ports[1], {ip:'192.168.1.1', prefix:24}); Object.assign(r.ports[2], {ip:'192.168.2.1', prefix:24}); Bld.ip(a, '192.168.1.10', 24, '192.168.1.254'); Bld.ip(b, '192.168.2.10', 24, '192.168.2.1');
+      Bld.link(r, 'LAN1', s1, 0); Bld.link(r, 'LAN2', s2, 0); Bld.link(a, 0, s1, 1); Bld.link(b, 0, s2, 1); },
+    check() {
+      const a = byName('PC1'), r = simulate(a, hostIP(byName('PC2')));
+      if (!r.ok) return {ok:false, msg:'PC1 sigue sin llegar a PC2: ' + r.reason};
+      return {ok:true, msg:`Correcto: PC1 envía el tráfico de otras subredes a su gateway ${a.gw}, la IP real del router.`};
+    }}
+];
+
+/* =====================================================================
+   15. CONTENIDO TEÓRICO
+   ===================================================================== */
+const TEORIA = [
+  ['Direccionamiento IPv4', 'Una dirección IPv4 son 32 bits escritos como cuatro números (a.b.c.d). Identifica un equipo dentro de una red. Las direcciones privadas (10.0.0.0/8, 172.16.0.0/12 y 192.168.0.0/16) solo se usan en redes locales.'],
+  ['Máscaras y subredes', 'La máscara indica qué parte de la IP es la red y cuál el host: 255.255.255.0 equivale al prefijo /24. Dos equipos están en la misma subred si, aplicando la máscara, obtienen la misma dirección de red. La primera dirección (red) y la última (broadcast) no se asignan a hosts.'],
+  ['DHCP', 'Un servidor DHCP asigna IP, máscara, gateway y DNS automáticamente. El proceso es DISCOVER (el cliente busca servidor), OFFER (propuesta), REQUEST (el cliente la solicita) y ACK (confirmación).'],
+  ['DNS', 'Traduce nombres como www.ejemplo.es a direcciones IP. El equipo consulta al servidor DNS configurado (UDP puerto 53); si no hay registro, responde NXDOMAIN.'],
+  ['ARP', 'Resuelve una IP a la dirección MAC dentro de la misma red. Un equipo envía «¿quién tiene la IP X?» por difusión y el propietario responde con su MAC. Los resultados se guardan en la caché ARP.'],
+  ['Ethernet', 'Estándar de red local que usa tramas con MAC de origen y destino. Velocidades habituales: 100 Mb/s, 1 Gb/s y 10 Gb/s. Usa cobre (par trenzado con RJ45) o fibra óptica.'],
+  ['Switches (capa 2)', 'Reenvían tramas según la tabla MAC, que aprenden de la MAC de origen de cada trama. Si no conocen el destino, inundan la trama por todos los puertos de la VLAN.'],
+  ['Routers (capa 3)', 'Conectan redes distintas y reenvían paquetes según su tabla de rutas, eligiendo la ruta con el prefijo más largo. Cada interfaz pertenece a una subred diferente y es el gateway de esa subred.'],
+  ['VLAN', 'Dividen un switch en redes lógicas separadas. Un puerto de acceso pertenece a una VLAN; un puerto troncal transporta varias etiquetadas (802.1Q). Para comunicar VLAN hace falta un dispositivo de capa 3.'],
+  ['Wi-Fi', 'Los clientes se asocian a un punto de acceso mediante SSID y clave. 2,4 GHz tiene más alcance (usa canales 1, 6 y 11 para no solaparse); 5 GHz ofrece más velocidad con menos alcance.'],
+  ['NAT / PAT', 'El router traduce las IP privadas de la LAN a su IP pública para salir a Internet, y deshace la traducción al volver la respuesta. Sin NAT, Internet no puede devolver paquetes a direcciones privadas.'],
+  ['Tablas de rutas', 'Cada entrada tiene red de destino, prefijo, siguiente salto, interfaz y métrica. Las redes conectadas se añaden solas; las demás requieren rutas estáticas o una ruta predeterminada 0.0.0.0/0.']
+];
+/* =====================================================================
+   16. UTILIDADES DE INTERFAZ
+   ===================================================================== */
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const cv = $('#cv'), SVGNS = 'http://www.w3.org/2000/svg';
+let toastT = null;
+function toast(m, ms = 2800) { const t = $('#toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toastT); toastT = setTimeout(() => t.style.display = 'none', ms); }
+function modal(title, html, btns = [{t:'Cerrar'}]) {
+  $('#mT').textContent = title; $('#mB').innerHTML = html; const f = $('#mF'); f.innerHTML = '';
+  const close = () => $('#modal').classList.remove('show');
+  btns.forEach(b => { const e = document.createElement('button'); e.textContent = b.t; if (b.cls) e.className = b.cls; e.onclick = () => { if (!b.f || b.f() !== false) close(); }; f.appendChild(e); });
+  $('#modal').classList.add('show'); const fi = $('#mB input,#mB select'); if (fi) fi.focus(); return {close};
+}
+$('#modal').addEventListener('pointerdown', e => { if (e.target.id === 'modal') $('#modal').classList.remove('show'); });
+function menu(x, y, items) {
+  const m = $('#menu'); m.innerHTML = '';
+  items.forEach(it => { if (it === '-') { m.appendChild(document.createElement('hr')); return; } const d = document.createElement('div'); d.textContent = it.t; d.onclick = () => { hideMenu(); it.f(); }; m.appendChild(d); });
+  m.style.display = 'block'; const w = m.offsetWidth, h = m.offsetHeight;
+  m.style.left = Math.min(x, innerWidth - w - 6) + 'px'; m.style.top = Math.min(y, innerHeight - h - 6) + 'px';
+}
+const hideMenu = () => { $('#menu').style.display = 'none'; };
+function dl(name, text, mime = 'text/plain') { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], {type:mime + ';charset=utf-8'})); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); }
+const csv = rows => '\ufeff' + rows.map(r => r.map(c => { c = String(c ?? ''); return /[",;\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c; }).join(';')).join('\r\n');
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const hash = s => { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
+
+/* =====================================================================
+   17. ICONOS VECTORIALES (originales, dentro del propio HTML)
+   ===================================================================== */
+const ICON = {
+  router:'<circle r="15"/><path d="M-8 0h16M0-8v16M-8 0l3-3M-8 0l3 3M8 0l-3-3M8 0l-3 3M0-8l-3 3M0-8l3 3M0 8l-3-3M0 8l3-3"/>',
+  routerwifi:'<rect x="-19" y="2" width="38" height="14" rx="3"/><path d="M-11 2L-15-14M11 2L15-14M-7-3a7 7 0 0 1 14 0"/><circle class="f" cx="-10" cy="9" r="1.6"/><circle class="f" cx="-4" cy="9" r="1.6"/>',
+  switch:'<rect x="-20" y="-10" width="40" height="20" rx="3"/><path d="M-12-3h24M8-6l4 3-4 3M12 4H-12M-8 1l-4 3 4 3"/>',
+  switchmgmt:'<rect x="-20" y="-8" width="40" height="20" rx="3"/><path d="M-12-1h24M8-4l4 3-4 3M12 6H-12M-8 3l-4 3 4 3"/><circle cx="15" cy="-15" r="3.5"/>',
+  mlswitch:'<rect x="-20" y="-14" width="40" height="20" rx="3"/><path d="M-12-7h24M8-10l4 3-4 3M12 0H-12M-8-3l-4 3 4 3"/><text class="f" x="0" y="19" text-anchor="middle" style="font:700 11px sans-serif">L3</text>',
+  ap:'<path d="M-14 12a14 14 0 0 1 28 0z"/><path d="M-9-2a13 13 0 0 1 18 0M-15-8a21 21 0 0 1 30 0"/><circle class="f" cx="0" cy="8" r="1.8"/>',
+  firewall:'<rect x="-19" y="-14" width="38" height="28" rx="2"/><path d="M-19-5h38M-19 5h38M-6-14v9M8-5v10M-10 5v9"/>',
+  modem:'<rect x="-19" y="-2" width="38" height="16" rx="3"/><path d="M-10-2v-10l-5-4M0-2v-12"/><circle class="f" cx="-10" cy="6" r="1.7"/><circle class="f" cx="-3" cy="6" r="1.7"/><path d="M6 6h8"/>',
+  ont:'<rect x="-14" y="-16" width="28" height="32" rx="4"/><path d="M-6 8c0-8 12-8 12-16"/><circle class="f" cx="-6" cy="8" r="2"/><circle class="f" cx="6" cy="-8" r="2"/>',
+  repeater:'<path d="M-9 4a13 13 0 0 1 18 0M-15-2a21 21 0 0 1 30 0"/><circle class="f" cx="0" cy="9" r="2"/><path d="M-12 15h24M8 12l4 3-4 3"/>',
+  pc:'<rect x="-19" y="-15" width="26" height="19" rx="2"/><path d="M-6 4v6M-12 10h12"/><rect x="11" y="-13" width="8" height="23" rx="1.5"/><circle class="f" cx="15" cy="5" r="1.2"/>',
+  laptop:'<rect x="-14" y="-14" width="28" height="19" rx="2"/><path d="M-20 12h40l-4-7h-32z"/>',
+  server:'<rect x="-16" y="-17" width="32" height="10" rx="2"/><rect x="-16" y="-5" width="32" height="10" rx="2"/><rect x="-16" y="7" width="32" height="10" rx="2"/><circle class="f" cx="-10" cy="-12" r="1.5"/><circle class="f" cx="-10" cy="0" r="1.5"/><circle class="f" cx="-10" cy="12" r="1.5"/><path d="M0-12h10M0 0h10M0 12h10"/>',
+  printer:'<rect x="-12" y="-17" width="24" height="10"/><rect x="-18" y="-7" width="36" height="16" rx="3"/><rect x="-10" y="4" width="20" height="12"/><circle class="f" cx="12" cy="-2" r="1.5"/>',
+  ipphone:'<path d="M-17-12h34v9h-34zM-12-3v4h24v-4"/><rect x="-14" y="3" width="28" height="14" rx="2"/><path d="M-8 8h4M-2 8h4M4 8h4M-8 13h16"/>',
+  ipcam:'<rect x="-18" y="-8" width="26" height="16" rx="3"/><path d="M8-3l10-5v16l-10-5"/><circle cx="-5" cy="0" r="4"/>',
+  phone:'<rect x="-9" y="-17" width="18" height="34" rx="3"/><path d="M-4-12h8M-3 12h6"/>',
+  tablet:'<rect x="-17" y="-13" width="34" height="26" rx="3"/><circle class="f" cx="13" cy="0" r="1.5"/>',
+  iot:'<rect x="-10" y="-10" width="20" height="20" rx="2"/><path d="M-5-5h10v10h-10zM-4-10v-6M4-10v-6M-4 10v6M4 10v6M-10-4h-6M-10 4h-6M10-4h6M10 4h6"/>',
+  cloud:'<path d="M-13 12a8 8 0 0 1-1-16 11 11 0 0 1 21-3 9 9 0 0 1 4 19z"/>',
+  extnet:'<circle r="15"/><path d="M-15 0h30M0-15c-9 8-9 22 0 30M0-15c9 8 9 22 0 30"/>',
+  subnet:'<rect x="-18" y="-14" width="36" height="28" rx="4" stroke-dasharray="4 3"/><circle class="f" cx="-8" cy="0" r="2"/><circle class="f" cx="0" cy="-5" r="2"/><circle class="f" cx="8" cy="3" r="2"/><path d="M-8 0L0-5L8 3"/>',
+  cabinet:'<rect x="-14" y="-17" width="28" height="34" rx="2"/><path d="M-14-7h28M-14 3h28M-14 13h28"/><circle class="f" cx="-9" cy="-12" r="1.3"/><circle class="f" cx="-9" cy="-2" r="1.3"/><circle class="f" cx="-9" cy="8" r="1.3"/>',
+  patch:'<rect x="-20" y="-8" width="40" height="16" rx="2"/><path d="M-15-3h4v6h-4zM-8-3h4v6h-4zM-1-3h4v6h-4zM6-3h4v6h-4zM13-3h4v6h-4z"/>',
+  rj45:'<path d="M-12-12h24v18h-6v6h-12v-6h-6z"/><path d="M-6 0v6M-2 0v6M2 0v6M6 0v6"/>',
+  fibra:'<rect x="-20" y="-5" width="8" height="10" rx="1"/><rect x="12" y="-5" width="8" height="10" rx="1"/><path d="M-12 0c6-14 18 14 24 0"/>'
+};
+const SVGCSS = `.body{fill:var(--c-fill);stroke-width:2}.ic{stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.ic .f,.f{fill:currentColor;stroke:none}
+.lbl{fill:var(--c-ink);font:600 12px "Segoe UI",system-ui,sans-serif;text-anchor:middle;paint-order:stroke;stroke:var(--c-bg);stroke-width:4px;stroke-linejoin:round}
+.sub{fill:var(--c-muted);font:11px ui-monospace,Consolas,monospace;text-anchor:middle;paint-order:stroke;stroke:var(--c-bg);stroke-width:4px;stroke-linejoin:round}
+.selbox{fill:none;stroke:var(--c-acc);stroke-width:1.6;stroke-dasharray:5 3}.dev{cursor:grab}.dev:active{cursor:grabbing}
+.pt .hit{fill:transparent;cursor:crosshair}.pt:hover .pr,.pt.tgt .pr{stroke:#fff!important;stroke-width:2.5}.pr{stroke-width:1.5}
+.lk{fill:none;stroke-linecap:round;stroke-linejoin:round}.lk-eth{stroke:#8fb4ff;stroke-width:2.5}.lk-fiber{stroke:#f5a623;stroke-width:4.5}
+.lk-wifi{stroke:#5ee08a;stroke-width:2;stroke-dasharray:7 5}.lk-tunnel{stroke:#c58bff;stroke-width:2.5;stroke-dasharray:12 4 2 4}
+.lk-down{stroke:#ff5d5d!important;opacity:.9}.lk-sel{filter:drop-shadow(0 0 5px var(--c-acc))}.lk-hit{fill:none;stroke:transparent;stroke-width:14;cursor:pointer}
+.llbl{fill:var(--c-ink);font:11px ui-monospace,Consolas,monospace;text-anchor:middle;paint-order:stroke;stroke:var(--c-bg);stroke-width:4px;stroke-linejoin:round}
+.zr{stroke-width:1.6;stroke-dasharray:8 5;pointer-events:stroke}.zt{fill:transparent}.ztx{fill:var(--c-ink);font:600 12px "Segoe UI",system-ui,sans-serif}.zsb{fill:var(--c-muted);font:11px ui-monospace,Consolas,monospace}
+.pk{stroke:#fff;stroke-width:1.5;cursor:pointer}.pk-x{stroke:#ff5d5d;stroke-width:3;stroke-linecap:round}.cov{pointer-events:none}.covt{fill:var(--c-ink);font:11px "Segoe UI",sans-serif;text-anchor:middle;opacity:.75;pointer-events:none}`;
+$('#svgcss').textContent = SVGCSS;
+
+/* =====================================================================
+   18. GEOMETRÍA: puertos, rutas de enlaces
+   ===================================================================== */
+const devW = d => { const D = DV(d); if (D.cls === 'zone') return d.w; const m = d.ports.filter(p => p.kind !== 'wifi').length; return Math.max(72, m <= 6 ? m * 18 + 20 : Math.ceil(m / 2) * 14 + 18); };
+const devH = d => DV(d).cls === 'zone' ? d.h : 64;
+function portLocal(d) {
+  const W = devW(d), H = devH(d), wired = [], wf = [], res = [];
+  d.ports.forEach((p, i) => (p.kind === 'wifi' ? wf : wired).push(i));
+  const m = wired.length;
+  if (m <= 6) wired.forEach((i, k) => res[i] = {x:(k - (m - 1) / 2) * 18, y:H / 2, nx:0, ny:1});
+  else { const top = Math.floor(m / 2), bot = m - top; wired.forEach((i, k) => { if (k < bot) res[i] = {x:(k - (bot - 1) / 2) * 14, y:H / 2, nx:0, ny:1}; else { const kk = k - bot; res[i] = {x:(kk - (top - 1) / 2) * 14, y:-H / 2, nx:0, ny:-1}; } }); }
+  wf.forEach((i, k) => res[i] = {x:W / 2, y:(k - (wf.length - 1) / 2) * 14, nx:1, ny:0});
+  return res;
+}
+const rot = (x, y, r) => { const a = r * Math.PI / 180, c = Math.round(Math.cos(a)), s = Math.round(Math.sin(a)); return [x * c - y * s, x * s + y * c]; };
+function portPos(d, i) { const p = portLocal(d)[i], [x, y] = rot(p.x, p.y, d.rot), [nx, ny] = rot(p.nx, p.ny, d.rot); return {x:d.x + x, y:d.y + y, nx, ny}; }
+function devRect(d, pad = 6) { const sw = d.rot % 180 !== 0, w = (sw ? devH(d) : devW(d)) / 2 + pad, h = (sw ? devW(d) : devH(d)) / 2 + pad; return {x1:d.x - w, y1:d.y - h, x2:d.x + w, y2:d.y + h}; }
+function segHit(p, q, r) {              // segmento ortogonal contra rectángulo
+  if (p[0] === q[0]) return p[0] > r.x1 && p[0] < r.x2 && Math.max(p[1], q[1]) > r.y1 && Math.min(p[1], q[1]) < r.y2;
+  if (p[1] === q[1]) return p[1] > r.y1 && p[1] < r.y2 && Math.max(p[0], q[0]) > r.x1 && Math.min(p[0], q[0]) < r.x2;
+  return false;
+}
+function routePts(l) {
+  const a = dev(l.a.dev), b = dev(l.b.dev), A = portPos(a, a.ports.findIndex(p => p.id === l.a.port)), B = portPos(b, b.ports.findIndex(p => p.id === l.b.port));
+  const st = l.style || S.settings.route;
+  if (l.type === 'wifi' || st === 'direct') return [[A.x, A.y], [B.x, B.y]];
+  const s = 16, A2 = [A.x + A.nx * s, A.y + A.ny * s], B2 = [B.x + B.nx * s, B.y + B.ny * s];
+  const vert = A.ny !== 0, cands = [];
+  const midsY = [(A2[1] + B2[1]) / 2, Math.min(A2[1], B2[1]) - 36, Math.max(A2[1], B2[1]) + 36], midsX = [(A2[0] + B2[0]) / 2, Math.min(A2[0], B2[0]) - 36, Math.max(A2[0], B2[0]) + 36];
+  if (st === 'ortho') cands.push(vert ? [[A2[0], midsY[0]], [B2[0], midsY[0]]] : [[midsX[0], A2[1]], [midsX[0], B2[1]]]);
+  else {
+    midsY.forEach(y => cands.push([[A2[0], y], [B2[0], y]])); midsX.forEach(x => cands.push([[x, A2[1]], [x, B2[1]]]));
+    cands.push([[A2[0], B2[1]]], [[B2[0], A2[1]]]);
+  }
+  let best = null, bs = Infinity;
+  const others = S.devices.filter(d => d !== a && d !== b && DV(d).cls !== 'zone').map(d => devRect(d));
+  for (const mid of cands) {
+    const pts = [A2, ...mid, B2]; let sc = 0;
+    for (let i = 0; i < pts.length - 1; i++) { sc += Math.abs(pts[i + 1][0] - pts[i][0]) + Math.abs(pts[i + 1][1] - pts[i][1]); if (st === 'auto') for (const r of others) if (segHit(pts[i], pts[i + 1], r)) sc += 5000; }
+    if (sc < bs) { bs = sc; best = pts; }
+  }
+  const out = [[A.x, A.y], ...best, [B.x, B.y]];
+  return out.filter((p, i) => i === 0 || p[0] !== out[i - 1][0] || p[1] !== out[i - 1][1]);
+}
+const pathD = pts => 'M' + pts.map(p => p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join('L');
+function polyAt(pts, d) {               // punto a distancia d sobre la polilínea
+  let acc = 0;
+  for (let i = 0; i < pts.length - 1; i++) { const L = Math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1]); if (acc + L >= d) { const t = L ? (d - acc) / L : 0; return [pts[i][0] + (pts[i + 1][0] - pts[i][0]) * t, pts[i][1] + (pts[i + 1][1] - pts[i][1]) * t]; } acc += L; }
+  return pts[pts.length - 1];
+}
+const polyLen = pts => pts.reduce((s, p, i) => i ? s + Math.hypot(p[0] - pts[i - 1][0], p[1] - pts[i - 1][1]) : 0, 0);
+
+/* =====================================================================
+   19. RENDERIZADO DEL LIENZO (SVG dinámico)
+   ===================================================================== */
+let DIAG = [];
+function initSvg() {
+  cv.innerHTML = `<defs><pattern id="gp" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="var(--c-grid)" stroke-width="1"/></pattern></defs>
+  <rect id="grid" width="100%" height="100%" fill="url(#gp)"/><g id="scene"><g id="gZ"></g><g id="gW"></g><g id="gL"></g><g id="gD"></g><g id="gP"></g><g id="gO"></g></g>`;
+}
+function applyView() {
+  const v = S.view; $('#scene').setAttribute('transform', `translate(${v.x} ${v.y}) scale(${v.k})`);
+  const gp = $('#gp'), sz = S.settings.size; gp.setAttribute('width', sz); gp.setAttribute('height', sz); gp.firstElementChild.setAttribute('d', `M${sz} 0H0V${sz}`);
+  gp.setAttribute('patternTransform', `translate(${v.x} ${v.y}) scale(${v.k})`); $('#grid').style.display = S.settings.grid ? '' : 'none';
+  const z = $('#zoomLbl'); if (z) z.textContent = Math.round(v.k * 100) + '%';
+}
+const portColor = (d, p) => { if (!p.enabled) return '#4a5670'; const ls = linksAt(d, p.id); if (!ls.length) return '#9fb0cc'; return ls.some(l => !linkProblem(l)) ? '#35d27f' : '#ff5d5d'; };
+const vlanColor = id => (S.vlans.find(v => v.id === id) || {color:'#6f7f99'}).color;
+function shortIp(d) {
+  const D = DV(d), f = ifaces(d).filter(x => x.valid);
+  if (D.cls === 'host') { const c = hostCfg(d); return c.ip ? `${c.ip}/${c.prefix}` : (d.dhcp ? 'DHCP…' : ''); }
+  if (D.cls === 'router') return f[0] ? `${f.length > 1 ? f[1].ip : f[0].ip}/${(f.length > 1 ? f[1] : f[0]).prefix}` : '';
+  if (D.cls === 'cloud') return d.ip; if (D.l3 && f[0]) return f.length + ' SVI'; return '';
+}
+function devSVG(d) {
+  const D = DV(d), sel = RT.sel.has(d.id), col = d.color || D.c;
+  if (D.cls === 'zone') {
+    const w = d.w, h = d.h;
+    return `<g class="dev zone" data-id="${d.id}" transform="translate(${d.x} ${d.y})"><rect class="zr" x="${-w / 2}" y="${-h / 2}" width="${w}" height="${h}" rx="${d.type === 'cabinet' ? 4 : 14}" fill="${col}" fill-opacity="${d.type === 'cabinet' ? .14 : .07}" stroke="${sel ? 'var(--c-acc)' : col}" ${d.type === 'cabinet' ? 'stroke-dasharray="none"' : ''}/>
+    <rect class="zt" x="${-w / 2}" y="${-h / 2}" width="${w}" height="26"/><text class="ztx" x="${-w / 2 + 10}" y="${-h / 2 + 17}">${esc(d.name)}</text><text class="zsb" x="${w / 2 - 8}" y="${-h / 2 + 17}" text-anchor="end">${esc(d.subnet)}</text></g>`;
+  }
+  const W = devW(d), H = devH(d), pl = portLocal(d), isSw = D.cls === 'switch';
+  const ports = d.ports.map((p, i) => { const q = pl[i], c = portColor(d, p), vs = isSw || D.cls === 'ap' ? vlanColor(p.vlan) : c;
+    return `<g class="pt" data-port="${p.id}" data-dev="${d.id}"><title>${esc(d.name)} · ${esc(p.name)} (${p.kind === 'fiber' ? 'fibra' : p.kind === 'wifi' ? 'Wi-Fi' : 'Ethernet'}, ${p.speed})${isSw ? ' · ' + (p.mode === 'trunk' ? 'troncal' : 'VLAN ' + p.vlan) : ''}</title><circle class="hit" cx="${q.x}" cy="${q.y}" r="9"/>
+    ${p.kind === 'wifi' ? `<circle class="pr" cx="${q.x}" cy="${q.y}" r="5" fill="${c}" stroke="#0b1322"/>` : `<rect class="pr" x="${q.x - 5}" y="${q.y - 5}" width="10" height="10" rx="2" fill="${c}" stroke="${isSw && p.mode === 'access' ? vs : '#0b1322'}" ${isSw ? 'stroke-width="2"' : ''}/>`}</g>`; }).join('');
+  const led = !d.on ? '#ff5d5d' : DIAG.some(x => x.d === d && x.sev === 'err') ? '#ff5d5d' : DIAG.some(x => x.d === d && x.sev === 'warn') ? '#f0b35a' : '#35d27f';
+  const sw90 = d.rot % 180 !== 0, ly = (sw90 ? W : H) / 2 + 28, sub = S.settings.showIp ? shortIp(d) : '';
+  return `<g class="dev" data-id="${d.id}" transform="translate(${d.x} ${d.y})" opacity="${d.on ? 1 : .55}"><g transform="rotate(${d.rot})">
+   ${sel ? `<rect class="selbox" x="${-W / 2 - 6}" y="${-H / 2 - 6}" width="${W + 12}" height="${H + 12}" rx="14"/>` : ''}
+   <rect class="body" x="${-W / 2}" y="${-H / 2}" width="${W}" height="${H}" rx="10" stroke="${col}"/>
+   <g transform="rotate(${-d.rot}) translate(0 -2)"><g class="ic" style="color:${col}">${ICON[d.type]}</g></g>${ports}
+   <circle cx="${W / 2 - 8}" cy="${-H / 2 + 8}" r="3.5" fill="${led}"/></g>
+   ${S.settings.showName ? `<text class="lbl" y="${ly}">${esc(d.name)}</text>` : ''}${sub ? `<text class="sub" y="${ly + 13}">${esc(sub)}</text>` : ''}</g>`;
+}
+function renderDevices() {
+  $('#gZ').innerHTML = S.settings.showZones ? S.devices.filter(d => DV(d).cls === 'zone').map(devSVG).join('') : '';
+  $('#gD').innerHTML = S.devices.filter(d => DV(d).cls !== 'zone').map(devSVG).join('');
+}
+function renderWifi() {
+  $('#gW').innerHTML = !S.settings.showWifi ? '' : S.devices.filter(d => isAP(d) && d.on && d.radio.bcast).map(d => {
+    const h = hash(d.id) % 360, r = effRange(d);
+    return `<g class="cov"><circle cx="${d.x}" cy="${d.y}" r="${r}" fill="hsla(${h},80%,60%,.10)" stroke="hsla(${h},80%,62%,.6)" stroke-dasharray="5 5"/><text class="covt" x="${d.x}" y="${d.y - r + 14}">${esc(d.radio.ssid)} · ${d.radio.band} GHz · canal ${d.radio.channel}</text></g>`;
+  }).join('');
+}
+const TYPE_NAME = {eth:'Cobre', fiber:'Fibra', wifi:'Wi-Fi', tunnel:'Túnel'};
+function portIp(d, p) { const f = ifaces(d).find(f => f.ports.includes(p.id) && f.valid); return f ? f.ip : ''; }
+function linkLabel(l) {
+  const ll = S.settings.ll, a = dev(l.a.dev), b = dev(l.b.dev), pa = port(a, l.a.port), pb = port(b, l.b.port), parts = [];
+  if (l.label) parts.push(l.label); if (ll.speed) parts.push(linkSpeed(l)); if (ll.type) parts.push(TYPE_NAME[l.type]);
+  if (ll.ports && l.type !== 'wifi') parts.push(pa.name + '↔' + pb.name); if (ll.status) parts.push(linkProblem(l) ? 'DOWN' : 'UP');
+  if (ll.ip) { const ia = portIp(a, pa), ib = portIp(b, pb); if (ia || ib) parts.push((ia || '?') + '↔' + (ib || '?')); }
+  return parts.join(' · ');
+}
+function renderLinks() {
+  $('#gL').innerHTML = S.links.map(l => {
+    const pts = routePts(l), bad = linkProblem(l), sel = RT.selLink === l.id, mid = polyAt(pts, polyLen(pts) / 2), lab = linkLabel(l);
+    const wave = l.type === 'wifi' ? `<g transform="translate(${mid[0]} ${mid[1]})"><circle r="9" fill="var(--c-bg)"/><path d="M-5-2a7 7 0 0 1 10 0M-8-5a12 12 0 0 1 16 0" fill="none" stroke="#5ee08a" stroke-width="1.6"/><circle r="1.5" cy="3" fill="#5ee08a"/></g>` : '';
+    const x = bad ? `<g transform="translate(${mid[0]} ${mid[1]})"><circle r="8" fill="var(--c-bg)" stroke="#ff5d5d"/><path d="M-3-3l6 6M3-3l-6 6" stroke="#ff5d5d" stroke-width="2"/></g>` : '';
+    return `<g data-link="${l.id}"><path class="lk-hit" d="${pathD(pts)}"/><path class="lk lk-${l.type}${bad ? ' lk-down' : ''}${sel ? ' lk-sel' : ''}" d="${pathD(pts)}"/>${wave}${x}${lab ? `<text class="llbl" x="${mid[0]}" y="${mid[1] - 10}">${esc(lab)}</text>` : ''}</g>`;
+  }).join('');
+}
+function render() { applyView(); renderWifi(); renderLinks(); renderDevices(); }
+
+/* =====================================================================
+   20. VISTA: zoom, desplazamiento, ajustar y centrar
+   ===================================================================== */
+const w2 = e => { const r = cv.getBoundingClientRect(); return {x:(e.clientX - r.left - S.view.x) / S.view.k, y:(e.clientY - r.top - S.view.y) / S.view.k}; };
+function zoomAt(f, cx, cy) {
+  const r = cv.getBoundingClientRect(), v = S.view, nk = clamp(v.k * f, .15, 3.5); if (cx === undefined) { cx = r.width / 2; cy = r.height / 2; }
+  v.x = cx - (cx - v.x) * nk / v.k; v.y = cy - (cy - v.y) * nk / v.k; v.k = nk; applyView();
+}
+function bounds(list) {
+  if (!list.length) return null; let x1 = 1e9, y1 = 1e9, x2 = -1e9, y2 = -1e9;
+  list.forEach(d => { const r = devRect(d, 40); x1 = Math.min(x1, r.x1); y1 = Math.min(y1, r.y1); x2 = Math.max(x2, r.x2); y2 = Math.max(y2, r.y2); });
+  return {x1, y1, x2, y2};
+}
+function fitView() {
+  const b = bounds(S.devices), r = cv.getBoundingClientRect(); if (!b) { S.view = {x:60, y:60, k:1}; return applyView(); }
+  const tb = $('#ctb').offsetHeight + 16, k = clamp(Math.min(r.width / (b.x2 - b.x1), (r.height - tb - 50) / (b.y2 - b.y1)), .15, 1.6);
+  S.view = {k, x:(r.width - (b.x2 - b.x1) * k) / 2 - b.x1 * k, y:tb + (r.height - tb - 40 - (b.y2 - b.y1) * k) / 2 - b.y1 * k}; applyView();
+}
+function centerView() {
+  const b = bounds(S.devices), r = cv.getBoundingClientRect(), k = S.view.k; if (!b) return;
+  S.view.x = r.width / 2 - (b.x1 + b.x2) / 2 * k; S.view.y = r.height / 2 - (b.y1 + b.y2) / 2 * k + 40; applyView();
+}
+
+/* =====================================================================
+   21. HISTORIAL (deshacer/rehacer) y actualización general
+   ===================================================================== */
+const snapJSON = () => JSON.stringify(S);
+function pushUndo(js) { RT.hist.push(js || snapJSON()); if (RT.hist.length > 80) RT.hist.shift(); RT.redo = []; updUndo(); }
+function restore(js) {
+  try { S = JSON.parse(js); } catch (e) { toast('No se pudo restaurar el estado'); return; }
+  RT.sel = new Set([...RT.sel].filter(id => dev(id))); if (!lnk(RT.selLink)) RT.selLink = null; refreshAll();
+}
+function undo() { if (!RT.hist.length) return toast('No hay nada que deshacer'); RT.redo.push(snapJSON()); restore(RT.hist.pop()); updUndo(); }
+function redo() { if (!RT.redo.length) return toast('No hay nada que rehacer'); RT.hist.push(snapJSON()); restore(RT.redo.pop()); updUndo(); }
+function updUndo() { $('#bUndo').disabled = !RT.hist.length; $('#bRedo').disabled = !RT.redo.length; }
+let diagT = null;
+function refreshDiag() { clearTimeout(diagT); diagT = setTimeout(() => { try { DIAG = diagnose(); } catch (e) { DIAG = []; console.error(e); } updDiagPill(); renderDevices(); if (RT.btab === 'diag') renderBottom(); }, 120); }
+function updDiagPill() {
+  const e = DIAG.filter(x => x.sev === 'err').length, w = DIAG.filter(x => x.sev === 'warn').length, p = $('#diagPill');
+  p.textContent = e || w ? `✖ ${e}  ⚠ ${w}` : '✓ Sin problemas'; p.style.color = e ? 'var(--err)' : w ? 'var(--warn)' : 'var(--ok)'; p.style.cursor = 'pointer';
+}
+let autoT = null;
+function refreshAll(opts = {}) {
+  render(); if (!opts.keepProps) renderProps(); refreshDiag(); updUndo(); if (RT.btab !== 'diag' && !opts.keepBottom) renderBottom();
+  if (S.settings.autosave) { clearTimeout(autoT); autoT = setTimeout(() => { try { localStorage.setItem('netlab.proyecto', snapJSON()); } catch (e) {} }, 400); }
+}
+
+/* =====================================================================
+   22. EDICIÓN: añadir, duplicar, eliminar, alinear, conectar
+   ===================================================================== */
+const snapV = v => S.settings.snap ? Math.round(v / S.settings.size) * S.settings.size : v;
+function addDevice(type, x, y) {
+  pushUndo(); const d = newDevice(type, snapV(x), snapV(y)); S.devices.push(d); RT.sel = new Set([d.id]); RT.selLink = null; refreshAll(); return d;
+}
+function addCentered(type) {
+  const r = cv.getBoundingClientRect(), n = S.devices.length, c = {x:(r.width / 2 - S.view.x) / S.view.k, y:(r.height / 2 - S.view.y) / S.view.k};
+  addDevice(type, c.x + (n % 6) * 30 - 70, c.y + (n % 5) * 24 - 50);
+}
+function delSel() {
+  if (RT.selLink) { pushUndo(); S.links = S.links.filter(l => l.id !== RT.selLink); RT.selLink = null; return refreshAll(); }
+  if (!RT.sel.size) return; pushUndo(); const ids = RT.sel;
+  S.devices = S.devices.filter(d => !ids.has(d.id)); S.links = S.links.filter(l => !ids.has(l.a.dev) && !ids.has(l.b.dev)); RT.sel = new Set(); refreshAll();
+}
+function dupSel() {
+  if (!RT.sel.size) return; pushUndo(); const map = {}, ns = new Set();
+  for (const id of RT.sel) {
+    const o = dev(id), d = clone(o), nid = 'd' + (S.nextId++); map[id] = nid; Object.assign(d, {id:nid, x:o.x + 40, y:o.y + 40, mac:nextMac(), lease:null, macTable:{}, arp:{}, leases:[]});
+    const names = new Set(S.devices.map(x => x.name)); let n = 2, base = o.name.replace(/\d+$/, '') || o.name; while (names.has(base + n)) n++; d.name = base + n; if (d.type === 'cloud') d.name = 'Internet' + n;
+    S.devices.push(d); ns.add(nid);
+  }
+  for (const l of [...S.links]) if (map[l.a.dev] && map[l.b.dev]) { const c = clone(l); c.id = 'l' + (S.nextId++); c.a.dev = map[l.a.dev]; c.b.dev = map[l.b.dev]; S.links.push(c); }
+  RT.sel = ns; RT.selLink = null; refreshAll();
+}
+function rotSel() { const l = [...RT.sel].map(dev).filter(d => DV(d).cls !== 'zone'); if (!l.length) return toast('Selecciona un equipo para girarlo'); pushUndo(); l.forEach(d => d.rot = (d.rot + 90) % 360); refreshAll(); }
+function renameDev(id) {
+  const d = dev(id); modal('Cambiar nombre', `<label class="f"><span>Nombre del dispositivo</span><input id="rn" value="${esc(d.name)}"></label>`, [{t:'Cancelar'}, {t:'Aceptar', cls:'pri', f() { const v = $('#rn').value.trim(); if (!v) { toast('El nombre no puede estar vacío'); return false; } pushUndo(); d.name = v; refreshAll(); }}]);
+}
+function alignSel(mode) {
+  const l = [...RT.sel].map(dev); if (l.length < 2) return toast('Selecciona al menos dos dispositivos'); pushUndo();
+  const xs = l.map(d => d.x), ys = l.map(d => d.y), mn = a => Math.min(...a), mx = a => Math.max(...a);
+  if (mode === 'left') l.forEach(d => d.x = mn(xs)); if (mode === 'right') l.forEach(d => d.x = mx(xs)); if (mode === 'cx') l.forEach(d => d.x = Math.round((mn(xs) + mx(xs)) / 2));
+  if (mode === 'top') l.forEach(d => d.y = mn(ys)); if (mode === 'bottom') l.forEach(d => d.y = mx(ys)); if (mode === 'cy') l.forEach(d => d.y = Math.round((mn(ys) + mx(ys)) / 2));
+  if (mode === 'dh' || mode === 'dv') {
+    if (l.length < 3) { toast('Para distribuir selecciona al menos tres'); return; }
+    const k = mode === 'dh' ? 'x' : 'y', s = [...l].sort((a, b) => a[k] - b[k]), a = s[0][k], z = s[s.length - 1][k];
+    s.forEach((d, i) => d[k] = Math.round(a + (z - a) * i / (s.length - 1)));
+  }
+  refreshAll();
+}
+/* Conexiones: validación y creación */
+function createLink(da, pa, db, pb, type) {
+  if (da.id === db.id) { toast('No se puede conectar un dispositivo consigo mismo'); return null; }
+  const A = port(da, pa), B = port(db, pb); if (!A || !B) return null;
+  const busy = (d, p) => p.kind === 'wifi' && isAP(d) ? false : linksAt(d, p.id).length > 0;
+  if (busy(da, A)) { toast(`El puerto ${A.name} de ${da.name} ya está ocupado`); return null; }
+  if (busy(db, B)) { toast(`El puerto ${B.name} de ${db.name} ya está ocupado`); return null; }
+  if (A.kind === 'wifi' && B.kind === 'wifi') type = 'wifi';
+  pushUndo(); const l = newLink(da, pa, db, pb, type); S.links.push(l);
+  if (type === 'wifi') { const ap = isAP(da) ? da : db, cl = ap === da ? db : da; if (isAP(ap) && !isAP(cl) && cl.wifi && !cl.wifi.ssid) cl.wifi = {ssid:ap.radio.ssid, pass:ap.radio.pass}; }
+  RT.selLink = l.id; RT.sel = new Set(); refreshAll();
+  const pr = linkProblem(l); toast(pr ? `Enlace creado, pero no funciona: ${pr}` : `Enlace ${da.name} ↔ ${db.name} creado`, pr ? 4500 : 2200); return l;
+}
+const portOpts = (d, sel) => d.ports.map(p => { const used = linksAt(d, p.id).length > 0 && !(p.kind === 'wifi' && isAP(d)); return `<option value="${p.id}" ${p.id === sel ? 'selected' : ''} ${used ? 'disabled' : ''}>${esc(p.name)}${used ? ' (ocupado)' : ''}${p.kind === 'fiber' ? ' · fibra' : p.kind === 'wifi' ? ' · Wi-Fi' : ''}</option>`; }).join('');
+function connectWizard(aId, bId) {
+  const a = dev(aId);
+  if (!bId) {
+    modal('Conectar · paso 1: puerto de origen', `<p>Dispositivo de origen: <b>${esc(a.name)}</b></p><label class="f"><span>Puerto de origen</span><select id="wp">${portOpts(a, resolvePort(a))}</select></label>`,
+      [{t:'Cancelar', f() { RT.conn = null; setHint(); }}, {t:'Siguiente', cls:'pri', f() { RT.conn = {a:aId, pa:$('#wp').value}; setHint(`Conectar: ${a.name} (${port(a, RT.conn.pa).name}) → haz clic en el segundo dispositivo`); }}]);
+    return;
+  }
+  const b = dev(bId), t = S.settings.linkType;
+  modal('Conectar · paso 2: destino y confirmación', `<p>${esc(a.name)} (<b>${esc(port(a, RT.conn.pa).name)}</b>) → <b>${esc(b.name)}</b></p><div class="two"><label class="f"><span>Puerto de destino</span><select id="wp">${portOpts(b, resolvePort(b))}</select></label>
+    <label class="f"><span>Tipo de enlace</span><select id="wt">${Object.entries(TYPE_NAME).map(([k, v]) => `<option value="${k}" ${k === t ? 'selected' : ''}>${v}</option>`).join('')}</select></label></div>`,
+    [{t:'Cancelar', f() { RT.conn = null; setHint(); }}, {t:'Confirmar conexión', cls:'pri', f() { const l = createLink(a, RT.conn.pa, b, $('#wp').value, $('#wt').value); if (!l) return false; RT.conn = null; setHint(); }}]);
+}
+function setHint(m) { $('#hint').textContent = m || {select:'Arrastra equipos · arrastra desde un puerto para conectar · rueda para zoom · Espacio+arrastrar para desplazar', pan:'Arrastra para desplazar el lienzo', connect:'Conectar: haz clic en el primer dispositivo'}[RT.tool]; }
+function setTool(t) { RT.tool = t; RT.conn = null; cv.style.cursor = t === 'pan' ? 'grab' : t === 'connect' ? 'crosshair' : ''; $$('#ctb [data-tool]').forEach(b => b.classList.toggle('on', b.dataset.tool === t)); setHint(); }
+
+/* =====================================================================
+   23. INTERACCIÓN CON EL RATÓN
+   ===================================================================== */
+let DR = null;
+function selectDev(id, add) {
+  if (add) { RT.sel.has(id) ? RT.sel.delete(id) : RT.sel.add(id); } else if (!RT.sel.has(id)) RT.sel = new Set([id]); RT.selLink = null; renderDevices(); renderLinks(); renderProps();
+}
+function clearSel() { RT.sel = new Set(); RT.selLink = null; renderDevices(); renderLinks(); renderProps(); }
+cv.addEventListener('pointerdown', e => {
+  hideMenu(); cv.focus({preventScroll:true}); if (e.button === 2) return;
+  const t = e.target, pt = w2(e);
+  if (e.button === 1 || RT.tool === 'pan' || RT.space) { DR = {m:'pan', sx:e.clientX, sy:e.clientY, vx:S.view.x, vy:S.view.y}; cv.setPointerCapture(e.pointerId); return; }
+  const pk = t.closest('[data-pkt]'); if (pk) { showPacket(+pk.dataset.pkt, e); return; }
+  const pe = t.closest('[data-port]');
+  if (pe && RT.tool !== 'connect') { const d = dev(pe.dataset.dev), i = d.ports.findIndex(p => p.id === pe.dataset.port), pp = portPos(d, i); DR = {m:'link', d, p:pe.dataset.port, from:pp}; cv.setPointerCapture(e.pointerId); return; }
+  const de = t.closest('[data-id]'), le = t.closest('[data-link]');
+  if (RT.tool === 'connect') {
+    if (de) { if (!RT.conn) connectWizard(de.dataset.id); else if (de.dataset.id !== RT.conn.a) connectWizard(RT.conn.a, de.dataset.id); else toast('Elige un segundo dispositivo distinto'); }
+    return;
+  }
+  if (de) {
+    const id = de.dataset.id; selectDev(id, e.shiftKey || e.ctrlKey || e.metaKey);
+    DR = {m:'drag', sx:pt.x, sy:pt.y, js:snapJSON(), moved:false, start:[...RT.sel].map(i => { const d = dev(i); return {d, x:d.x, y:d.y}; })};
+    cv.setPointerCapture(e.pointerId); return;
+  }
+  if (le) { RT.selLink = le.dataset.link; RT.sel = new Set(); renderDevices(); renderLinks(); renderProps(); return; }
+  if (!(e.shiftKey)) clearSel();
+  DR = {m:'marq', sx:pt.x, sy:pt.y, add:e.shiftKey}; cv.setPointerCapture(e.pointerId);
+});
+cv.addEventListener('pointermove', e => {
+  if (!DR) { const t = e.target.closest && e.target.closest('[data-port]'); return; }
+  const pt = w2(e);
+  if (DR.m === 'pan') { S.view.x = DR.vx + e.clientX - DR.sx; S.view.y = DR.vy + e.clientY - DR.sy; applyView(); }
+  else if (DR.m === 'drag') {
+    const dx = pt.x - DR.sx, dy = pt.y - DR.sy; if (!DR.moved && Math.hypot(dx, dy) * S.view.k < 3) return; DR.moved = true;
+    DR.start.forEach(s => { s.d.x = snapV(s.x + dx); s.d.y = snapV(s.y + dy); const g = cv.querySelector(`[data-id="${s.d.id}"]`); if (g) g.setAttribute('transform', `translate(${s.d.x} ${s.d.y})`); });
+    renderLinks(); renderWifi();
+  } else if (DR.m === 'marq') {
+    const x = Math.min(DR.sx, pt.x), y = Math.min(DR.sy, pt.y), w = Math.abs(pt.x - DR.sx), h = Math.abs(pt.y - DR.sy);
+    $('#gO').innerHTML = `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="rgba(53,208,192,.12)" stroke="var(--c-acc)" stroke-dasharray="4 3"/>`; DR.r = {x, y, w, h};
+  } else if (DR.m === 'link') {
+    $('#gO').innerHTML = `<path d="M${DR.from.x} ${DR.from.y}L${pt.x} ${pt.y}" stroke="var(--c-acc)" stroke-width="2.5" stroke-dasharray="6 4" fill="none"/>`;
+    const el = document.elementFromPoint(e.clientX, e.clientY), pe = el && el.closest && el.closest('[data-port]');
+    $$('.pt.tgt').forEach(x => x.classList.remove('tgt')); if (pe) pe.classList.add('tgt');
+  }
+});
+cv.addEventListener('pointerup', e => {
+  if (!DR) return; const m = DR.m; $('#gO').innerHTML = ''; $$('.pt.tgt').forEach(x => x.classList.remove('tgt'));
+  if (m === 'drag' && DR.moved) { pushUndo(DR.js); refreshAll(); }
+  if (m === 'marq' && DR.r) {
+    const r = DR.r; const ids = S.devices.filter(d => DV(d).cls !== 'zone' ? (d.x >= r.x && d.x <= r.x + r.w && d.y >= r.y && d.y <= r.y + r.h) : (d.x - d.w / 2 >= r.x && d.x + d.w / 2 <= r.x + r.w && d.y - d.h / 2 >= r.y && d.y + d.h / 2 <= r.y + r.h)).map(d => d.id);
+    RT.sel = new Set(DR.add ? [...RT.sel, ...ids] : ids); renderDevices(); renderLinks(); renderProps();
+  }
+  if (m === 'link') {
+    const el = document.elementFromPoint(e.clientX, e.clientY), pe = el && el.closest && el.closest('[data-port]');
+    if (pe && !(pe.dataset.dev === DR.d.id && pe.dataset.port === DR.p)) createLink(DR.d, DR.p, dev(pe.dataset.dev), pe.dataset.port, S.settings.linkType);
+  }
+  DR = null;
+});
+cv.addEventListener('wheel', e => { e.preventDefault(); const r = cv.getBoundingClientRect(); zoomAt(Math.pow(1.0015, -e.deltaY), e.clientX - r.left, e.clientY - r.top); }, {passive:false});
+cv.addEventListener('contextmenu', e => {
+  e.preventDefault(); const de = e.target.closest('[data-id]'), le = e.target.closest('[data-link]'), pt = w2(e);
+  if (de) {
+    const id = de.dataset.id, d = dev(id); if (!RT.sel.has(id)) { RT.sel = new Set([id]); RT.selLink = null; renderDevices(); renderLinks(); renderProps(); }
+    menu(e.clientX, e.clientY, [{t:'Cambiar nombre…', f:() => renameDev(id)}, {t:'Duplicar', f:dupSel}, {t:'Girar 90°', f:rotSel}, {t:d.on ? 'Apagar' : 'Encender', f() { pushUndo(); d.on = !d.on; refreshAll(); }}, '-',
+      {t:'Conectar desde aquí…', f() { setTool('connect'); connectWizard(id); }}, {t:'Ver propiedades', f() { RT.ptab = 'general'; renderProps(); }}, '-', {t:'Eliminar', f:delSel}]);
+  } else if (le) {
+    const l = lnk(le.dataset.link); RT.selLink = l.id; RT.sel = new Set(); renderDevices(); renderLinks(); renderProps();
+    menu(e.clientX, e.clientY, [{t:l.down ? 'Activar enlace' : 'Desconectar enlace', f() { pushUndo(); l.down = !l.down; refreshAll(); }}, {t:'Editar propiedades', f() { renderProps(); }}, '-', {t:'Eliminar enlace', f:delSel}]);
+  } else menu(e.clientX, e.clientY, [{t:'Seleccionar todo', f() { RT.sel = new Set(S.devices.map(d => d.id)); refreshAll(); }}, {t:'Ajustar a la pantalla', f:fitView}, {t:'Centrar diseño', f:centerView}, '-',
+    {t:'Añadir PC aquí', f() { addDevice('pc', pt.x, pt.y); }}, {t:'Añadir switch aquí', f() { addDevice('switch', pt.x, pt.y); }}, {t:'Añadir router aquí', f() { addDevice('router', pt.x, pt.y); }}]);
+});
+cv.addEventListener('dblclick', e => { const de = e.target.closest('[data-id]'); if (de) renameDev(de.dataset.id); });
+cv.addEventListener('dragover', e => e.preventDefault());
+cv.addEventListener('drop', e => { e.preventDefault(); const t = e.dataTransfer.getData('text/plain'); if (DEF[t]) { const p = w2(e); addDevice(t, p.x, p.y); } });
+document.addEventListener('pointerdown', e => { if (!e.target.closest('#menu')) hideMenu(); });
+
+/* =====================================================================
+   24. ANIMACIÓN DE PAQUETES
+   ===================================================================== */
+let pktId = 0, loopOn = false, lastT = 0;
+const PCOL = {ICMP:'#ffd166', TCP:'#4da3ff', UDP:'#c58bff', ARP:'#5ee08a', DHCP:'#ff8fb3', DNS:'#26d0c0'};
+function animate(steps, o = {}) {
+  if (!steps || !steps.length || RT.sim === 'stopped') return;
+  RT.packets.push({id:++pktId, steps:[...steps], i:0, d:0, pts:null, len:0, proto:o.proto || 'ICMP', info:o.info || {}, bad:!!o.bad, dead:0, color:o.color || PCOL[o.proto] || '#ffd166', rev:o.rev});
+  if (!loopOn) { loopOn = true; lastT = performance.now(); requestAnimationFrame(tick); }
+}
+function tick(t) {
+  const dt = Math.min(.05, (t - lastT) / 1000); lastT = t; const g = $('#gP'); let html = '';
+  for (const p of RT.packets) {
+    if (RT.sim === 'running' && !p.dead) {
+      let guard = 0;
+      while (p.i < p.steps.length && guard++ < 4) {
+        if (!p.pts) { const s = p.steps[p.i], l = lnk(s.link); if (!l || !dev(l.a.dev) || !dev(l.b.dev)) { p.i++; continue; } p.pts = routePts(l); if (l.a.dev !== s.from) p.pts = p.pts.slice().reverse(); p.len = polyLen(p.pts); p.d = 0; }
+        p.d += 340 * dt * (guard === 1 ? 1 : 0); if (p.d >= p.len) { p.i++; p.pts = null; p.d = 0; if (guard > 1) break; } else break;
+      }
+      if (p.i >= p.steps.length) { p.dead = t; p.end = p.last; }
+    }
+    if (p.pts) { p.last = polyAt(p.pts, p.d); html += `<circle class="pk" data-pkt="${p.id}" cx="${p.last[0]}" cy="${p.last[1]}" r="6.5" fill="${p.color}"/>`; }
+    else if (p.dead && p.bad && p.last) html += `<path class="pk-x" d="M${p.last[0] - 6} ${p.last[1] - 6}l12 12M${p.last[0] + 6} ${p.last[1] - 6}l-12 12"/>`;
+  }
+  g.innerHTML = html;
+  RT.packets = RT.packets.filter(p => !p.dead || (p.bad && t - p.dead < 1400));
+  if (RT.packets.length) requestAnimationFrame(tick); else { loopOn = false; g.innerHTML = ''; }
+}
+function showPacket(id, e) {
+  const p = RT.packets.find(x => x.id === id); if (!p) return; const i = p.info, tip = $('#tip');
+  tip.innerHTML = `<b>Paquete ${esc(p.proto)}</b>${p.rev ? ' (respuesta)' : ''}<br>Origen: ${esc(i.src || '?')}<br>Destino: ${esc(i.dst || '?')}<br>Tamaño: ${i.size || 64} bytes${i.port ? '<br>Puerto: ' + i.port : ''}<br>Salto ${Math.min(p.i + 1, p.steps.length)} de ${p.steps.length}${i.note ? '<br><span class="mut">' + esc(i.note) + '</span>' : ''}`;
+  tip.style.display = 'block'; tip.style.left = Math.min(e.clientX + 12, innerWidth - 320) + 'px'; tip.style.top = Math.min(e.clientY + 12, innerHeight - 160) + 'px';
+  setTimeout(() => { document.addEventListener('pointerdown', () => tip.style.display = 'none', {once:true}); }, 0);
+}
+/* =====================================================================
+   25. EVENTOS Y CONTROL DE LA SIMULACIÓN
+   ===================================================================== */
+const nowSecs = () => { const n = new Date(); return n.getHours() * 3600 + n.getMinutes() * 60 + n.getSeconds(); };
+const fmtClock = () => { const s = ((RT.base || nowSecs()) + RT.clock) % 86400; return [s / 3600 | 0, s / 60 % 60 | 0, s % 60].map(n => String(n).padStart(2, '0')).join(':'); };
+const evHTML = e => `<div class="e ${e.type || ''}"><span class="t">[${e.t}]</span> ${esc(e.msg)}</div>`;
+function logEv(msg, type) {
+  RT.clock++; const e = {t:fmtClock(), msg, type}; RT.events.push(e); if (RT.events.length > 600) RT.events.shift();
+  const ev = $('#ev'); if (ev) { ev.insertAdjacentHTML('beforeend', evHTML(e)); ev.scrollTop = ev.scrollHeight; }
+}
+function upSim() {
+  const p = $('#simPill'); p.className = 'pill ' + (RT.sim === 'running' ? 'run' : RT.sim === 'paused' ? 'pause' : '');
+  p.lastChild.textContent = {stopped:'Simulación detenida', running:'Simulación en curso', paused:'Simulación en pausa'}[RT.sim];
+  $$('#ctb [data-sim]').forEach(b => b.classList.toggle('on', (b.dataset.sim === 'start' && RT.sim === 'running') || (b.dataset.sim === 'pause' && RT.sim === 'paused')));
+}
+function simStart() {
+  if (RT.sim === 'running') return; if (RT.sim === 'paused') { RT.sim = 'running'; logEv('Simulación reanudada'); return upSim(); }
+  RT.sim = 'running'; RT.clock = 0; RT.base = nowSecs(); S.devices.forEach(d => { d.arp = {}; d.macTable = {}; });
+  logEv('Simulación iniciada (tiempos y paquetes simulados; no se envía tráfico real por tu red)'); runDhcpAll(logEv);
+  const n = diagnose().filter(x => x.sev === 'err').length; if (n) logEv(`${n} error(es) de configuración detectados: revisa la pestaña Diagnóstico`, 'warn');
+  upSim(); refreshAll();
+}
+function simPause() { if (RT.sim === 'stopped') return toast('Inicia primero la simulación'); if (RT.sim === 'paused') return simStart(); RT.sim = 'paused'; logEv('Simulación en pausa', 'warn'); upSim(); }
+function simStop() { if (RT.sim === 'stopped') return; RT.sim = 'stopped'; RT.packets = []; $('#gP').innerHTML = ''; S.devices.forEach(d => { d.arp = {}; d.macTable = {}; }); logEv('Simulación detenida; se vacían las cachés ARP y las tablas MAC'); upSim(); refreshAll(); }
+function simReset() { simStop(); RT.events = []; renderBottom(); simStart(); }
+function needSim() { if (RT.sim === 'stopped') simStart(); if (RT.sim === 'paused') { toast('La simulación está en pausa: reanúdala para generar tráfico'); return false; } return true; }
+
+/* =====================================================================
+   26. PALETA DE DISPOSITIVOS Y BARRA DE HERRAMIENTAS
+   ===================================================================== */
+const CATS = {net:'Dispositivos de red', host:'Equipos finales', infra:'Infraestructura'};
+function buildPalette(filter = '') {
+  const f = filter.toLowerCase(); let h = '';
+  for (const c in CATS) {
+    const items = Object.entries(DEF).filter(([k, d]) => d.cat === c && d.n.toLowerCase().includes(f)); if (!items.length) continue;
+    h += `<h4 data-c="${c}">${CATS[c]}</h4><div data-cat="${c}">` + items.map(([k, d]) => `<div class="pi" draggable="true" data-t="${k}" title="Arrastra al lienzo o haz clic para añadir"><svg viewBox="-26 -26 52 52"><g class="ic" style="color:${d.c}">${ICON[k]}</g></svg><span>${d.n}</span></div>`).join('') + '</div>';
+  }
+  $('#pal').innerHTML = h || '<p class="mut">Sin resultados</p>';
+}
+$('#pal').addEventListener('click', e => { const p = e.target.closest('.pi'); if (p) addCentered(p.dataset.t); const h = e.target.closest('h4'); if (h) { const c = $(`[data-cat="${h.dataset.c}"]`); c.style.display = c.style.display === 'none' ? '' : 'none'; } });
+$('#pal').addEventListener('dragstart', e => { const p = e.target.closest('.pi'); if (p) e.dataTransfer.setData('text/plain', p.dataset.t); });
+$('#q').addEventListener('input', e => buildPalette(e.target.value));
+function buildToolbar() {
+  $('#ctb').innerHTML = `
+  <div class="g"><button data-tool="select" title="Seleccionar y mover (V)">Seleccionar</button><button data-tool="pan" title="Desplazar el lienzo (H)">Mover lienzo</button><button data-tool="connect" title="Conectar dispositivos paso a paso (C)">Conectar</button></div>
+  <div class="g"><select id="lt" title="Tipo de enlace a crear">${Object.entries(TYPE_NAME).map(([k, v]) => `<option value="${k}">${k === 'eth' ? 'Ethernet de cobre' : k === 'fiber' ? 'Fibra óptica' : k === 'wifi' ? 'Enlace Wi-Fi' : 'Enlace lógico / túnel'}</option>`).join('')}</select>
+   <select id="rs" title="Estilo de trazado"><option value="direct">Línea directa</option><option value="ortho">Ortogonal</option><option value="auto">Auto (evita equipos)</option></select></div>
+  <div class="g"><button data-sim="start" title="Iniciar / reanudar simulación">▶ Iniciar</button><button data-sim="pause" title="Pausar">❚❚ Pausar</button><button data-sim="stop" title="Detener">■ Detener</button><button data-sim="reset" title="Reiniciar">⟳ Reiniciar</button></div>
+  <div class="g"><button id="zo" title="Alejar (-)">−</button><span id="zoomLbl" style="min-width:42px;text-align:center">100%</span><button id="zi" title="Acercar (+)">+</button><button id="bCenter" title="Centrar el diseño">Centrar</button><button id="bFit" title="Ajustar todo a la pantalla (F)">Ajustar</button></div>
+  <div class="g"><button id="tGrid" title="Mostrar u ocultar cuadrícula (G)">Cuadrícula</button><button id="tSnap" title="Ajustar a la cuadrícula">Imán</button><button id="tTheme" title="Fondo claro/oscuro">Fondo</button><button id="tWifi" title="Mostrar cobertura Wi-Fi">Cobertura</button><button id="tLab" title="Etiquetas visibles">Etiquetas</button></div>
+  <div class="g"><button id="bAlign" title="Alinear y distribuir la selección">Alinear</button><button id="bVlan" title="Gestor de VLAN">VLAN</button><button id="bCalc" title="Calculadora de subredes">Subredes</button><button id="bTpl" title="Topologías prediseñadas">Plantillas</button></div>`;
+  $('#lt').value = S.settings.linkType; $('#rs').value = S.settings.route; syncToggles(); setTool(RT.tool); upSim();
+}
+function syncToggles() { const s = S.settings; $('#tGrid').classList.toggle('on', s.grid); $('#tSnap').classList.toggle('on', s.snap); $('#tWifi').classList.toggle('on', s.showWifi); $('#center').dataset.theme = s.theme; $('#lt').value = s.linkType; $('#rs').value = s.route; }
+$('#ctb').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.tool) return setTool(b.dataset.tool);
+  if (b.dataset.sim) return ({start:simStart, pause:simPause, stop:simStop, reset:simReset})[b.dataset.sim]();
+  const s = S.settings, id = b.id;
+  if (id === 'zo') zoomAt(1 / 1.2); if (id === 'zi') zoomAt(1.2); if (id === 'bFit') fitView(); if (id === 'bCenter') centerView();
+  if (id === 'tGrid') { s.grid = !s.grid; syncToggles(); applyView(); } if (id === 'tSnap') { s.snap = !s.snap; syncToggles(); toast(s.snap ? 'Ajuste a la cuadrícula activado' : 'Ajuste desactivado'); }
+  if (id === 'tTheme') { s.theme = s.theme === 'dark' ? 'light' : 'dark'; syncToggles(); } if (id === 'tWifi') { s.showWifi = !s.showWifi; syncToggles(); renderWifi(); }
+  if (id === 'tLab') { const r = b.getBoundingClientRect(), L = s.ll, ck = v => (v ? '✓ ' : '   ');
+    menu(r.left, r.bottom + 4, [{t:ck(s.showName) + 'Nombres', f() { s.showName = !s.showName; refreshAll({keepProps:1}); }}, {t:ck(s.showIp) + 'Direcciones IP', f() { s.showIp = !s.showIp; refreshAll({keepProps:1}); }}, {t:ck(s.showZones) + 'Zonas / subredes', f() { s.showZones = !s.showZones; refreshAll({keepProps:1}); }}, '-',
+      {t:ck(L.speed) + 'Enlaces: velocidad', f() { L.speed = !L.speed; renderLinks(); }}, {t:ck(L.type) + 'Enlaces: tipo de cable', f() { L.type = !L.type; renderLinks(); }}, {t:ck(L.ports) + 'Enlaces: puertos', f() { L.ports = !L.ports; renderLinks(); }},
+      {t:ck(L.status) + 'Enlaces: estado', f() { L.status = !L.status; renderLinks(); }}, {t:ck(L.ip) + 'Enlaces: IP de interfaces', f() { L.ip = !L.ip; renderLinks(); }}]); }
+  if (id === 'bAlign') { const r = b.getBoundingClientRect(); menu(r.left, r.bottom + 4, [['left', 'Alinear a la izquierda'], ['cx', 'Centrar horizontalmente'], ['right', 'Alinear a la derecha'], ['top', 'Alinear arriba'], ['cy', 'Centrar verticalmente'], ['bottom', 'Alinear abajo'], ['dh', 'Distribuir horizontalmente'], ['dv', 'Distribuir verticalmente']].map(([m, t]) => ({t, f() { alignSel(m); }}))); }
+  if (id === 'bVlan') vlanDlg(); if (id === 'bCalc') calcDlg();
+  if (id === 'bTpl') { const r = b.getBoundingClientRect(); menu(r.left, r.bottom + 4, TPL.map((t, i) => ({t:t.n, f() { loadTpl(i); }}))); }
+});
+$('#ctb').addEventListener('change', e => { if (e.target.id === 'lt') S.settings.linkType = e.target.value; if (e.target.id === 'rs') { S.settings.route = e.target.value; renderLinks(); } });
+
+/* =====================================================================
+   27. PANEL DE PROPIEDADES
+   ===================================================================== */
+const gp = (o, p) => p.split('.').reduce((a, k) => a == null ? a : a[k], o);
+function sp(o, p, v) { const ks = p.split('.'), last = ks.pop(); ks.reduce((a, k) => a[k], o)[last] = v; }
+const cur = () => RT.sel.size === 1 ? dev([...RT.sel][0]) : null;
+function fld(lab, path, o = {}) {
+  const d = o.obj || cur(), v = gp(d, path), t = o.t || 'str', tip = o.tip ? ` title="${esc(o.tip)}"` : '';
+  if (t === 'bool') return `<label class="ck"${tip}><input type="checkbox" data-p="${path}" data-t="bool" ${v ? 'checked' : ''}> ${lab}</label>`;
+  let inner;
+  if (o.opts) inner = `<select data-p="${path}" data-t="${t}">${o.opts.map(x => { const [val, lb] = Array.isArray(x) ? x : [x, x]; return `<option value="${esc(val)}" ${String(val) === String(v) ? 'selected' : ''}>${esc(lb)}</option>`; }).join('')}</select>`;
+  else if (t === 'mask') inner = `<input data-p="${path}" data-t="mask" value="${v !== '' && v >= 0 && v <= 32 && v != null ? IP.str(IP.maskOf(+v)) : ''}" placeholder="255.255.255.0">`;
+  else if (t === 'area') inner = `<textarea rows="3" data-p="${path}">${esc(v)}</textarea>`;
+  else if (t === 'color') inner = `<input type="color" data-p="${path}" value="${v || '#35d0c0'}">`;
+  else inner = `<input ${t === 'int' ? 'type="number"' : ''} ${o.ip ? 'data-ip="1"' : ''} data-p="${path}" data-t="${t}" value="${esc(v)}" ${o.ph ? `placeholder="${o.ph}"` : ''}>`;
+  return `<label class="f ${o.cls || ''}"${tip}><span>${lab}</span>${inner}</label>`;
+}
+const calcHTML = (ip, p) => { const n = IP.parse(ip); if (n === null || !(p >= 0 && p <= 32) || p === '') return ''; const c = IP.calc(n, +p);
+  return `<div class="card mono"><h5 style="font-family:var(--font)">Subred ${c.net}/${p}</h5>Máscara ${c.mask} · wildcard ${c.wild}<br>Red ${c.net} · Broadcast ${c.bcast}<br>Bits de host ${c.hostBits} · Direcciones útiles ${c.usable}<br>Primer host ${c.first} · Último host ${c.last}</div>`; };
+const devIssues = d => DIAG.filter(x => x.d === d).map(x => `<div class="msg ${x.sev}">${esc(x.msg)}<small>${esc(x.tip)}</small></div>`).join('');
+function ifaceCards(d, label) {
+  return ifaces(d).map(f => { const path = f.svi ? `svis.${d.svis.findIndex(s => s.vlan === f.svi)}` : DV(d).cls === 'cloud' ? '' : `ports.${d.ports.indexOf(f.ref)}`, P = path ? path + '.' : '';
+    return `<div class="card"><h5>${label} ${esc(f.name)} <span class="tag">${f.up ? 'activa' : 'inactiva'}</span> <span class="mut mono">${f.mac}</span></h5>${f.svi ? `<div class="two">${fld('VLAN', P + 'vlan', {t:'num', opts:S.vlans.map(v => [v.id, `${v.id} · ${v.name}`])})}<div style="padding-top:18px"><button class="dng" data-act="delsvi" data-i="${path.split('.')[1]}">Eliminar</button></div></div>` : ''}
+    ${fld('Dirección IPv4', P + 'ip', {ip:1, ph:'192.168.1.1'})}<div class="two">${fld('Máscara', P + 'prefix', {t:'mask'})}${fld('Prefijo CIDR', P + 'prefix', {t:'int'})}</div>${fld('Interfaz activa', P + 'enabled', {t:'bool'})}${calcHTML(f.ip, f.prefix)}</div>`; }).join('');
+}
+function portsTable(d) {
+  const D = DV(d), mg = D.cls === 'switch' && D.managed, vo = S.vlans.map(v => [v.id, v.id + ' ' + v.name]);
+  const sel = (path, opts, v, t = '') => `<select data-p="${path}" ${t ? `data-t="${t}"` : ''}>${opts.map(o => { const [a, b] = Array.isArray(o) ? o : [o, o]; return `<option value="${a}" ${String(a) === String(v) ? 'selected' : ''}>${b}</option>`; }).join('')}</select>`;
+  const cnt = d.ports.filter(p => p.kind !== 'fiber' && p.kind !== 'wifi').length;
+  return `${D.cls === 'switch' ? `<label class="f"><span>Número de puertos de cobre</span><select data-act="nports">${[4, 8, 12, 16, 24, 48].map(n => `<option ${n === cnt ? 'selected' : ''}>${n}</option>`).join('')}</select></label>` : ''}
+  <div class="sw"><table><tr><th>Puerto</th><th>Vel.</th><th>On</th>${mg ? '<th>Modo</th><th>VLAN</th><th>Nativa</th>' : ''}<th>Descripción</th></tr>
+  ${d.ports.map((p, i) => `<tr><td>${esc(p.name)}${p.kind === 'fiber' ? ' <span class="tag">FO</span>' : ''}</td><td>${sel(`ports.${i}.speed`, ['10M', '100M', '1G', '10G'], p.speed)}</td><td><input type="checkbox" data-p="ports.${i}.enabled" data-t="bool" ${p.enabled ? 'checked' : ''}></td>
+  ${mg ? `<td>${sel(`ports.${i}.mode`, [['access', 'acceso'], ['trunk', 'troncal']], p.mode)}</td><td>${p.mode === 'access' ? sel(`ports.${i}.vlan`, vo, p.vlan, 'num') : '—'}</td><td>${p.mode === 'trunk' ? sel(`ports.${i}.native`, vo, p.native, 'num') : '—'}</td>` : ''}<td><input data-p="ports.${i}.desc" value="${esc(p.desc)}"></td></tr>`).join('')}</table></div>`;
+}
+const recEd = (d, path = 'dnsRecords') => `<div class="card"><h5>Registros DNS</h5>${(d[path] || []).map((r, i) => `<div class="row" style="margin-bottom:4px"><label>${fld('', `${path}.${i}.name`, {ph:'nombre.dominio'}).replace('<span></span>', '')}</label><label>${fld('', `${path}.${i}.ip`, {ph:'IP'}).replace('<span></span>', '')}</label><button class="dng" data-act="delrec" data-i="${i}">✕</button></div>`).join('') || '<p class="mut">Sin registros.</p>'}<button data-act="addrec">+ Añadir registro</button></div>`;
+function renderProps() {
+  const P = $('#props'), T = $('#ptabs'); let h = '', tabs = [];
+  const d = cur();
+  if (RT.selLink && lnk(RT.selLink)) {
+    const l = lnk(RT.selLink), a = dev(l.a.dev), b = dev(l.b.dev), pr = linkProblem(l);
+    T.innerHTML = ''; P.innerHTML = `<div class="card"><h5>Enlace ${esc(a.name)} ↔ ${esc(b.name)}</h5><div class="mono mut">${esc(a.name)}:${esc(port(a, l.a.port).name)} ⇄ ${esc(b.name)}:${esc(port(b, l.b.port).name)}<br>Velocidad nominal: ${linkSpeed(l)}</div>
+    <div class="msg ${pr ? 'err' : 'ok'}" style="margin-top:8px">${pr ? 'Sin conexión: ' + esc(pr) : 'Enlace operativo'}</div></div>
+    <label class="f"><span>Tipo de enlace</span><select data-l="type">${Object.entries({eth:'Ethernet de cobre', fiber:'Fibra óptica', wifi:'Enlace Wi-Fi', tunnel:'Enlace lógico / túnel'}).map(([k, v]) => `<option value="${k}" ${l.type === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+    <label class="f"><span>Trazado</span><select data-l="style"><option value="" ${!l.style ? 'selected' : ''}>Según ajuste general</option>${[['direct', 'Línea directa'], ['ortho', 'Ortogonal'], ['auto', 'Automático']].map(([k, v]) => `<option value="${k}" ${l.style === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+    <label class="f"><span>Etiqueta opcional</span><input data-l="label" value="${esc(l.label)}"></label><label class="ck"><input type="checkbox" data-l="down" ${l.down ? 'checked' : ''}> Enlace desactivado (simular corte)</label>
+    <button class="dng" data-act="dellink">Eliminar enlace</button>`; return;
+  }
+  if (RT.sel.size > 1) {
+    T.innerHTML = ''; P.innerHTML = `<div class="card"><h5>${RT.sel.size} dispositivos seleccionados</h5><div class="row"><button data-act="dup">Duplicar</button><button data-act="rot">Girar</button><button class="dng" data-act="del">Eliminar</button></div>
+    <p class="mut">Alinear y distribuir:</p><div class="row">${[['left', 'Izq.'], ['cx', 'Centro H'], ['right', 'Der.'], ['top', 'Arriba'], ['cy', 'Centro V'], ['bottom', 'Abajo'], ['dh', 'Distrib. H'], ['dv', 'Distrib. V']].map(([m, t]) => `<button data-al="${m}">${t}</button>`).join('')}</div></div>`; return;
+  }
+  if (!d) {
+    T.innerHTML = ''; const s = S.settings, ec = DIAG.length;
+    P.innerHTML = `<div class="card"><h5>Proyecto</h5><label class="f"><span>Nombre</span><input data-pj="name" value="${esc(S.name)}"></label><div class="mut">${S.devices.length} dispositivos · ${S.links.length} enlaces · ${S.vlans.length} VLAN</div></div>
+    <div class="card"><h5>Ajustes</h5><label class="ck"><input type="checkbox" data-pj="autosave" ${s.autosave ? 'checked' : ''}> Guardado automático en el navegador</label>
+    <label class="f"><span>Tamaño de cuadrícula</span><select data-pj="size">${[10, 20, 40].map(n => `<option ${s.size === n ? 'selected' : ''}>${n}</option>`).join('')}</select></label></div>
+    <div class="card"><h5>Primeros pasos</h5><p class="mut">Arrastra dispositivos desde la izquierda, conéctalos arrastrando de un puerto a otro y haz clic en un equipo para configurarlo. Pulsa <b>▶ Iniciar</b> y usa la pestaña <b>Tráfico</b> para probar. Menú <b>Plantillas</b> para empezar con una red hecha.</p></div>`; return;
+  }
+  const D = DV(d), cl = D.cls;
+  tabs = [['general', 'General']];
+  if (cl === 'host') { tabs.push(['red', 'Red']); if (d.wifi) tabs.push(['wifi', 'Wi-Fi']); tabs.push(['serv', 'Servicios'], ['puertos', 'Puertos']); }
+  if (cl === 'router') tabs.push(['ifaces', 'Interfaces'], ['dhcp', 'DHCP'], ['rutas', 'Rutas'], ['nat', D.fw ? 'Firewall/NAT' : 'NAT/DNS']), D.radio && tabs.push(['wifi', 'Wi-Fi']), tabs.push(['puertos', 'Puertos']);
+  if (cl === 'switch') { tabs.push(['puertos', 'Puertos'], ['mac', 'Tabla MAC']); if (D.l3) tabs.push(['ifaces', 'SVI'], ['dhcp', 'DHCP'], ['rutas', 'Rutas']); }
+  if (cl === 'ap') tabs.push(['wifi', 'Wi-Fi'], ['puertos', 'Puertos']);
+  if (cl === 'pass') tabs.push(['puertos', 'Puertos']);
+  if (cl === 'cloud') tabs.push(['red', 'Red y DNS'], ['puertos', 'Puertos']);
+  if (!tabs.some(t => t[0] === RT.ptab)) RT.ptab = 'general';
+  T.innerHTML = tabs.map(([k, v]) => `<button data-pt="${k}" class="${RT.ptab === k ? 'on' : ''}">${v}</button>`).join('');
+  const tb = RT.ptab, iss = devIssues(d);
+  if (tb === 'general') {
+    h = `<div class="card"><h5>${esc(D.n)}</h5>${fld('Nombre del dispositivo', 'name')}${fld('Modelo o tipo', 'desc')}${cl !== 'zone' ? fld('Dirección MAC simulada', 'mac', {tip:'Debe ser única en el proyecto'}) + fld('Encendido', 'on', {t:'bool'}) : `<div class="two">${fld('Ancho', 'w', {t:'int'})}${fld('Alto', 'h', {t:'int'})}</div>${fld('Subred / etiqueta', 'subnet')}`}
+    <div class="two">${fld('Color', 'color', {t:'color'})}<div style="padding-top:18px"><button data-act="clrcolor">Color por defecto</button></div></div>${fld('Comentarios', 'note', {t:'area'})}</div>
+    <div class="row"><button data-act="dup">Duplicar</button>${cl !== 'zone' ? '<button data-act="rot">Girar 90°</button>' : ''}<button class="dng" data-act="del">Eliminar</button></div>${iss}`;
+  } else if (tb === 'red' && cl === 'host') {
+    const c = hostCfg(d);
+    h = `<div class="card"><h5>Configuración IPv4</h5>${fld('DHCP activado', 'dhcp', {t:'bool'})}${d.dhcp ? `<div class="msg ${d.lease ? 'ok' : 'warn'}">${d.lease ? `Concesión: ${d.lease.ip}/${d.lease.prefix}<br>Gateway ${d.lease.gw || '—'} · DNS ${d.lease.dns || '—'} · servidor ${d.lease.server}` : 'Sin concesión DHCP todavía.'}</div><button class="pri" data-act="renew">Renovar DHCP</button>`
+      : `${fld('Dirección IPv4', 'ip', {ip:1, ph:'192.168.1.10'})}<div class="two">${fld('Máscara', 'prefix', {t:'mask'})}${fld('Prefijo CIDR', 'prefix', {t:'int'})}</div>${fld('Puerta de enlace', 'gw', {ip:1, ph:'192.168.1.1'})}${fld('Servidor DNS', 'dns', {ip:1})}`}</div>${calcHTML(c.ip, c.prefix)}${iss}`;
+  } else if (tb === 'red' && cl === 'cloud') {
+    h = `<div class="card"><h5>${d.type === 'cloud' ? 'Internet simulado' : 'Red externa'}</h5>${fld('IP de la interfaz', 'ip', {ip:1})}<div class="two">${fld('Máscara', 'prefix', {t:'mask'})}${fld('Prefijo', 'prefix', {t:'int'})}</div>
+    <p class="mut">${d.type === 'cloud' ? 'Responde a cualquier dirección IP pública. Las direcciones privadas no se enrutan (necesitan NAT).' : 'Responde solo a direcciones de su propia red.'}</p></div>${fld('Servidor DNS activo', 'dnsOn', {t:'bool'})}${recEd(d)}${calcHTML(d.ip, d.prefix)}`;
+  } else if (tb === 'wifi' && d.wifi) {
+    const near = S.devices.filter(a => isAP(a) && a.on && a.radio.bcast && dist(a, d) <= effRange(a)), cn = linksAt(d, d.ports.find(p => p.kind === 'wifi').id);
+    h = `<div class="card"><h5>Conexión Wi-Fi</h5>${fld('SSID', 'wifi.ssid')}${fld('Contraseña', 'wifi.pass')}<div class="msg ${cn.some(l => !linkProblem(l)) ? 'ok' : 'warn'}">${cn.length ? (cn.map(l => linkProblem(l)).find(Boolean) || 'Asociado correctamente') : 'Sin asociar a ningún punto de acceso'}</div>${cn.length ? '<button data-act="leave">Desconectar</button>' : ''}</div>
+    <div class="card"><h5>Redes al alcance</h5>${near.map(a => { const q = 1 - dist(a, d) / effRange(a); return `<div class="row" style="margin-bottom:4px"><div style="flex:1"><b>${esc(a.radio.ssid)}</b><br><span class="mut">${a.radio.band} GHz · canal ${a.radio.channel} · ${a.radio.sec} · señal ${'▂▄▆█'.slice(0, Math.max(1, Math.ceil(q * 4)))}</span></div><button data-act="join" data-id="${a.id}">Conectar</button></div>`; }).join('') || '<p class="mut">Ningún punto de acceso cubre este equipo. Acércalo o amplía la cobertura.</p>'}</div>`;
+  } else if (tb === 'wifi' && D.radio) {
+    const r = d.radio, ch = r.band === '5' ? [36, 40, 44, 48, 149, 153, 157, 161] : seq('', 13).map(Number), cn = S.links.filter(l => l.type === 'wifi' && (l.a.dev === d.id || l.b.dev === d.id));
+    h = `<div class="card"><h5>Radio Wi-Fi</h5>${fld('SSID', 'radio.ssid')}<div class="two">${fld('Banda', 'radio.band', {opts:[['2.4', '2,4 GHz'], ['5', '5 GHz']]})}${fld('Canal', 'radio.channel', {t:'num', opts:ch})}</div>
+    <div class="two">${fld('Ancho de canal', 'radio.width', {t:'num', opts:r.band === '5' ? [20, 40, 80] : [20, 40]})}${fld('Seguridad', 'radio.sec', {opts:['Abierta', 'WPA2', 'WPA3']})}</div>${r.sec !== 'Abierta' ? fld('Contraseña (ficticia)', 'radio.pass') : ''}
+    <div class="two">${fld('Potencia (%)', 'radio.power', {t:'int'})}${fld('Alcance base (px)', 'radio.range', {t:'int', tip:'Cobertura orientativa, no es una predicción radioeléctrica real'})}</div>
+    <div class="two">${fld('VLAN asociada', 'radio.vlan', {t:'num', opts:S.vlans.map(v => [v.id, `${v.id} · ${v.name}`])})}${fld('IP de gestión', 'radio.mgmtIp', {ip:1})}</div>${fld('Emitir SSID', 'radio.bcast', {t:'bool'})}
+    <p class="mut">Cobertura efectiva: ${Math.round(effRange(d))} px (orientativa).</p></div><div class="card"><h5>Clientes asociados</h5>${cn.map(l => { const c = dev(l.a.dev === d.id ? l.b.dev : l.a.dev); return `<div>${esc(c.name)} ${linkProblem(l) ? '<span class="tag" style="color:var(--err)">falla</span>' : '<span class="tag" style="color:var(--ok)">ok</span>'}</div>`; }).join('') || '<span class="mut">Ninguno</span>'}</div>`;
+  } else if (tb === 'serv') {
+    h = `<div class="card"><h5>Servicios</h5>${fld('Puertos abiertos (TCP/UDP)', 'openPorts', {ph:'22,80,443'})}${d.type === 'server' ? fld('Servidor DNS activo (puerto 53)', 'dnsOn', {t:'bool'}) : ''}</div>${d.type === 'server' && d.dnsOn ? recEd(d) : ''}`;
+  } else if (tb === 'ifaces') h = ifaceCards(d, cl === 'switch' ? 'SVI' : 'Interfaz') + (D.l3 ? '<button data-act="addsvi">+ Añadir interfaz VLAN (SVI)</button>' : '') + iss;
+  else if (tb === 'dhcp') {
+    const fs = ifaces(d);
+    h = (d.dhcpPools.map((p, i) => { const f = fs.find(x => x.id === p.iface); return `<div class="card"><h5>Servidor DHCP ${i + 1} <span class="tag">${p.on ? 'activo' : 'inactivo'}</span></h5>${fld('Interfaz', `dhcpPools.${i}.iface`, {opts:fs.map(x => [x.id, x.name])})}
+      <div class="two">${fld('Dirección inicial', `dhcpPools.${i}.start`, {ip:1})}${fld('Dirección final', `dhcpPools.${i}.end`, {ip:1})}</div><div class="two"><div class="f"><span>Máscara</span><input disabled value="${f && f.valid ? IP.str(IP.maskOf(f.prefix)) : '—'}"></div>${fld('Gateway (vacío = IP de la interfaz)', `dhcpPools.${i}.gw`, {ip:1})}</div>
+      <div class="two">${fld('DNS', `dhcpPools.${i}.dns`, {ip:1})}${fld('Concesión (s)', `dhcpPools.${i}.lease`, {t:'int'})}</div>${fld('Servidor DHCP activo', `dhcpPools.${i}.on`, {t:'bool'})}<button class="dng" data-act="delpool" data-i="${i}">Eliminar pool</button></div>`; }).join('') || '<p class="mut">Este equipo no tiene ningún servidor DHCP.</p>')
+      + `<button data-act="addpool">+ Añadir servidor DHCP</button><div class="card" style="margin-top:9px"><h5>Concesiones</h5>${(d.leases || []).map(l => `<div class="mono">${l.ip} ← ${l.mac} (${esc(l.host)})</div>`).join('') || '<span class="mut">Ninguna.</span>'} ${d.leases.length ? '<br><button data-act="clearleases">Borrar concesiones</button>' : ''}</div>` + iss;
+  } else if (tb === 'rutas') {
+    const fs = ifaces(d), cn = fs.filter(f => f.valid && f.up);
+    h = `<div class="card"><h5>Tabla de rutas</h5><div class="sw"><table><tr><th>Destino</th><th>Prefijo</th><th>Salto</th><th>Interfaz</th><th>Métr.</th><th>On</th><th></th></tr>
+    ${cn.map(f => `<tr class="mut"><td>${IP.str(IP.net(f.ipn, f.prefix))}</td><td>${f.prefix}</td><td>—</td><td>${esc(f.name)}</td><td>0</td><td></td><td>C</td></tr>`).join('')}
+    ${d.routes.map((r, i) => `<tr><td><input data-ip="1" data-p="routes.${i}.net" value="${esc(r.net)}"></td><td><input type="number" style="width:54px" data-t="int" data-p="routes.${i}.prefix" value="${esc(r.prefix)}"></td><td><input data-ip="1" data-p="routes.${i}.nh" value="${esc(r.nh)}"></td>
+    <td><select data-p="routes.${i}.iface"><option value=""></option>${fs.map(f => `<option ${r.iface === f.name ? 'selected' : ''}>${esc(f.name)}</option>`).join('')}</select></td><td><input type="number" style="width:50px" data-t="int" data-p="routes.${i}.metric" value="${esc(r.metric)}"></td><td><input type="checkbox" data-t="bool" data-p="routes.${i}.on" ${r.on !== false ? 'checked' : ''}></td><td><button class="dng" data-act="delroute" data-i="${i}">✕</button></td></tr>`).join('')}</table></div>
+    <p class="mut">C = red conectada. Ruta predeterminada: 0.0.0.0 con prefijo 0.</p><div class="row"><button data-act="addroute">+ Añadir ruta</button><button data-act="adddef">+ Ruta predeterminada</button></div></div>${iss}`;
+  } else if (tb === 'nat') {
+    const net = S.devices.find(x => x.type === 'cloud'), r = net ? simulate(d, net.ip, {}) : null;
+    h = `<div class="card"><h5>NAT / PAT</h5>${fld('Activar NAT/PAT en la interfaz WAN', 'nat', {t:'bool'})}<p class="mut">Traduce las IP privadas de origen a la IP de la interfaz WAN al salir a Internet.</p></div>
+    <div class="card"><h5>DNS reenviado</h5>${fld('Servidor DNS en el router (reenvía a Internet)', 'dnsOn', {t:'bool'})}</div>${d.dnsOn ? recEd(d) : ''}
+    ${D.fw ? `<div class="card"><h5>Bloqueo de tráfico en tránsito</h5>${['ICMP', 'TCP', 'UDP'].map(p => `<label class="ck"><input type="checkbox" data-blk="${p}" ${d.block.includes(p) ? 'checked' : ''}> Bloquear ${p}</label>`).join('')}</div>` : ''}
+    <div class="card"><h5>Conexión simulada a Internet</h5>${net ? `<div class="msg ${r.ok ? 'ok' : 'err'}">${r.ok ? `${esc(d.name)} alcanza ${esc(net.name)} (${net.ip}) · ${r.rtt} ms` : esc(r.reason)}<small>${esc(r.tip)}</small></div>` : '<p class="mut">No hay ninguna nube de Internet en el diseño.</p>'}</div>`;
+  } else if (tb === 'mac') {
+    const rows = Object.values(d.macTable || {}); h = `<div class="card"><h5>Tabla de direcciones MAC</h5>${rows.length ? `<table><tr><th>VLAN</th><th>MAC</th><th>Puerto</th></tr>${rows.map(m => `<tr><td>${m.vlan}</td><td class="mono">${m.mac}</td><td>${esc(port(d, m.port)?.name || '')}</td></tr>`).join('')}</table><button data-act="clearmac">Vaciar tabla</button>` : '<p class="mut">Vacía. Inicia la simulación y genera tráfico para que el switch aprenda MAC.</p>'}</div>`;
+  } else if (tb === 'puertos') h = portsTable(d) + iss;
+  P.innerHTML = h;
+}
+$('#ptabs').addEventListener('click', e => { const b = e.target.closest('[data-pt]'); if (b) { RT.ptab = b.dataset.pt; renderProps(); } });
+$('#props').addEventListener('input', e => { const el = e.target; if (el.dataset.ip !== undefined) el.classList.toggle('bad', el.value.trim() !== '' && IP.parse(el.value) === null); });
+$('#props').addEventListener('change', e => {
+  const el = e.target;
+  if (el.dataset.pj) { const k = el.dataset.pj; pushUndo(); if (k === 'name') S.name = el.value; else if (k === 'autosave') { S.settings.autosave = el.checked; try { localStorage.setItem('netlab.auto', el.checked ? '1' : '0'); } catch (x) {} } else if (k === 'size') { S.settings.size = +el.value; } refreshAll(); return; }
+  if (el.dataset.l !== undefined) { const l = lnk(RT.selLink); pushUndo(); l[el.dataset.l] = el.type === 'checkbox' ? el.checked : el.value; refreshAll(); return; }
+  if (el.dataset.blk) { const d = cur(); pushUndo(); d.block = d.block.filter(x => x !== el.dataset.blk); if (el.checked) d.block.push(el.dataset.blk); refreshAll(); return; }
+  if (el.dataset.act === 'nports') { const d = cur(); pushUndo(); setPortCount(d, +el.value); refreshAll(); return; }
+  if (el.dataset.p !== undefined) applyField(el);
+});
+function applyField(el) {
+  const d = cur(); if (!d) return; const p = el.dataset.p, t = el.dataset.t; let v;
+  if (t === 'bool') v = el.checked; else if (t === 'int') { v = el.value === '' ? '' : parseInt(el.value, 10); if (isNaN(v)) v = ''; }
+  else if (t === 'mask') { v = IP.prefixOfMask(el.value); if (v === null) { toast('Máscara no válida: debe ser contigua, por ejemplo 255.255.255.0 o 255.255.254.0'); renderProps(); return; } }
+  else if (t === 'num') v = +el.value; else v = el.value;
+  pushUndo(); sp(d, p, t === 'str' || !t ? v.trim?.() ?? v : v);
+  if (p === 'radio.band') { d.radio.channel = v === '5' ? 36 : 6; d.radio.range = v === '5' ? 150 : 210; d.radio.width = 20; }
+  if (p === 'mac' && S.devices.some(x => x !== d && x.mac.toLowerCase() === d.mac.toLowerCase())) toast('Aviso: esa MAC ya la usa otro dispositivo');
+  if (/^ports\.\d+\.mode$/.test(p) && v === 'trunk') { const q = d.ports[+p.split('.')[1]]; q.native = q.native || 1; }
+  refreshAll();
+}
+function setPortCount(d, n) {
+  const cu = d.ports.filter(p => p.kind !== 'fiber' && p.kind !== 'wifi'), base = (cu[0] ? cu[0].name : 'Gi0/1').replace(/\d+$/, '');
+  if (n < cu.length) { const rm = cu.slice(n).map(p => p.id); S.links = S.links.filter(l => !((l.a.dev === d.id && rm.includes(l.a.port)) || (l.b.dev === d.id && rm.includes(l.b.port)))); d.ports = d.ports.filter(p => !rm.includes(p.id)); }
+  else { let mx = Math.max(...d.ports.map(p => +p.id.slice(1))); const at = d.ports.findIndex(p => p.kind === 'fiber'), add = []; for (let k = cu.length + 1; k <= n; k++) add.push({id:'p' + (++mx), name:base + k, kind:'eth', speed:'1G', enabled:true, vlan:1, mode:'access', native:1, desc:'', ip:'', prefix:24}); d.ports.splice(at < 0 ? d.ports.length : at, 0, ...add); }
+}
+$('#props').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return; const a = b.dataset.act, d = cur(), i = +b.dataset.i;
+  if (b.dataset.al) return alignSel(b.dataset.al);
+  if (!a) return;
+  if (a === 'dup') return dupSel(); if (a === 'del') return delSel(); if (a === 'rot') return rotSel(); if (a === 'dellink') return delSel();
+  if (a === 'renew') { if (!needSim()) return; pushUndo(); const r = doDhcp(d, logEv); if (r.ok) animate(r.steps, {proto:'DHCP', info:{src:d.name, dst:r.server.name, size:342, note:'DHCP Discover/Offer/Request/Ack'}}); else toast(r.msg, 4500); return refreshAll(); }
+  pushUndo();
+  if (a === 'clrcolor') d.color = ''; if (a === 'addroute') d.routes.push({net:'', prefix:24, nh:'', iface:'', metric:1}); if (a === 'adddef') d.routes.push({net:'0.0.0.0', prefix:0, nh:'', iface:'', metric:1});
+  if (a === 'delroute') d.routes.splice(i, 1); if (a === 'addpool') d.dhcpPools.push({iface:(ifaces(d)[1] || ifaces(d)[0] || {id:''}).id, start:'', end:'', gw:'', dns:'', lease:86400, on:true}); if (a === 'delpool') d.dhcpPools.splice(i, 1);
+  if (a === 'addrec') d.dnsRecords.push({name:'', ip:''}); if (a === 'delrec') d.dnsRecords.splice(i, 1); if (a === 'clearleases') { d.leases = []; S.devices.forEach(h => { if (h.lease && h.lease.server && ifaces(d).some(f => f.ip === h.lease.server)) h.lease = null; }); }
+  if (a === 'addsvi') { const used = new Set(d.svis.map(s => s.vlan)), v = S.vlans.find(v => !used.has(v.id)); if (!v) { toast('Crea antes otra VLAN en el gestor de VLAN'); return; } d.svis.push({vlan:v.id, ip:'', prefix:24, enabled:true}); } if (a === 'delsvi') d.svis.splice(i, 1);
+  if (a === 'clearmac') d.macTable = {};
+  if (a === 'leave') { S.links = S.links.filter(l => !(l.type === 'wifi' && (l.a.dev === d.id || l.b.dev === d.id))); }
+  if (a === 'join') joinWifi(d, dev(b.dataset.id));
+  refreshAll();
+});
+function joinWifi(c, ap) {
+  const go = pass => { c.wifi = {ssid:ap.radio.ssid, pass}; S.links = S.links.filter(l => !(l.type === 'wifi' && (l.a.dev === c.id || l.b.dev === c.id)));
+    const l = newLink(c, c.ports.find(p => p.kind === 'wifi').id, ap, ap.ports.find(p => p.kind === 'wifi').id, 'wifi'); S.links.push(l); const pr = linkProblem(l); refreshAll(); toast(pr ? pr : `${c.name} asociado a «${ap.radio.ssid}»`, 4000); };
+  if (ap.radio.sec === 'Abierta') { pushUndo(); go(''); return; }
+  modal(`Conectar a «${ap.radio.ssid}»`, `<label class="f"><span>Contraseña de la red</span><input id="wpw" type="text" placeholder="Contraseña"></label><p class="mut">Seguridad ${ap.radio.sec}. Si la contraseña no coincide, la asociación fallará.</p>`, [{t:'Cancelar'}, {t:'Conectar', cls:'pri', f() { pushUndo(); go($('#wpw').value); }}]);
+}
+
+/* =====================================================================
+   28. PANEL INFERIOR: eventos, tráfico, diagnóstico, tablas, aprendizaje
+   ===================================================================== */
+const BT = [['ev', 'Eventos'], ['tr', 'Herramientas de tráfico'], ['diag', 'Diagnóstico'], ['tab', 'Tablas'], ['learn', 'Aprender y prácticas']];
+RT.btab = 'ev'; RT.ptab = 'general'; RT.trOut = ''; RT.tabSel = 'ip'; RT.theo = 0; RT.prac = null;
+const trOut = (t, c) => { RT.trOut += `<div class="${c || ''}" style="${c === 'err' ? 'color:var(--err)' : c === 'ok' ? 'color:var(--ok)' : c === 'warn' ? 'color:var(--warn)' : ''}">${esc(t)}</div>`; const o = $('#tout'); if (o) { o.innerHTML = RT.trOut; o.scrollTop = o.scrollHeight; } };
+function renderBottom() {
+  $('#btabs').innerHTML = BT.map(([k, v]) => `<button data-bt="${k}" class="${RT.btab === k ? 'on' : ''}">${v}${k === 'diag' && DIAG.length ? ` (${DIAG.length})` : ''}</button>`).join('');
+  const B = $('#btb'), k = RT.btab;
+  if (k === 'ev') { B.innerHTML = `<div class="row" style="margin-bottom:4px"><button id="evClr">Limpiar</button><span class="mut">Los tiempos son simulados; no se envían paquetes reales por tu red.</span></div><div id="ev">${RT.events.map(evHTML).join('')}</div>`; $('#ev').scrollTop = 1e9; }
+  if (k === 'tr') {
+    const keep = {}; $$('#btb [data-k]').forEach(e => keep[e.dataset.k] = e.value);
+    const srcs = S.devices.filter(d => ['host', 'router', 'cloud'].includes(DV(d).cls) || DV(d).l3), tg = S.devices.filter(d => ifaces(d).length);
+    B.innerHTML = `<div class="tools"><div style="overflow:auto"><div class="row"><label class="f"><span>Origen</span><select data-k="src">${srcs.map(d => `<option value="${d.id}">${esc(d.name)}</option>`).join('')}</select></label>
+    <label class="f"><span>Destino (equipo, IP o dominio)</span><input data-k="dst" list="dl" placeholder="192.168.1.20"></label><datalist id="dl">${tg.map(d => `<option value="${esc(d.name)}"></option>`).join('')}</datalist></div>
+    <div class="row"><label class="f"><span>Protocolo</span><select data-k="proto"><option>ICMP</option><option>TCP</option><option>UDP</option></select></label><label class="f"><span>Puerto</span><input data-k="port" type="number" value="80"></label><label class="f"><span>Tamaño (bytes)</span><input data-k="size" type="number" value="64"></label><label class="f"><span>Dominio (DNS)</span><input data-k="dns" value="www.ejemplo.es"></label></div>
+    <div class="row">${[['ping', 'Ping'], ['trace', 'Traceroute'], ['arp', 'ARP'], ['arpc', 'Caché ARP'], ['dhcp', 'DHCP'], ['dns', 'DNS'], ['pkt', 'Enviar paquete'], ['clr', 'Limpiar']].map(([a, t]) => `<button data-tool2="${a}" class="${a === 'ping' ? 'pri' : ''}">${t}</button>`).join('')}</div></div><div class="out" id="tout">${RT.trOut || '<span class="mut">Resultados de las pruebas. Pulsa un paquete animado en el lienzo para ver su información.</span>'}</div></div>`;
+    $$('#btb [data-k]').forEach(e => { if (keep[e.dataset.k] !== undefined) e.value = keep[e.dataset.k]; });
+  }
+  if (k === 'diag') B.innerHTML = DIAG.length ? DIAG.map(x => `<div class="msg ${x.sev}" ${x.d ? `data-d="${x.d.id}"` : ''}><b>${x.sev === 'err' ? '✖' : '⚠'} ${esc(x.d ? x.d.name : '')}</b>: ${esc(x.msg)}<small>${esc(x.tip)}</small></div>`).join('') : '<div class="msg ok">No se han detectado errores ni advertencias de configuración.</div>';
+  if (k === 'tab') {
+    const T = tables(), rows = T[RT.tabSel];
+    B.innerHTML = `<div class="row"><label class="f"><span>Tabla</span><select id="tsel">${[['ip', 'Direcciones IP'], ['mac', 'Tablas MAC'], ['dhcp', 'Concesiones DHCP'], ['rutas', 'Rutas'], ['arp', 'Caché ARP']].map(([a, b]) => `<option value="${a}" ${RT.tabSel === a ? 'selected' : ''}>${b}</option>`).join('')}</select></label><button id="tcsv">Exportar CSV</button></div>
+    <div class="sw"><table><tr>${rows[0].map(h => `<th>${h}</th>`).join('')}</tr>${rows.slice(1).map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('') || ''}</table></div>${rows.length < 2 ? '<p class="mut">Sin datos todavía.</p>' : ''}`;
+  }
+  if (k === 'learn') renderLearn();
+}
+$('#btabs').addEventListener('click', e => { const b = e.target.closest('[data-bt]'); if (b) { RT.btab = b.dataset.bt; renderBottom(); } });
+$('#btb').addEventListener('change', e => { if (e.target.id === 'tsel') { RT.tabSel = e.target.value; renderBottom(); } if (e.target.dataset.theo !== undefined) { RT.theo = +e.target.value; renderBottom(); } });
+$('#btb').addEventListener('click', e => {
+  const b = e.target.closest('button'), m = e.target.closest('.msg[data-d]');
+  if (m) { RT.sel = new Set([m.dataset.d]); RT.selLink = null; refreshAll({keepBottom:1}); const d = dev(m.dataset.d); if (d) { const r = cv.getBoundingClientRect(); S.view.x = r.width / 2 - d.x * S.view.k; S.view.y = r.height / 2 - d.y * S.view.k; applyView(); } return; }
+  if (!b) return; if (b.id === 'evClr') { RT.events = []; renderBottom(); } if (b.id === 'tcsv') { dl(`netlab-${RT.tabSel}.csv`, csv(tables()[RT.tabSel]), 'text/csv'); }
+  if (b.dataset.tool2) return runTool(b.dataset.tool2);
+  if (b.dataset.pr) pracAction(b.dataset.pr, b.dataset.id);
+});
+const kv = k => { const e = $(`#btb [data-k="${k}"]`); return e ? e.value : ''; };
+function target(src, s) {
+  s = s.trim(); if (!s) return {err:'Indica un destino (equipo, IP o dominio).'};
+  if (IP.parse(s) !== null) return {ip:s};
+  const d = S.devices.find(x => x.name.toLowerCase() === s.toLowerCase());
+  if (d) { const f = ifaces(d).find(f => f.valid); return f ? {ip:f.ip, name:d.name} : {err:`${d.name} no tiene una IP configurada.`}; }
+  if (/[a-z]/i.test(s) && s.includes('.')) { const r = resolveDNS(src, s, logEv); if (r.ok) { animate(r.steps, {proto:'DNS', info:{src:src.name, dst:hostCfg(src).dns, size:70, port:53}}); return {ip:r.ip, name:s, dnsMsg:r.msg}; } return {err:`No se pudo resolver «${s}»: ${r.msg}`}; }
+  return {err:`«${s}» no es una IP, un equipo ni un dominio.`};
+}
+function runTool(a) {
+  if (a === 'clr') { RT.trOut = ''; return renderBottom(); }
+  const src = dev(kv('src')); if (!src) return toast('Añade un equipo de origen');
+  if (!needSim()) return;
+  const info = (r, proto, dst, extra = {}) => ({proto, info:Object.assign({src:`${src.name} (${r.srcIP !== null && r.srcIP !== undefined ? IP.str(r.srcIP) : '?'})`, dst, size:+kv('size') || 64}, extra)});
+  if (a === 'ping' || a === 'pkt' || a === 'trace') {
+    const t = target(src, kv('dst')); if (t.err) { trOut(t.err, 'err'); logEv(t.err, 'err'); return; }
+    if (t.dnsMsg) trOut('DNS: ' + t.dnsMsg);
+    const proto = a === 'ping' || a === 'trace' ? 'ICMP' : kv('proto'), port = proto === 'ICMP' ? 0 : +kv('port') || 80;
+    if (a === 'trace') {
+      const r = simulate(src, t.ip, {log:logEv, learn:true, proto}); trOut(`Traceroute a ${t.ip} desde ${src.name} (máx. 30 saltos)`);
+      r.hops.forEach((h, i) => trOut(`${String(i + 1).padStart(2)}  ${h.ip.padEnd(15)} ${h.name.padEnd(12)} ${(0.4 * (i + 1) + 0.3).toFixed(1)} ms`));
+      if (r.ok) { trOut('Traza completada.', 'ok'); } else { trOut(`${String(r.hops.length + 1).padStart(2)}  *  *  *   Tiempo de espera agotado`, 'err'); trOut('Se interrumpe aquí: ' + r.reason, 'err'); if (r.tip) trOut('→ ' + r.tip, 'warn'); }
+      animate(r.steps, {proto, bad:!r.ok, info:{src:src.name, dst:t.ip, size:60}}); logEv(`Traceroute ${src.name} → ${t.ip}: ${r.ok ? r.hops.length + ' salto(s)' : 'interrumpido'}`, r.ok ? 'ok' : 'err'); return;
+    }
+    const n = a === 'ping' ? 4 : 1, size = +kv('size') || 64; let ok = 0, rt = [], R0 = null;
+    trOut(`${a === 'ping' ? 'PING' : proto} ${t.ip} desde ${src.name}${hostIP(src) ? ' (' + hostIP(src) + ')' : ''} con ${size} bytes`);
+    for (let i = 0; i < n; i++) {
+      const r = simulate(src, t.ip, {log:i === 0 ? logEv : null, learn:true, proto, port}); if (i === 0) R0 = r;
+      if (r.ok) { ok++; const ms = Math.max(.1, +(r.rtt + [0, .3, -.1, .2][i % 4]).toFixed(1)); rt.push(ms); const ttl = 64 - Math.max(0, r.hops.length - 1);
+        trOut(r.refused ? `${t.ip}: ${r.reason}` : `Respuesta de ${t.ip}: bytes=${size} tiempo=${ms} ms TTL=${ttl}${proto !== 'ICMP' ? ' ' + proto + '/' + port + ' conectado' : ''}`, r.refused ? 'warn' : 'ok'); }
+      else trOut(`Tiempo de espera agotado para ${t.ip}`, 'err');
+    }
+    trOut(`Paquetes: enviados = ${n}, recibidos = ${ok}, perdidos = ${n - ok} (${Math.round((n - ok) / n * 100)}% de pérdida)${rt.length ? `; mín/máx/media = ${Math.min(...rt)}/${Math.max(...rt)}/${(rt.reduce((x, y) => x + y, 0) / rt.length).toFixed(1)} ms` : ''}`, ok ? 'ok' : 'err');
+    if (!R0.ok || R0.refused) { trOut('Causa probable: ' + R0.reason, 'err'); if (R0.tip) trOut('→ ' + R0.tip, 'warn'); }
+    if (R0.dup) trOut('⚠ Se detectó una IP duplicada en el camino.', 'warn');
+    const inf = info(R0, proto, `${t.name || t.ip} (${t.ip})`, {port:port || undefined});
+    animate(R0.steps, Object.assign({bad:!R0.ok && !R0.reqOk}, inf)); if (R0.ok || R0.reqOk) setTimeout(() => animate(R0.rsteps, Object.assign({}, inf, {rev:true, info:Object.assign({}, inf.info, {src:inf.info.dst, dst:inf.info.src})})), Math.min(2600, R0.steps.length * 420 + 200));
+    logEv(`${a === 'ping' ? 'Ping' : proto} ${src.name} → ${t.ip}: ${ok}/${n} respuestas${R0.ok ? '' : ' · ' + R0.reason}`, ok ? 'ok' : 'err'); refreshAll({keepBottom:1, keepProps:1}); return;
+  }
+  if (a === 'arp') {
+    const t = target(src, kv('dst')); if (t.err) return trOut(t.err, 'err'); let n = IP.parse(t.ip); const fs = ifaces(src), f = fs.find(f => f.valid && IP.same(f.ipn, n, f.prefix)) || fs[0];
+    if (f && f.valid && !IP.same(f.ipn, n, f.prefix) && f.gw && IP.parse(f.gw) !== null) { trOut(`${t.ip} está en otra subred: ARP solo resuelve direcciones locales, se resuelve el gateway ${f.gw}.`, 'warn'); n = IP.parse(f.gw); t.ip = f.gw; }
+    if (!f || !f.valid) return trOut(`${src.name} no tiene una interfaz con IP válida para enviar ARP.`, 'err');
+    logEv(`${src.name} genera una solicitud ARP: ¿quién tiene ${t.ip}?`); const res = resolveL2(src, f, n, {learn:true, log:logEv});
+    if (!res.owner) { trOut(`ARP ${t.ip}: sin respuesta. ${arpTip(src, n)}`, 'err'); logEv(`ARP sin respuesta para ${t.ip}`, 'err'); return; }
+    src.arp[t.ip] = res.owner.f.mac; res.owner.dev.arp[f.ip] = f.mac; trOut(`ARP: ${t.ip} está en ${res.owner.f.mac} (${res.owner.dev.name})`, 'ok'); if (res.dup) trOut('⚠ Varias respuestas ARP: IP duplicada.', 'warn');
+    logEv(`${res.owner.dev.name} responde ARP: ${t.ip} → ${res.owner.f.mac}`, 'ok'); animate(nodeSteps(res.owner.ep.node), {proto:'ARP', info:{src:src.name, dst:res.owner.dev.name, size:42, note:'Solicitud ARP (difusión) y respuesta'}}); renderBottom(); return;
+  }
+  if (a === 'arpc') { const k = Object.keys(src.arp); trOut(`Caché ARP de ${src.name}:`); k.length ? k.forEach(i => trOut(`  ${i.padEnd(16)} ${src.arp[i]}`)) : trOut('  (vacía)'); return; }
+  if (a === 'dhcp') {
+    if (DV(src).cls !== 'host') return trOut('Elige un equipo final como origen para solicitar DHCP.', 'err'); if (!src.dhcp) { src.dhcp = true; refreshAll(); }
+    const r = doDhcp(src, logEv); trOut('DHCP Discover → Offer → Request → Acknowledge'); trOut(r.msg, r.ok ? 'ok' : 'err'); if (r.ok) animate(r.steps, {proto:'DHCP', info:{src:src.name, dst:r.server.name, size:342, note:'DHCP Discover/Offer/Request/Ack'}}); refreshAll({keepBottom:1}); return;
+  }
+  if (a === 'dns') {
+    const r = resolveDNS(src, kv('dns').trim(), logEv); trOut(`DNS: ${kv('dns')} consultado desde ${src.name} (${hostCfg(src).dns || 'sin servidor'})`); trOut(r.msg, r.ok ? 'ok' : 'err'); if (r.tip) trOut('→ ' + r.tip, 'warn');
+    animate(r.steps || [], {proto:'DNS', bad:!r.ok, info:{src:src.name, dst:hostCfg(src).dns, size:70, port:53, note:'Consulta UDP al servidor DNS'}}); logEv(`DNS ${kv('dns')}: ${r.msg}`, r.ok ? 'ok' : 'err');
+  }
+}
+
+/* ---- Teoría y prácticas ---- */
+function renderLearn() {
+  const th = TEORIA[RT.theo], p = RT.prac && PRACT.find(x => x.id === RT.prac.id), prof = RT.mode === 'profesor';
+  $('#btb').innerHTML = `<div class="pgrid"><div><label class="f"><span>Tema teórico</span><select data-theo="1">${TEORIA.map((t, i) => `<option value="${i}" ${i === RT.theo ? 'selected' : ''}>${t[0]}</option>`).join('')}</select></label><div class="card"><h5>${th[0]}</h5><p style="margin:0">${th[1]}</p></div></div>
+  <div><div class="card"><h5>Prácticas guiadas (${RT.mode})</h5>${PRACT.map(x => `<div class="row" style="margin-bottom:3px;align-items:center"><div style="flex:1">${x.t}</div><button data-pr="load" data-id="${x.id}">Cargar</button></div>`).join('')}</div>
+  ${p ? `<div class="card"><h5>Práctica actual: ${p.t}</h5><p>${p.d}</p>${RT.prac.hints ? p.hints.slice(0, RT.prac.hints).map((h, i) => `<div class="msg warn">Pista ${i + 1}: ${h}</div>`).join('') : ''}${RT.prac.res ? `<div class="msg ${RT.prac.res.ok ? 'ok' : 'err'}">${esc(RT.prac.res.msg)}</div>` : ''}
+   ${prof ? `<div class="msg"><b>Solución (modo profesor):</b> ${esc(p.sol)}</div>` : ''}<div class="row"><button class="pri" data-pr="check">Comprobar solución</button><button data-pr="hint" ${RT.prac.hints >= p.hints.length ? 'disabled' : ''}>Pista (${RT.prac.hints}/${p.hints.length})</button><button data-pr="reset">Reiniciar ejercicio</button></div></div>` : ''}</div></div>`;
+}
+function pracAction(a, id) {
+  if (a === 'load' || a === 'reset') {
+    const p = PRACT.find(x => x.id === (id || RT.prac.id)), go = () => { replaceProject(() => p.setup(), p.t); RT.prac = {id:p.id, hints:0, res:null}; S.practice = p.id; renderBottom(); logEv('Práctica cargada: ' + p.t); };
+    return S.devices.length && a === 'load' ? modal('Cargar práctica', '<p>Se reemplazará el diseño actual (podrás recuperarlo con «Deshacer»).</p>', [{t:'Cancelar'}, {t:'Cargar', cls:'pri', f:go}]) : go();
+  }
+  const p = PRACT.find(x => x.id === RT.prac.id);
+  if (a === 'hint') RT.prac.hints = Math.min(p.hints.length, RT.prac.hints + 1);
+  if (a === 'check') { try { RT.prac.res = p.check(); } catch (e) { RT.prac.res = {ok:false, msg:'No se pudo comprobar: revisa que no hayas eliminado equipos de la práctica.'}; } refreshAll({keepBottom:1}); }
+  renderBottom();
+}
+$('#mode').addEventListener('change', e => { RT.mode = e.target.value; if (RT.btab === 'learn') renderBottom(); });
+$('#diagPill').addEventListener('click', () => { RT.btab = 'diag'; renderBottom(); });
+
+/* =====================================================================
+   29. DIÁLOGOS: VLAN, calculadora de subredes, ayuda
+   ===================================================================== */
+function vlanDlg() {
+  const draw = () => { $('#mB').innerHTML = `<table><tr><th>ID</th><th>Nombre</th><th>Color</th><th>Puertos</th><th></th></tr>${S.vlans.map((v, i) => `<tr><td>${v.id}</td><td><input data-vn="${i}" value="${esc(v.name)}"></td><td><input type="color" data-vc="${i}" value="${v.color}"></td><td>${S.devices.reduce((n, d) => n + d.ports.filter(p => p.mode === 'access' && p.vlan === v.id && DV(d).cls === 'switch').length, 0)}</td><td>${v.id === 1 ? '' : `<button class="dng" data-vd="${i}">Eliminar</button>`}</td></tr>`).join('')}</table>
+    <div class="row" style="margin-top:12px"><label class="f"><span>Nueva VLAN (ID 2–4094)</span><input id="vid" type="number" min="2" max="4094"></label><label class="f"><span>Nombre</span><input id="vnm"></label><button class="pri" id="vadd">Añadir</button></div>`; };
+  modal('Gestor de VLAN', '', [{t:'Cerrar'}]); draw();
+  $('#mB').onchange = e => { const t = e.target; if (t.dataset.vn) { pushUndo(); S.vlans[+t.dataset.vn].name = t.value; refreshAll(); } if (t.dataset.vc) { pushUndo(); S.vlans[+t.dataset.vc].color = t.value; refreshAll(); } };
+  $('#mB').onclick = e => { const b = e.target.closest('button'); if (!b) return;
+    if (b.id === 'vadd') { const id = +$('#vid').value, nm = $('#vnm').value.trim() || 'VLAN' + id; if (!(id >= 2 && id <= 4094)) return toast('El ID debe estar entre 2 y 4094'); if (S.vlans.some(v => v.id === id)) return toast('Esa VLAN ya existe'); pushUndo(); S.vlans.push({id, name:nm, color:VLAN_COLORS[S.vlans.length % VLAN_COLORS.length]}); refreshAll(); draw(); }
+    if (b.dataset.vd) { const v = S.vlans[+b.dataset.vd]; pushUndo(); S.devices.forEach(d => d.ports.forEach(p => { if (p.vlan === v.id) p.vlan = 1; if (p.native === v.id) p.native = 1; })); S.devices.forEach(d => { if (d.radio && d.radio.vlan === v.id) d.radio.vlan = 1; if (d.svis) d.svis = d.svis.filter(s => s.vlan !== v.id); }); S.vlans.splice(+b.dataset.vd, 1); refreshAll(); draw(); } };
+}
+function calcDlg() {
+  const upd = () => { const ip = $('#cip').value, m = $('#cmk').value.trim(); let p = m.startsWith('/') ? +m.slice(1) : (/^\d+$/.test(m) ? +m : IP.prefixOfMask(m)), n = IP.parse(ip), o = $('#cout');
+    if (n === null) o.innerHTML = '<div class="msg err">Dirección IP no válida.</div>'; else if (p === null || !(p >= 0 && p <= 32)) o.innerHTML = '<div class="msg err">Máscara o prefijo no válido (ejemplos: 255.255.255.0, /24 o 24).</div>'; else o.innerHTML = calcHTML(ip, p) + `<p class="mut">Tipo: ${IP.isPrivate(n) ? 'privada (RFC 1918)' : IP.isPublic(n) ? 'pública' : 'especial'}${p < 31 && (n === IP.net(n, p) || n === IP.bcast(n, p)) ? ' · <b style="color:var(--warn)">esta IP es la de red o broadcast, no válida para un host</b>' : ''}</p>`; };
+  const subs = []; S.devices.forEach(d => ifaces(d).forEach(f => { if (f.valid) { const k = IP.str(IP.net(f.ipn, f.prefix)) + '/' + f.prefix; let s = subs.find(x => x.k === k); if (!s) subs.push(s = {k, m:[]}); s.m.push(d.name); } }));
+  modal('Calculadora de subredes', `<div class="row"><label class="f"><span>Dirección IPv4</span><input id="cip" value="192.168.1.10"></label><label class="f"><span>Máscara o prefijo</span><input id="cmk" value="255.255.255.0"></label></div><div id="cout"></div>
+   <div class="card"><h5>Subredes del diseño</h5>${subs.map(s => `<div class="mono">${s.k} — ${esc([...new Set(s.m)].join(', '))}</div>`).join('') || '<span class="mut">Todavía no hay equipos con IP.</span>'}</div>`); upd(); $('#mB').oninput = upd;
+}
+function helpDlg() {
+  modal('Ayuda de NetLab', `<p>NetLab es un laboratorio virtual de redes: la simulación es educativa y <b>no envía paquetes reales</b> por tu red.</p><div class="card"><h5>Cómo diseñar una red</h5>1. Arrastra equipos a la izquierda o haz clic en ellos. 2. Conéctalos arrastrando de un puerto a otro (o con <b>Conectar</b>). 3. Configura IP, máscara y gateway en el panel derecho. 4. Pulsa <b>▶ Iniciar</b> y prueba con <b>Ping</b>.</div>
+  <div class="card"><h5>Atajos de teclado</h5><div class="mono">V seleccionar · H mover lienzo · C conectar · Espacio+arrastrar desplazar<br>Supr eliminar · Ctrl+D duplicar · R girar · Ctrl+A todo · Esc cancelar<br>Ctrl+Z / Ctrl+Y deshacer / rehacer · Ctrl+S guardar · G cuadrícula<br>+ / − zoom · F ajustar · F1 ayuda · clic derecho: menú contextual</div></div>
+  <div class="card"><h5>Limitaciones</h5>Sin STP, OSPF/BGP, IPv6 ni ACL detalladas; el firewall solo bloquea protocolos; la cobertura Wi-Fi es orientativa; los tiempos son ficticios.</div>`);
+}
+$('#bHelp').onclick = helpDlg;
+
+/* =====================================================================
+   30. PROYECTOS: nuevo, guardar, abrir, plantillas
+   ===================================================================== */
+function replaceProject(builder, name) {
+  const js = snapJSON(), hist = RT.hist, st = S.settings; resetProject(); S.settings = st; builder(); runDhcpAll(); RT.hist = hist; pushUndo(js); if (name) S.name = name;
+  RT.packets = []; refreshAll(); fitView(); logEv('Proyecto cargado: ' + (name || S.name));
+}
+function loadTpl(i) { replaceProject(() => TPL[i].f(), TPL[i].n.replace(/^\d+\.\s*/, '')); toast('Plantilla cargada. Puedes modificarla libremente.'); }
+function sanitize(o) {                  // valida un proyecto antes de reemplazar el actual
+  if (!o || !Array.isArray(o.devices) || !Array.isArray(o.links)) throw new Error('El archivo no es un proyecto de NetLab');
+  const keep = S; try {
+    const ns = blank(); S = ns; Object.assign(ns.settings, o.settings || {}); ns.name = String(o.name || 'Proyecto'); ns.vlans = Array.isArray(o.vlans) && o.vlans.length ? o.vlans.filter(v => v && Number.isInteger(v.id)) : ns.vlans;
+    if (!ns.vlans.some(v => v.id === 1)) ns.vlans.unshift({id:1, name:'default', color:'#6f7f99'});
+    ns.devices = o.devices.filter(sd => sd && DEF[sd.type] && typeof sd.id === 'string').map(sd => { const b = newDevice(sd.type, +sd.x || 0, +sd.y || 0); const m = Object.assign(b, sd);
+      m.ports = Array.isArray(sd.ports) && sd.ports.length ? sd.ports.map((p, i) => Object.assign({}, b.ports[i] || {}, p)) : b.ports; m.macTable = sd.macTable || {}; m.arp = sd.arp || {}; return m; });
+    ns.links = o.links.filter(l => l && l.a && l.b && dev(l.a.dev) && dev(l.b.dev) && port(dev(l.a.dev), l.a.port) && port(dev(l.b.dev), l.b.port));
+    ns.nextId = Math.max(+o.nextId || 1, ns.nextId); ns.macSeq = Math.max(+o.macSeq || 1, ns.macSeq); ns.view = o.view && isFinite(o.view.k) ? o.view : ns.view; ns.practice = o.practice || null; return ns;
+  } catch (e) { S = keep; throw e; }
+}
+function openProject(file) {
+  const fr = new FileReader(); fr.onload = () => { const keep = S; try { const ns = sanitize(JSON.parse(fr.result)); S = keep; const js = snapJSON(); S = ns; RT.sel = new Set(); RT.selLink = null; RT.packets = []; pushUndo(js); refreshAll(); toast('Proyecto abierto: ' + S.name); } catch (e) { S = keep; toast('No se pudo abrir el archivo: ' + e.message, 5000); } };
+  fr.onerror = () => toast('No se pudo leer el archivo'); fr.readAsText(file);
+}
+function saveProject() { dl((S.name || 'proyecto').normalize('NFD').replace(/[^\w\- ]/g, '_') + '.netlab.json', JSON.stringify(S, null, 1), 'application/json'); toast('Proyecto guardado como archivo JSON'); }
+$('#bNew').onclick = () => modal('Nuevo proyecto', '<p>Se vaciará el lienzo. Podrás recuperar el diseño anterior con «Deshacer».</p>', [{t:'Cancelar'}, {t:'Crear proyecto nuevo', cls:'pri', f() { replaceProject(() => {}, 'Proyecto sin título'); simStop(); }}]);
+$('#bSave').onclick = saveProject; $('#bOpen').onclick = () => $('#fOpen').click(); $('#fOpen').onchange = e => { if (e.target.files[0]) openProject(e.target.files[0]); e.target.value = ''; };
+$('#bUndo').onclick = undo; $('#bRedo').onclick = redo;
+
+/* =====================================================================
+   31. EXPORTACIÓN: SVG, PNG, CSV, configuración, impresión
+   ===================================================================== */
+function svgString() {
+  const b = bounds(S.devices) || {x1:0, y1:0, x2:400, y2:300}; if (S.settings.showWifi) S.devices.filter(d => isAP(d) && d.radio.bcast).forEach(d => { const r = effRange(d); b.x1 = Math.min(b.x1, d.x - r); b.y1 = Math.min(b.y1, d.y - r); b.x2 = Math.max(b.x2, d.x + r); b.y2 = Math.max(b.y2, d.y + r); });
+  const w = Math.round(b.x2 - b.x1), h = Math.round(b.y2 - b.y1), cs = getComputedStyle(cv), vars = ['--c-bg', '--c-grid', '--c-fill', '--c-ink', '--c-muted', '--c-acc'].map(v => `${v}:${cs.getPropertyValue(v).trim()}`).join(';');
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="${b.x1} ${b.y1} ${w} ${h}" width="${w}" height="${h}" style="${vars}"><style>${SVGCSS}</style><rect x="${b.x1}" y="${b.y1}" width="${w}" height="${h}" fill="var(--c-bg)"/>${$('#gZ').innerHTML}${$('#gW').innerHTML}${$('#gL').innerHTML}${$('#gD').innerHTML}</svg>`;
+}
+function exportImg(kind) {
+  if (!S.devices.length) return toast('No hay nada que exportar');
+  const svg = svgString(), nm = (S.name || 'diagrama').replace(/[^\w\-]/g, '_');
+  if (kind === 'svg') { dl(nm + '.svg', svg, 'image/svg+xml'); return toast('Diagrama exportado como SVG'); }
+  const m = svg.match(/viewBox="[\d.\-]+ [\d.\-]+ (\d+) (\d+)"/), sc = Math.min(2, 8000 / Math.max(+m[1], +m[2])), img = new Image();
+  img.onload = () => { const c = document.createElement('canvas'); c.width = Math.round(+m[1] * sc); c.height = Math.round(+m[2] * sc); const x = c.getContext('2d'); x.drawImage(img, 0, 0, c.width, c.height);
+    c.toBlob(bl => { const a = document.createElement('a'); a.href = URL.createObjectURL(bl); a.download = nm + '.png'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 800); toast('Diagrama exportado como PNG'); }, 'image/png'); };
+  img.onerror = () => toast('El navegador no pudo generar el PNG; usa la exportación SVG'); img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
+$('#bImg').onclick = e => { const r = e.target.getBoundingClientRect(); menu(r.left, r.bottom + 4, [{t:'Imagen SVG (vectorial)', f:() => exportImg('svg')}, {t:'Imagen PNG', f:() => exportImg('png')}, {t:'Imprimir el diseño', f:() => window.print()}]); };
+function reportRows() {
+  const A = [['DISPOSITIVOS'], ['Nombre', 'Tipo', 'Estado', 'MAC', 'IP principal', 'Prefijo', 'Gateway', 'Comentarios']];
+  S.devices.forEach(d => { const f = ifaces(d)[0] || {}; A.push([d.name, DV(d).n, d.on === false ? 'apagado' : 'encendido', d.mac || '', f.ip || '', f.prefix ?? '', f.gw || '', d.note || '']); });
+  A.push([], ['ENLACES'], ['Origen', 'Puerto origen', 'Destino', 'Puerto destino', 'Tipo', 'Velocidad', 'Estado']);
+  S.links.forEach(l => { const a = dev(l.a.dev), b = dev(l.b.dev); A.push([a.name, port(a, l.a.port).name, b.name, port(b, l.b.port).name, TYPE_NAME[l.type], linkSpeed(l), linkProblem(l) || 'activo']); }); return A;
+}
+function configText() {
+  let t = `! NetLab · ${S.name}\n! Configuración simulada de los equipos\n`;
+  S.devices.forEach(d => { const D = DV(d); t += `\n!--- ${d.name} (${D.n}) ${d.on ? '' : '[APAGADO]'}\nhostname ${d.name}\n`;
+    ifaces(d).forEach(f => { t += `interface ${f.name}\n  ${f.valid ? `ip address ${f.ip} ${IP.str(IP.maskOf(f.prefix))}` : 'no ip address'}\n`; });
+    if (D.cls === 'host') { const c = hostCfg(d); t += d.dhcp ? 'ip address dhcp\n' : ''; if (c.gw) t += `ip default-gateway ${c.gw}\n`; if (c.dns) t += `ip name-server ${c.dns}\n`; }
+    (d.routes || []).forEach(r => { t += `ip route ${r.net} ${IP.prefixOfMask ? IP.str(IP.maskOf(+r.prefix)) : ''} ${r.nh || r.iface}\n`; }); if (d.nat) t += 'ip nat inside source overload (interfaz WAN)\n';
+    (d.dhcpPools || []).forEach(p => { t += `ip dhcp pool ${p.iface}\n  range ${p.start} ${p.end}\n  default-router ${p.gw || '(IP de la interfaz)'}\n  dns-server ${p.dns || '-'}\n  lease ${p.lease}\n`; });
+    if (D.cls === 'switch') d.ports.forEach(p => { t += `interface ${p.name}\n  switchport mode ${p.mode}\n  ${p.mode === 'access' ? 'switchport access vlan ' + p.vlan : 'switchport trunk native vlan ' + p.native}\n${p.enabled ? '' : '  shutdown\n'}`; });
+    if (d.radio) t += `wlan ssid ${d.radio.ssid} band ${d.radio.band} channel ${d.radio.channel} security ${d.radio.sec}\n`; });
+  return t + '\n! VLAN\n' + S.vlans.map(v => `vlan ${v.id} name ${v.name}`).join('\n') + '\n';
+}
+$('#bCfg').onclick = e => { const r = e.target.getBoundingClientRect(), T = () => tables();
+  menu(r.left, r.bottom + 4, [{t:'Informe de dispositivos y enlaces (CSV)', f:() => dl('informe-red.csv', csv(reportRows()), 'text/csv')}, {t:'Tabla de direcciones IP (CSV)', f:() => dl('tabla-ip.csv', csv(T().ip), 'text/csv')}, {t:'Tablas MAC (CSV)', f:() => dl('tabla-mac.csv', csv(T().mac), 'text/csv')},
+    {t:'Concesiones DHCP (CSV)', f:() => dl('tabla-dhcp.csv', csv(T().dhcp), 'text/csv')}, {t:'Tablas de rutas (CSV)', f:() => dl('tabla-rutas.csv', csv(T().rutas), 'text/csv')}, {t:'Configuración de equipos (TXT)', f:() => dl('configuracion.txt', configText())}]); };
+
+/* =====================================================================
+   32. ATAJOS, DIVISORES Y ARRANQUE
+   ===================================================================== */
+document.addEventListener('keydown', e => {
+  const tg = e.target.tagName; if (tg === 'INPUT' || tg === 'TEXTAREA' || tg === 'SELECT') return; if ($('#modal').classList.contains('show')) { if (e.key === 'Escape') $('#modal').classList.remove('show'); return; }
+  const k = e.key.toLowerCase(), c = e.ctrlKey || e.metaKey;
+  if (c && k === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); } else if (c && k === 'y') { e.preventDefault(); redo(); } else if (c && k === 's') { e.preventDefault(); saveProject(); }
+  else if (c && k === 'd') { e.preventDefault(); dupSel(); } else if (c && k === 'a') { e.preventDefault(); RT.sel = new Set(S.devices.map(d => d.id)); refreshAll(); }
+  else if (k === 'delete' || k === 'backspace') delSel(); else if (k === 'escape') { RT.conn = null; setTool('select'); clearSel(); hideMenu(); }
+  else if (k === 'v') setTool('select'); else if (k === 'h') setTool('pan'); else if (k === 'c' && !c) setTool('connect'); else if (k === 'r' && !c) rotSel(); else if (k === 'f') fitView();
+  else if (k === 'g') { S.settings.grid = !S.settings.grid; syncToggles(); applyView(); } else if (k === '+' || k === '=') zoomAt(1.2); else if (k === '-') zoomAt(1 / 1.2); else if (k === 'f1' || k === '?') { e.preventDefault(); helpDlg(); }
+  else if (k === ' ') { RT.space = true; cv.style.cursor = 'grab'; e.preventDefault(); }
+  else if (k.startsWith('arrow') && RT.sel.size) { e.preventDefault(); const s = S.settings.size, dx = k === 'arrowleft' ? -s : k === 'arrowright' ? s : 0, dy = k === 'arrowup' ? -s : k === 'arrowdown' ? s : 0; pushUndo(); RT.sel.forEach(id => { const d = dev(id); d.x += dx; d.y += dy; }); refreshAll(); }
+});
+document.addEventListener('keyup', e => { if (e.key === ' ') { RT.space = false; cv.style.cursor = RT.tool === 'pan' ? 'grab' : ''; } });
+function splitter(id, prop, rev, min, max, axis = 'x') {
+  $(id).addEventListener('pointerdown', e => { e.preventDefault(); const el = $(id), st = axis === 'x' ? e.clientX : e.clientY, cs = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(prop)); el.setPointerCapture(e.pointerId);
+    const mv = ev => { const dd = (axis === 'x' ? ev.clientX : ev.clientY) - st; document.documentElement.style.setProperty(prop, clamp(cs + (rev ? -dd : dd), min, max) + 'px'); }, up = () => { el.removeEventListener('pointermove', mv); el.removeEventListener('pointerup', up); };
+    el.addEventListener('pointermove', mv); el.addEventListener('pointerup', up); });
+}
+splitter('#r1', '--lw', false, 150, 420); splitter('#r2', '--rw', true, 240, 560); splitter('#r3', '--bh', true, 110, 560, 'y');
+window.addEventListener('beforeunload', () => { if (S.settings.autosave) try { localStorage.setItem('netlab.proyecto', snapJSON()); } catch (e) {} });
+function init() {
+  initSvg(); buildToolbar(); buildPalette(); let loaded = false;
+  try { if (localStorage.getItem('netlab.auto') === '1') { const js = localStorage.getItem('netlab.proyecto'); if (js) { S = sanitize(JSON.parse(js)); S.settings.autosave = true; loaded = true; } } } catch (e) { S = blank(); }
+  if (!loaded) { TPL[3].f(); S.name = 'Dos subredes conectadas por un router'; }
+  syncToggles(); buildToolbar(); renderBottom(); refreshAll(); setTimeout(() => { fitView(); try { DIAG = diagnose(); updDiagPill(); renderDevices(); } catch (e) {} }, 30);
+}
+init();
+})();</script></body></html>
