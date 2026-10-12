@@ -1,2 +1,2 @@
 # simulab
-Aplicaciones i elements de radiocomunicaciones i xarxes
+Aplicacions i elements de radiocomunicaciones i xarxes
