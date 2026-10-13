@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Calculadora de instalación solar aislada</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f6f4ee;--card:#fff;--tx:#1d2330;--mut:#667;--bd:#dcd8cc;--ac:#e8890c;--bl:#2b6cb0;--gr:#2f9e5b;--in:#f1efe6}
+:root:not([data-theme="light"]){}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12161d;--card:#1b212b;--tx:#e8eaee;--mut:#9aa3b2;--bd:#2c3442;--ac:#ffb347;--bl:#6fb1ff;--gr:#55d68a;--in:#242b37}}
+:root[data-theme="dark"]{--bg:#12161d;--card:#1b212b;--tx:#e8eaee;--mut:#9aa3b2;--bd:#2c3442;--ac:#ffb347;--bl:#6fb1ff;--gr:#55d68a;--in:#242b37}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{padding:22px 16px 6px;max-width:1100px;margin:auto}
+h1{margin:0;font-size:1.5rem}h1 span{color:var(--ac)}
+p.s{margin:4px 0 0;color:var(--mut)}
+main{max-width:1100px;margin:auto;padding:12px 16px 40px;display:grid;gap:14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px}
+h2{margin:0 0 10px;font-size:1.05rem}
+.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+label{display:block;font-size:.78rem;color:var(--mut)}
+input,select,button{font:inherit;color:var(--tx);background:var(--in);border:1px solid var(--bd);border-radius:8px;padding:7px 8px;width:100%}
+button{cursor:pointer;width:auto;background:var(--ac);color:#1d1400;border:0;font-weight:600}
+button.x{background:transparent;color:var(--mut);border:1px solid var(--bd);padding:4px 9px}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:620px}
+th{font-size:.75rem;color:var(--mut);text-align:left;padding:2px 4px}
+td{padding:3px 4px}td input,td select{padding:5px 6px}
+.res{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+.k{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px dashed var(--bd)}
+.k:last-child{border:0}.k b{text-align:right}
+.big{font-size:1.6rem;font-weight:700;color:var(--ac)}
+.note{font-size:.8rem;color:var(--mut);margin-top:8px}
+svg{width:100%;height:auto;display:block}
+svg text{fill:var(--tx);font:12px system-ui,sans-serif}
+.t2{fill:var(--mut)!important;font-size:11px!important}
+.box{fill:var(--in);stroke:var(--bd);stroke-width:1.5}
+.w{fill:none;stroke:var(--ac);stroke-width:3;stroke-dasharray:8 8;animation:fl 0.8s linear infinite}
+.wb{stroke:var(--bl)}.wg{stroke:var(--gr)}
+@keyframes fl{to{stroke-dashoffset:-16}}
+.ray{transform-origin:70px 62px;animation:rot 14s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+.pulse{animation:pu 2s ease-in-out infinite}
+@keyframes pu{50%{opacity:.35}}
+.lvl{animation:lv 5s ease-in-out infinite alternate}
+@keyframes lv{from{transform:scaleY(.45)}to{transform:scaleY(1)}}
+.glow{animation:gl 1.6s ease-in-out infinite alternate}
+@keyframes gl{from{opacity:.25}to{opacity:1}}
+.pv{fill:#1e4f8f;stroke:#9cc3ee;stroke-width:1}
+.bt{fill:var(--in);stroke:var(--gr);stroke-width:2}
+</style></head><body>
+<header><h1>☀️ Calculadora de <span>instalación solar</span> aislada</h1>
+<p class="s">Cargas, ubicación, baterías, paneles, regulador MPPT e inversor, con esquema animado.</p></header>
+<main>
+<section class="card"><h2>1 · Ubicación y parámetros</h2>
+<div class="g">
+<div><label>Localidad</label><select id="city"></select></div>
+<div><label>Latitud (°)</label><input id="lat" type="number" step="0.1"></div>
+<div><label>HSP peor mes (h/día)</label><input id="hsp" type="number" step="0.1" min="0.5"></div>
+<div><label>Días de autonomía</label><input id="aut" type="number" min="1" max="7" value="2"></div>
+<div><label>Tipo de batería</label><select id="bt"><option value="li">LiFePO4 12,8 V 100 Ah (DoD 80%)</option><option value="agm">AGM/Gel 12 V 100 Ah (DoD 50%)</option></select></div>
+<div><label>Panel solar</label><select id="pn"><option value="0">200 W · 12 V (Voc 22,5)</option><option value="1" selected>450 W · mono (Voc 49,6)</option><option value="2">550 W · mono (Voc 49,9)</option></select></div>
+<div><label>Tensión del sistema</label><select id="vs"><option value="0">Automática</option><option>12</option><option>24</option><option>48</option></select></div>
+<div><label>Simultaneidad cargas AC (%)</label><input id="sim" type="number" min="20" max="100" value="70"></div>
+</div>
+<p class="note">HSP orientativas del mes más desfavorable (diciembre, inclinación óptima de invierno). Para un proyecto real, contrasta con PVGIS.</p></section>
+
+<section class="card"><h2>2 · Cálculo de cargas</h2>
+<div class="tw"><table><thead><tr><th>Equipo</th><th>Potencia (W)</th><th>Cantidad</th><th>Horas/día</th><th>Tipo</th><th>Wh/día</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
+<p style="margin:10px 0 0"><button id="add">+ Añadir carga</button></p></section>
+
+<section class="card"><h2>3 · Sistema completo (animado)</h2>
+<svg viewBox="0 0 980 400" role="img" aria-label="Esquema animado de la instalación">
+<g class="ray"><g stroke="#ffb703" stroke-width="3" stroke-linecap="round"><path d="M70 14v-12M70 110v12M22 62h-12M118 62h12M36 28l-8-8M104 96l8 8M36 96l-8 8M104 28l8-8"/></g></g>
+<circle cx="70" cy="62" r="30" fill="#ffb703" class="pulse"/>
+<g id="gP"></g>
+<text id="tP" x="165" y="385" text-anchor="middle"></text>
+<path class="w" d="M310 250H345V200H370"/>
+<rect class="box" x="370" y="165" width="110" height="75" rx="8"/>
+<text x="425" y="192" text-anchor="middle" font-weight="700">Regulador MPPT</text><text id="tR" class="t2" x="425" y="212" text-anchor="middle"></text><text id="tR2" class="t2" x="425" y="228" text-anchor="middle"></text>
+<path class="w wb" d="M480 202H530"/>
+<rect class="box" x="530" y="140" width="130" height="125" rx="8"/>
+<rect class="bt" x="548" y="158" width="94" height="74" rx="6"/>
+<g style="transform-origin:595px 232px" class="lvl"><rect x="552" y="162" width="86" height="66" rx="4" fill="#2f9e5b" opacity=".75"/></g>
+<text x="595" y="256" text-anchor="middle" id="tB"></text>
+<path class="w wg" d="M660 202H710"/>
+<rect class="box" x="710" y="165" width="110" height="75" rx="8"/>
+<text x="765" y="192" text-anchor="middle" font-weight="700">Inversor DC/AC</text><text id="tI" class="t2" x="765" y="212" text-anchor="middle"></text><text id="tI2" class="t2" x="765" y="228" text-anchor="middle"></text>
+<path class="w" d="M820 190H860V120H885"/>
+<g transform="translate(885 70)"><rect class="box" width="80" height="100" rx="8"/><circle class="glow" cx="40" cy="38" r="20" fill="#ffd54a"/><path d="M32 60h16M34 66h12" stroke="var(--mut)" stroke-width="3"/><text x="40" y="92" text-anchor="middle" class="t2">Cargas AC</text></g>
+<path class="w wb" d="M595 265V345H885"/>
+<g transform="translate(885 300)"><rect class="box" width="80" height="80" rx="8"/><circle class="glow" cx="40" cy="30" r="14" fill="#7fd1ff"/><text x="40" y="66" text-anchor="middle" class="t2">Cargas DC</text></g>
+<text x="590" y="338" class="t2" text-anchor="middle" id="tD"></text>
+</svg></section>
+
+<div class="res" id="res"></div>
+
+<section class="card"><h2>4 · Esquema del banco de baterías</h2><div class="tw" id="bsch"></div><p class="note" id="bnote"></p></section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const C={"Alcoy (Alicante)":[38.7,3.5],"Valencia":[39.5,3.6],"Madrid":[40.4,3.4],"Barcelona":[41.4,3.2],"Sevilla":[37.4,3.9],"Málaga":[36.7,4.0],"Zaragoza":[41.7,3.3],"Palma":[39.6,3.7],"Bilbao":[43.3,2.2],"A Coruña":[43.4,2.3],"Las Palmas":[28.1,4.6],"Personalizada":[40,3.3]};
+const PN=[{w:200,voc:22.5,vmp:18.6,isc:11.2,imp:10.8,d:"1480×670 mm · 12 kg"},{w:450,voc:49.6,vmp:41.4,isc:11.5,imp:10.9,d:"2094×1038 mm · 23 kg"},{w:550,voc:49.9,vmp:41.8,isc:13.9,imp:13.2,d:"2279×1134 mm · 28 kg"}];
+const BT={li:{dod:.8,eff:.95,v:12.8,ah:100,n:"LiFePO4"},agm:{dod:.5,eff:.85,v:12,ah:100,n:"AGM/Gel"}};
+let L=[["Nevera A++",150,1,8,"AC"],["Iluminación LED",10,8,5,"AC"],["Televisor",80,1,4,"AC"],["Portátil",60,1,5,"AC"],["Router WiFi",12,1,24,"AC"],["Bomba agua 12 V",100,1,1,"DC"]];
+$("city").innerHTML=Object.keys(C).map(c=>`<option>${c}</option>`).join("");
+function setCity(){const c=C[$("city").value];$("lat").value=c[0];$("hsp").value=c[1];calc()}
+$("city").onchange=setCity;
+function rows(){$("rows").innerHTML=L.map((r,i)=>`<tr><td><input value="${r[0]}" oninput="U(${i},0,this.value)"></td><td><input type="number" min="0" value="${r[1]}" oninput="U(${i},1,+this.value)"></td><td><input type="number" min="1" value="${r[2]}" oninput="U(${i},2,+this.value)"></td><td><input type="number" min="0" max="24" step=".5" value="${r[3]}" oninput="U(${i},3,+this.value)"></td><td><select onchange="U(${i},4,this.value)"><option${r[4]=="AC"?" selected":""}>AC</option><option${r[4]=="DC"?" selected":""}>DC</option></select></td><td id="wh${i}">${r[1]*r[2]*r[3]}</td><td><button class="x" onclick="L.splice(${i},1);rows();calc()">✕</button></td></tr>`).join("")}
+function U(i,k,v){L[i][k]=v;$("wh"+i).textContent=Math.round(L[i][1]*L[i][2]*L[i][3]);calc()}
+$("add").onclick=()=>{L.push(["Nueva carga",50,1,2,"AC"]);rows();calc()};
+["aut","bt","pn","vs","sim","lat","hsp"].forEach(i=>$(i).oninput=calc);
+const pick=(a,v)=>a.find(x=>x>=v)||a[a.length-1];
+const f=(n,d=0)=>n.toLocaleString("es-ES",{maximumFractionDigits:d});
+function calc(){
+ let eac=0,edc=0,pac=0,pdc=0;
+ L.forEach(r=>{const e=r[1]*r[2]*r[3],p=r[1]*r[2];if(r[4]=="AC"){eac+=e;pac+=p}else{edc+=e;pdc+=p}});
+ const sim=Math.max(.2,$("sim").value/100),ETA=.92;
+ const etot=edc+eac/ETA;
+ const pinvReq=pac*sim*1.25;
+ const pinv=pac?pick([300,500,800,1000,1500,2000,3000,4000,5000,8000,10000],pinvReq):0;
+ const ptot=pac*sim+pdc;
+ let vs=+$("vs").value||(ptot<=800?12:ptot<=2200?24:48);
+ const b=BT[$("bt").value],aut=+$("aut").value||1;
+ const cwh=etot*aut/(b.dod*b.eff),cah=cwh/vs;
+ const bs=Math.round(vs/12),bp=Math.max(1,Math.ceil(cah/b.ah)),bn=bs*bp;
+ const bwh=bn*b.v*b.ah;
+ const p=PN[+$("pn").value],hsp=+$("hsp").value||3,PR=.75;
+ const eday=p.w*hsp*PR;
+ let n=Math.max(1,Math.ceil(etot/eday));
+ const vmax=145,maxS=Math.max(1,Math.floor(vmax/(p.voc*1.15))),minS=Math.max(1,Math.ceil(vs*1.3/p.vmp));
+ let S=Math.min(maxS,minS),best=1e9;
+ for(let s=minS;s<=maxS;s++){const t=Math.ceil(n/s)*s;if(t<=best){best=t;S=s}}
+ const SP=S,PP=Math.ceil(n/SP);n=SP*PP;
+ const wp=n*p.w,ich=wp/vs*1.25;
+ const regA=pick([20,30,40,50,60,80,100],Math.min(ich,100)),nReg=Math.ceil(ich/100),regUse=ich>100?100:regA;
+ const vocS=SP*p.voc*1.15,iscT=PP*p.isc*1.25;
+ const iinv=pinv/(vs*.9),fuse=Math.ceil(iinv*1.25);
+ const tilt=Math.round(+$("lat").value+10);
+ const card=(t,rs,x="")=>`<section class="card"><h2>${t}</h2>${rs.map(r=>`<div class="k"><span>${r[0]}</span><b>${r[1]}</b></div>`).join("")}${x}</section>`;
+ $("res").innerHTML=
+ card("⚡ Energía",[["Consumo AC",f(eac)+" Wh/día"],["Consumo DC",f(edc)+" Wh/día"],["Potencia AC instalada",f(pac)+" W"],["Potencia DC",f(pdc)+" W"]],`<div class="big">${f(etot/1000,2)} kWh/día</div><div class="note">Incluye pérdidas del inversor (η ${ETA*100}%).</div>`)+
+ card("🔋 Baterías",[["Tensión del sistema",vs+" V"],["Tipo",b.n+" "+b.v+" V / "+b.ah+" Ah"],["Capacidad necesaria",f(cwh/1000,1)+" kWh · "+f(cah)+" Ah"],["Configuración",bs+" en serie × "+bp+" en paralelo"],["Total baterías",`<span style="color:var(--gr)">${bn} uds</span> (${f(bwh/1000,1)} kWh)`]])+
+ card("☀️ Paneles",[["Modelo",p.w+" W · "+p.d],["Voc / Vmp",p.voc+" V / "+p.vmp+" V"],["Isc / Imp",p.isc+" A / "+p.imp+" A"],["Producción por panel",f(eday)+" Wh/día"],["Nº de paneles",`<span style="color:var(--ac)">${n} uds</span> (${f(wp/1000,2)} kWp)`],["Configuración",SP+" en serie × "+PP+" en paralelo"],["Orientación",`Sur, inclinación ≈ ${tilt}°`]],`<div class="note">Pérdidas totales consideradas: PR ${PR*100}%.</div>`)+
+ card("🎛️ Regulador MPPT",[["Corriente de carga",f(ich,0)+" A (con 25% margen)"],["Regulador recomendado",(nReg>1?nReg+" × ":"")+regUse+" A / "+vs+" V"],["Voc string (frío)",f(vocS)+" V (máx. "+vmax+" V)"],["Isc total ×1,25",f(iscT,1)+" A"]])+
+ card("🔌 Inversor y protecciones",[["Potencia inversor (onda senoidal pura)",pinv?f(pinv)+" W":"no necesario"],["Potencia continua requerida",f(pinvReq)+" W"],["Entrada DC",vs+" V · "+f(iinv)+" A"],["Fusible batería–inversor",pinv?fuse+" A":"—"],["Protección DC cargas",f(pdc/vs*1.25,0)+" A"]],`<div class="note">Cargas con motor (nevera, bomba): comprueba que el pico de arranque (3–5×) no supere la sobrecarga del inversor.</div>`);
+ // diagrama
+ const sh=Math.min(n,12),cols=Math.min(4,sh),rw=Math.ceil(sh/cols),pw=Math.min(62,250/cols),ph=pw*.62;
+ let g="";for(let i=0;i<sh;i++){const x=20+(i%cols)*(pw+6),y=170+Math.floor(i/cols)*(ph+6);g+=`<rect class="pv" x="${x}" y="${y}" width="${pw}" height="${ph}" rx="3"/><path d="M${x+pw/3} ${y}v${ph}M${x+2*pw/3} ${y}v${ph}M${x} ${y+ph/2}h${pw}" stroke="#9cc3ee" opacity=".5"/><rect class="glow" x="${x}" y="${y}" width="${pw}" height="${ph}" fill="#fff" opacity=".15" style="animation-delay:${i*.15}s"/>`}
+ $("gP").innerHTML=g;
+ $("tP").textContent=`${n} paneles ${p.w} W · ${SP}S × ${PP}P`+(n>sh?" (se muestran "+sh+")":"");
+ $("tR").textContent=(nReg>1?nReg+"× ":"")+regUse+" A · "+vs+" V";$("tR2").textContent=f(wp)+" Wp";
+ $("tB").textContent=`${bn} × ${b.v} V ${b.ah} Ah`;
+ $("tI").textContent=f(pinv)+" W · "+vs+"V→230V";$("tI2").textContent=f(iinv)+" A DC";
+ $("tD").textContent=f(pdc)+" W DC";
+ // esquema baterías
+ const sP=Math.min(bp,8),W=90,H=52,w=70+bs*W,h=40+sP*H;
+ let s=`<svg viewBox="0 0 ${w} ${h}" style="min-width:${Math.min(w,600)}px;max-width:${w+60}px"><path d="M30 20V${h-18}M${w-30} 20V${h-18}" stroke="var(--ac)" stroke-width="5"/><text x="30" y="14" text-anchor="middle" fill="var(--ac)">+</text><text x="${w-30}" y="14" text-anchor="middle">−</text>`;
+ for(let r=0;r<sP;r++){const y=34+r*H;s+=`<path class="w wg" d="M30 ${y+16}H${w-30}" style="stroke-width:2"/>`;for(let c=0;c<bs;c++){const x=45+c*W;s+=`<rect class="bt" x="${x}" y="${y}" width="${W-20}" height="32" rx="5"/><text x="${x+(W-20)/2}" y="${y+20}" text-anchor="middle">${b.v}V ${b.ah}Ah</text>`}}
+ $("bsch").innerHTML=s+"</svg>";
+ $("bnote").textContent=`${bs} batería(s) en serie por rama (suma tensión → ${vs} V) y ${bp} ramas en paralelo (suma capacidad → ${bp*b.ah} Ah)`+(bp>sP?`. Se dibujan ${sP} ramas de ${bp}.`:".");
+}
+rows();setCity();
+</script></body></html>
