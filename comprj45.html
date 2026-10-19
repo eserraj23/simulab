@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CT-900 PRO · Comprobador de cables avanzado</title>
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=Barlow+Condensed:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* ===== Tokens ===== */
+:root{--bg:#121417;--edge:#5d656d;--ink:#d8dde2;--mute:#8b949c;--yel:#f2b705;--ok:#37e07a;--bad:#ff4d3d;--warn:#ffa31a;
+--lcd1:#12423c;--lcd2:#082320;--on:#a8ffd9;--dim:#2f7a69;--ui:'Barlow Condensed','Arial Narrow',system-ui,sans-serif;--px:'VT323','Courier New',monospace}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--ink);font:16px/1.3 var(--ui);background:var(--bg) repeating-linear-gradient(90deg,rgba(255,255,255,.015) 0 2px,transparent 2px 5px)}
+header{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;background:#0d0f11;border-bottom:1px solid #000}
+h1{margin:0;font-size:22px;letter-spacing:.04em}h1 small{color:var(--mute);font-weight:500;font-size:15px;margin-left:10px}
+.wrap{max-width:1200px;margin:0 auto;padding:18px;display:grid;grid-template-columns:1fr 330px;gap:18px;align-items:start}
+.rig{display:grid;grid-template-columns:150px 1fr 150px;gap:14px;align-items:start}
+/* ===== LEDs ===== */
+.led{display:inline-block;width:11px;height:11px;border-radius:50%;background:#2a2d30;box-shadow:inset 0 0 2px #000,0 0 0 1px #000}
+.led.ok{background:var(--ok);box-shadow:0 0 8px var(--ok)}.led.seen{background:#1e6b3e}
+.led.open,.led.short{background:var(--bad);box-shadow:0 0 8px var(--bad)}
+.led.cross,.led.high{background:var(--warn);box-shadow:0 0 8px var(--warn)}
+.led.scan{background:#7fe9ff;box-shadow:0 0 10px #7fe9ff}.led.poe{background:var(--yel);box-shadow:0 0 8px var(--yel)}
+.blink{animation:bl 1s steps(2) infinite}@keyframes bl{50%{opacity:.25}}
+/* ===== Carcasa ===== */
+.device{background:linear-gradient(160deg,#3a4046,#1e2226 60%,#2a2f34);border:3px solid #0a0b0c;border-left:10px solid var(--yel);border-right:10px solid var(--yel);border-radius:26px 26px 40px 40px;padding:14px 16px 16px;box-shadow:0 20px 40px #000a,inset 0 1px 0 #fff2}
+.brand{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:20px;letter-spacing:.08em}.brand span{color:var(--yel)}
+.ind{display:flex;gap:10px}.ind i{display:flex;align-items:center;gap:4px;font:600 11px var(--ui);color:var(--mute)}
+/* ===== LCD ===== */
+.lcd{margin:12px 0;height:206px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;position:relative;overflow:hidden;font-family:var(--px);color:var(--on);text-shadow:0 0 6px #5cffc366;border:4px solid #0a0b0c;border-radius:8px;background:radial-gradient(ellipse at 50% 30%,var(--lcd1),var(--lcd2));box-shadow:inset 0 0 25px #000}
+.lcd::after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.18) 0 1px,transparent 1px 3px)}
+.lcd.off{background:#0b1514;box-shadow:inset 0 0 25px #000}.lcd.off *{visibility:hidden}
+.l0{display:flex;justify-content:space-between;font-size:20px;color:var(--dim);border-bottom:1px solid var(--dim)}
+.big{font-size:32px;line-height:1;min-height:34px}.lcd:not(.tdr) .big{font-size:38px;flex:1;display:flex;align-items:center}
+.big.bad{animation:bl .5s steps(2) 6}.big.warn{color:#ffd37a}
+.sub{font-size:20px;min-height:20px;color:#7fe0bd}
+canvas{display:none;width:100%;height:60px}.lcd.tdr canvas{display:block}
+.barw{height:7px;border:1px solid var(--dim)}#bar{height:100%;width:0;background:var(--on)}
+/* ===== Matriz LED, controles ===== */
+.mx,.pl{display:grid;grid-template-columns:repeat(9,1fr);gap:2px;text-align:center}
+.mx{background:#0c0e10;border-radius:8px;padding:8px 6px;font:700 13px var(--ui);color:var(--mute)}
+.mx div,.pl div{display:flex;flex-direction:column;align-items:center;gap:3px;border-radius:4px;padding:1px 0}.mx .cur{outline:1px solid var(--on)}
+.ctl{display:grid;grid-template-columns:104px 1fr;gap:14px;align-items:center;margin-top:12px}
+.rot{position:relative;width:104px;height:104px}
+.dial{position:absolute;inset:22px;border-radius:50%;cursor:pointer;border:3px solid #0a0b0c;background:conic-gradient(#555,#9a9a9a,#444,#888,#555);box-shadow:0 4px 8px #000a;transition:transform .35s cubic-bezier(.3,1.6,.5,1)}
+.dial::after{content:"";position:absolute;left:50%;top:4px;width:4px;height:18px;margin-left:-2px;background:var(--yel);border-radius:2px}
+.rot b{position:absolute;font:700 11px var(--ui);color:var(--mute);cursor:pointer}.rot b:hover,.rot b.on{color:var(--yel)}
+.p0{left:0;top:0}.p1{right:0;top:0}.p2{right:0;bottom:0}.p3{left:0;bottom:0}
+.keys{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.btn{border:1px solid #000;border-radius:10px;background:linear-gradient(#4a525a,#2b3036);color:var(--ink);font:700 14px var(--ui);letter-spacing:.06em;padding:10px 0;cursor:pointer;box-shadow:0 3px 0 #0a0b0c,inset 0 1px 0 #ffffff30;user-select:none}
+.btn:active{transform:translateY(3px);box-shadow:none}
+.btn.test{grid-column:1/-1;font-size:22px;color:#1b1500;background:linear-gradient(#ffd23d,#d99a00)}
+.btn.pwr{border-radius:50%;width:38px;height:38px;padding:0;color:#fff;background:linear-gradient(#e0483a,#8e1b12)}
+.hint{margin-top:10px;font-size:13px;color:var(--mute);text-align:center}
+/* ===== Paneles de conectores ===== */
+.port{background:linear-gradient(#2b3035,#1b1e22);border:2px solid #0a0b0c;border-radius:14px;padding:12px 8px;text-align:center;font:700 10px var(--ui);color:var(--mute)}
+.port h3{margin:0 0 8px;font-size:14px;letter-spacing:.08em;color:var(--yel)}
+.rj{width:100px;margin:0 auto 8px;padding:8px 6px 5px;background:#0b0c0d;border:2px solid var(--edge);border-radius:6px 6px 2px 2px}
+.rj .c{display:grid;grid-template-columns:repeat(8,1fr);gap:2px;align-items:end;height:28px}.rj .c i{height:26px;border-radius:1px;background:linear-gradient(#f5d77a,#a67c1a)}
+/* ===== Cable / fallas ===== */
+.wire{margin-top:18px;background:#0d0f11;border:1px solid #2a3036;border-radius:12px;padding:10px 14px}
+.wire h2,.faults h2{margin:0 0 6px;font-size:17px;letter-spacing:.05em;color:var(--yel)}
+svg{width:100%;height:auto;display:block;font:600 11px var(--ui);fill:var(--mute)}
+.wr{fill:none;stroke-width:5;stroke-linecap:round}.wr.st{stroke:#fff;stroke-width:2;stroke-dasharray:3 3}
+.glow{fill:none;stroke-width:12;opacity:.45}.glow.ok{stroke:var(--ok)}.glow.open,.glow.short{stroke:var(--bad)}.glow.cross,.glow.high{stroke:var(--warn)}
+.xm{fill:var(--bad);font-size:16px}.rz{fill:#222;stroke:var(--warn);stroke-width:1.5}.sb{stroke:var(--warn);stroke-width:3;fill:none}
+.faults{background:#1a1d21;border:1px solid #2f353b;border-radius:12px;padding:14px;position:sticky;top:12px}
+.faults h3{margin:14px 0 6px;font-size:14px;color:var(--ink);border-top:1px solid #2f353b;padding-top:10px}
+.faults label{display:block;font-size:13px;color:var(--mute);margin-bottom:8px}
+.faults select,.faults input[type=range]{width:100%;margin-top:3px}
+.faults select{background:#0f1113;color:var(--ink);border:1px solid #3a4046;border-radius:6px;padding:6px;font:15px var(--ui)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fb{width:100%;padding:9px;border:0;border-radius:8px;background:var(--yel);color:#1b1500;font:700 14px var(--ui);cursor:pointer}.fb.sec{background:#2f353b;color:var(--ink)}
+.fb:hover{filter:brightness(1.1)}.fb:focus-visible,.btn:focus-visible,select:focus-visible,.dial:focus-visible{outline:2px solid var(--on);outline-offset:2px}
+#flist{list-style:none;margin:0 0 10px;padding:0;font-size:14px}
+#flist li{display:flex;justify-content:space-between;align-items:center;padding:4px 8px;margin-bottom:4px;background:#0f1113;border-left:3px solid var(--bad);border-radius:4px}
+#flist li.none{border-color:var(--ok);color:var(--mute)}#flist button{background:none;border:0;color:var(--mute);cursor:pointer;font-size:15px}
+#note{min-height:18px;font-size:13px;color:var(--yel);margin:6px 0 0}
+@media(max-width:1000px){.wrap{grid-template-columns:1fr}.faults{position:static}}
+@media(max-width:700px){.rig{grid-template-columns:1fr 1fr}.device{grid-column:1/-1;order:-1}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header><h1>CT-900 PRO<small>Comprobador de cables multifunción · simulador</small></h1>
+<button id="snd" class="fb sec" style="width:auto;padding:6px 14px">Sonido: sí</button></header>
+
+<div class="wrap"><div>
+<section class="rig">
+  <div class="port"><h3>PRINCIPAL</h3><div class="rj"><div class="c"></div></div><div class="pl" id="plM"></div><div style="margin-top:6px">RJ45 · TX</div></div>
+
+  <div class="device" id="dev">
+    <div class="brand"><div>CT-900 <span>PRO</span></div>
+      <div class="ind"><i><b class="led" id="iPass"></b>PASS</i><i><b class="led" id="iFail"></b>FAIL</i><i><b class="led" id="iShd"></b>SHIELD</i><i><b class="led" id="iBat"></b>BATT</i></div>
+      <button class="btn pwr" data-act="pwr" title="Encender / apagar">⏻</button></div>
+    <div class="lcd off" id="lcd">
+      <div class="l0" id="l0"></div><div class="big" id="l1"></div><canvas id="cv" width="360" height="64"></canvas>
+      <div class="sub" id="l2"></div><div class="sub" id="l3"></div><div class="barw"><div id="bar"></div></div>
+    </div>
+    <div class="mx" id="mx"></div>
+    <div class="ctl">
+      <div class="rot"><b class="p0 on" data-m="0">WIRE</b><b class="p1" data-m="1">TDR</b><b class="p2" data-m="2">PoE</b><b class="p3" data-m="3">SHLD</b>
+        <div class="dial" id="dial" data-act="mode" tabindex="0" role="button" aria-label="Selector de modo"></div></div>
+      <div class="keys">
+        <button class="btn" data-act="up" title="Pin anterior">▲</button><button class="btn" data-act="dn" title="Pin siguiente">▼</button>
+        <button class="btn" data-act="mode">MODE</button><button class="btn" data-act="sel" title="Cambiar m / ft">SELECT</button>
+        <button class="btn test" data-act="test">TEST</button>
+      </div>
+    </div>
+    <div class="hint">Pulsa ⏻ para encender · ▲▼ revisan el detalle de cada hilo tras el test · SELECT cambia m/ft</div>
+  </div>
+
+  <div class="port"><h3>REMOTO</h3><div class="rj"><div class="c"></div></div><div class="pl" id="plR"></div><div style="margin-top:6px">RJ45 · RX</div></div>
+</section>
+
+<section class="wire"><h2>Cable virtual bajo prueba</h2>
+<svg id="wsvg" viewBox="0 0 600 170" role="img" aria-label="Esquema del cable"></svg></section>
+</div>
+
+<aside class="faults">
+  <h2>Inyección de fallas</h2>
+  <label>Tipo de falla<select id="ftype">
+    <option value="open">Cortar un hilo</option><option value="short">Cortocircuito entre dos hilos</option>
+    <option value="swap">Cruzar dos hilos</option><option value="high">Resistencia alta en un hilo</option>
+    <option value="split">Par dividido (split pair)</option><option value="shield">Cortar la malla (blindaje)</option></select></label>
+  <div class="two"><label>Hilo A<select id="pa"></select></label><label>Hilo B<select id="pb"></select></label></div>
+  <button class="fb" id="apply">Aplicar falla</button>
+  <div class="two" style="margin-top:8px"><button class="fb sec" id="pStr">Cable directo</button><button class="fb sec" id="pCro">Cable crossover</button></div>
+  <p id="note"></p>
+  <h3>Cable y entorno</h3>
+  <label>Longitud: <b id="lenv"></b><input type="range" id="len" min="5" max="100" step="0.1"></label>
+  <label>Distancia a la falla: <b id="fdv"></b><input type="range" id="fd" min="1" max="100" step="0.1"></label>
+  <label>Tipo de cable<select id="shield"><option>UTP</option><option>FTP</option><option>SFTP</option></select></label>
+  <label>Fuente PoE<select id="poe"></select></label>
+  <h3>Fallas activas</h3><ul id="flist"></ul>
+  <div class="two"><button class="fb sec" id="reset">Cable sano</button><button class="fb sec" id="newbat">Pilas nuevas</button></div>
+</aside></div>
+
+<script>
+(()=>{'use strict';
+/* ===== Utilidades y constantes ===== */
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)],sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const COLORS=['#f28a1d','#f28a1d','#2eb15a','#2f6fd6','#2f6fd6','#2eb15a','#8a5a2f','#8a5a2f'];   // T568B
+const STRIPE=[1,0,1,0,1,0,1,0],CROSS=[2,5,0,3,4,1,6,7],ID=[0,1,2,3,4,5,6,7],LB=['1','2','3','4','5','6','7','8','G'];
+const MODES=['WIREMAP','TDR / LONGITUD','PoE','BLINDAJE'];
+const HINT=['CONTINUITY · SHORT · SPLIT','TDR · LENGTH / FAULT DIST.','PoE · VOLTAGE ON PAIRS','SHIELD · DRAIN CONTINUITY'];
+const POE={off:{n:'Sin PoE',v:0,pins:[]},'af-a':{n:'802.3af Modo A',v:48,pins:[0,1,2,5],m:'1-2/3-6'},'af-b':{n:'802.3af Modo B',v:48,pins:[3,4,6,7],m:'4-5/7-8'},
+ 'at-a':{n:'802.3at Modo A',v:54,pins:[0,1,2,5],m:'1-2/3-6'},pas:{n:'Pasivo 24 V (B)',v:24,pins:[3,4,6,7],m:'4-5/7-8'}};
+const S={on:false,busy:false,mode:0,unit:'m',cur:0,batt:87,run:0,res:null};
+const fresh=()=>({map:[...ID],open:Array(8).fill(false),shorts:[],high:{},split:false,shield:'FTP',shieldOk:true,len:45.2,fdist:22.4,poe:'off'});
+const cable=fresh();
+
+/* ===== Audio (Web Audio API) ===== */
+let ac=null,mute=false;
+function beep(f,d=.08,t='square',v=.04,delay=0){if(mute)return;try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();
+ const o=ac.createOscillator(),g=ac.createGain(),t0=ac.currentTime+delay;o.type=t;o.frequency.value=f;g.gain.setValueAtTime(v,t0);
+ g.gain.exponentialRampToValueAtTime(.0001,t0+d);o.connect(g).connect(ac.destination);o.start(t0);o.stop(t0+d+.02)}catch(e){}}
+const snd={click:()=>beep(1800,.03),tick:()=>beep(2600,.015,'square',.02),
+ pass:()=>{beep(880,.12,'square',.05);beep(1320,.22,'square',.05,.13)},fail:()=>beep(180,.5,'sawtooth',.06),warn:()=>{beep(600,.12);beep(600,.12,'square',.04,.2)}};
+
+/* ===== LEDs y LCD ===== */
+const L={l0:$('#l0'),l1:$('#l1'),l2:$('#l2'),l3:$('#l3'),bar:$('#bar'),cv:$('#cv'),lcd:$('#lcd')};
+function mk(id){const el=$(id),a=[];LB.forEach(t=>{const c=document.createElement('div');c.innerHTML=`<span>${t}</span><i class="led"></i>`;el.append(c);a.push(c.querySelector('i'))});return a}
+$$('.rj .c').forEach(c=>c.innerHTML='<i></i>'.repeat(8));
+const mxL=mk('#mx'),mnL=mk('#plM'),rmL=mk('#plR');
+const setLed=(a,i,s)=>{a[i].className='led '+(s||'')},ind=(id,c)=>{$(id).className='led '+(c||'')};
+function clearLeds(){[mxL,mnL,rmL].forEach(a=>a.forEach(l=>l.className='led'));['#iPass','#iFail','#iShd'].forEach(i=>ind(i));updateBatt()}
+function updateBatt(){ind('#iBat',!S.on?'':S.batt>30?'ok':S.batt>10?'high blink':'open blink')}
+const lcd=(big,sub='',cls='')=>{L.l1.textContent=big;L.l1.className='big '+cls;L.l2.textContent=sub};
+const head=()=>L.l0.innerHTML=`<span>${MODES[S.mode]}</span><span>${S.unit.toUpperCase()} ▮${Math.round(S.batt)}%</span>`;
+const fmtD=m=>S.unit==='m'?m.toFixed(1)+'m':(m*3.28084).toFixed(1)+'ft';
+function pinLine(){L.l3.textContent=S.res?`PIN ${LB[S.cur]}: ${S.res.det[S.cur]||'-'}`:'';mxL.forEach((l,i)=>l.parentElement.classList.toggle('cur',!!S.res&&i===S.cur))}
+
+/* ===== Motor de análisis ===== */
+function shieldRes(){
+ if(cable.shield==='UTP')return{st:'none',txt:'INFO: UNSHIELDED CABLE',sub:'NO DRAIN WIRE FOUND'};
+ return cable.shieldOk?{st:'ok',txt:'PASS: SHIELD OK',sub:`R=${(cable.len*.021+.3).toFixed(1)}ohm ${cable.shield}`}
+  :{st:'open',txt:'ERR: SHIELD OPEN',sub:'DRAIN NOT CONTINUOUS'}}
+
+function analyze(){   // Wiremap: continuidad, cortos, cruces, par dividido, resistencia alta
+ const st=Array(8).fill('ok'),det=Array(9).fill(''),remote=Array(8).fill(-1),is=[],R=cable.len*.094,opens=[],mis=[];
+ for(let i=0;i<8;i++){
+  if(cable.open[i]){st[i]='open';det[i]='OPEN CIRCUIT';opens.push(i+1);continue}
+  const j=cable.map[i];remote[i]=j;det[i]=`${(R+(cable.high[i]||0)).toFixed(1)}ohm > PIN ${j+1}`;
+  if(j!==i){st[i]='cross';mis.push(i)}if(cable.high[i])st[i]='high'}
+ cable.shorts.forEach(([a,b])=>[[a,b],[b,a]].forEach(([p,q])=>{if(st[p]!=='open'){st[p]='short';det[p]='SHORT WITH PIN '+(q+1)}}));
+ const clean=!opens.length&&!cable.shorts.length&&!Object.keys(cable.high).length,isX=clean&&cable.map.every((v,i)=>v===CROSS[i]);
+ if(isX)st.fill('ok');
+ if(opens.length)is.push('ERR: OPEN PIN '+opens.join(','));
+ cable.shorts.forEach(([a,b])=>is.push(`ERR: SHORT PIN ${a+1}-${b+1}`));
+ if(mis.length&&!isX)is.push('ERR: MISWIRE '+mis.slice(0,3).map(i=>`${i+1}>${cable.map[i]+1}`).join(' '));
+ if(cable.split){is.push('ERR: SPLIT PAIRS 3-6/4-5');[2,3,4,5].forEach(i=>{if(st[i]==='ok')st[i]='cross'})}
+ Object.entries(cable.high).forEach(([p,o])=>is.push(`WARN: HIGH R PIN ${+p+1} ${o}ohm`));
+ const sh=shieldRes();det[8]=sh.sub;if(cable.shield!=='UTP'&&!cable.shieldOk)is.push('WARN: SHIELD OPEN');
+ const fail=is.some(x=>x[0]==='E'),warn=is.some(x=>x[0]==='W');
+ return{st,det,remote,fail,warn,cls:fail?'bad':warn?'warn':'',
+  txt:is[0]||(isX?'PASS: T568A/B CROSSOVER':'PASS: T568B STRAIGHT'),sub:is.length?is.slice(1,3).join(' | '):'8/8 WIRES OK · NO FAULTS'}}
+
+function tdrRes(){   // Reflectometría: longitud o distancia a la falla
+ const op=cable.open.some(Boolean),sh=cable.shorts.length>0,hi=Object.keys(cable.high).length>0,d=Math.min(cable.fdist,cable.len);
+ const sub='NVP 0.69 · Z 100ohm';
+ if(op)return{ev:{d,type:'open'},txt:`ERR: OPEN @ ${fmtD(d)}`,sub,fail:true,cls:'bad'};
+ if(sh)return{ev:{d,type:'short'},txt:`ERR: SHORT @ ${fmtD(d)}`,sub,fail:true,cls:'bad'};
+ if(hi)return{ev:{d,type:'high'},txt:`WARN: HIGH Z @ ${fmtD(d)}`,sub,warn:true,cls:'warn'};
+ return{ev:{d:cable.len,type:'end'},txt:`LENGTH: ${fmtD(cable.len)}`,sub:sub+' · PASS',cls:''}}
+
+function poeRes(){   // Tensión PoE por pares
+ const p=POE[cable.poe];if(!p.v)return{txt:'INFO: NO PoE DETECTED',sub:'0.0V ON ALL PAIRS',leds:{},det:[]};
+ const drop=cable.len*.03,leds={},det=[],volts=[];
+ p.pins.forEach(i=>{const v=cable.open[i]?0:Math.max(0,p.v-drop-(cable.high[i]||0)*.01);volts[i]=v;det[i]=v.toFixed(1)+'V';leds[i]=cable.open[i]?'open':'poe'});
+ const op=p.pins.filter(i=>cable.open[i]),sh=cable.shorts.filter(([a,b])=>p.pins.includes(a)||p.pins.includes(b));
+ sh.forEach(([a,b])=>{leds[a]=leds[b]='short'});
+ const v=Math.max(...volts.filter(x=>x!==undefined)),base={leds,det};
+ if(op.length)return{...base,fail:true,cls:'bad',txt:'ERR: PoE PAIR OPEN '+op.map(i=>i+1).join(','),sub:`${p.n} · ${p.m}`};
+ if(sh.length)return{...base,fail:true,cls:'bad',txt:`ERR: PoE SHORT PIN ${sh[0][0]+1}-${sh[0][1]+1}`,sub:'POWER ON SHORTED PAIR'};
+ return{...base,txt:`PASS: ${v.toFixed(1)}V ${p.v>=48?'PoE':'PASS-PoE'}`,sub:`${p.n} · PAIRS ${p.m}`}}
+
+/* ===== Gráfica TDR ===== */
+function drawTDR(p){
+ const c=L.cv,g=c.getContext('2d'),W=c.width,H=c.height,r=tdrRes();g.clearRect(0,0,W,H);g.lineWidth=1;g.strokeStyle='rgba(168,255,217,.15)';
+ for(let i=1;i<10;i++){g.beginPath();g.moveTo(i*W/10,0);g.lineTo(i*W/10,H);g.stroke()}
+ g.beginPath();g.moveTo(0,H/2);g.lineTo(W,H/2);g.stroke();if(p<=0)return;
+ const range=Math.max(cable.len*1.2,20),ex=r.ev.d/range*W,sg=r.ev.type==='short'?-1:1,amp=(r.ev.type==='end'?.35:r.ev.type==='high'?.25:.6)*(1-.4*ex/W);
+ g.strokeStyle='#a8ffd9';g.lineWidth=2;g.beginPath();
+ for(let x=0;x<=W*p;x++){const y=Math.exp(-x/9)*.9+sg*amp*Math.exp(-((x-ex)**2)/40)+.03*Math.sin(x*1.7)*Math.sin(x*.3);g.lineTo(x,H/2-y*H*.42)}
+ g.stroke();g.fillStyle='#2f7a69';g.font='14px VT323,monospace';g.fillText('0',2,H-3);g.fillText(fmtD(range),W-52,H-3);
+ if(p>=1){g.setLineDash([3,3]);g.beginPath();g.moveTo(ex,0);g.lineTo(ex,H);g.stroke();g.setLineDash([])}}
+
+/* ===== Resultado final de cada modo ===== */
+function finish(){
+ clearLeds();const a=analyze(),m=S.mode;let r;
+ if(m===0||m===1){r=m===0?a:{...tdrRes(),det:a.det};
+  a.st.forEach((s,i)=>{setLed(mxL,i,s);setLed(mnL,i,s);if(a.remote[i]>=0)setLed(rmL,a.remote[i],s)});
+  const sh=shieldRes(),gs=sh.st==='ok'?'ok':sh.st==='open'?'open':'';[mxL,mnL,rmL].forEach(x=>setLed(x,8,gs));
+  ind('#iShd',gs==='ok'?'ok':gs==='open'?'high':'');if(m===1)drawTDR(1)}
+ else if(m===2){const p=poeRes();r={...p,det:a.det.map((d,i)=>p.det[i]||d)};
+  for(let i=0;i<8;i++){const s=p.leds[i]||(cable.open[i]?'open':'');setLed(mxL,i,s);setLed(mnL,i,s)}}
+ else{const sh=shieldRes();r={txt:sh.txt,sub:sh.sub,fail:sh.st==='open',cls:sh.st==='open'?'bad':sh.st==='none'?'warn':'',det:a.det};
+  const gs=sh.st==='ok'?'ok':sh.st==='open'?'open':'high';[mxL,mnL,rmL].forEach(x=>setLed(x,8,gs));ind('#iShd',gs==='ok'?'ok':gs==='open'?'open':'high')}
+ ind(r.fail?'#iFail':'#iPass',r.fail?'open':'ok');lcd(r.txt,r.sub,r.cls);S.res=r;pinLine();return r}
+
+/* ===== Test con escaneo secuencial ===== */
+async function test(){
+ if(!S.on||S.busy)return;const pv=POE[cable.poe];
+ if(S.mode!==2&&pv.v){clearLeds();S.res=null;pinLine();lcd(`DANGER ${pv.v}V ON LINE`,'DISCONNECT PoE SOURCE FIRST','bad');ind('#iFail','open');snd.warn();return}
+ const my=++S.run;S.busy=true;clearLeds();S.res=null;pinLine();S.batt-=.6;
+ if(S.batt<3){S.batt=0;S.busy=false;return power()}
+ updateBatt();head();const a=analyze();
+ for(let i=0;i<9;i++){
+  const r=i<8?a.remote[i]:8;setLed(mxL,i,'scan');setLed(mnL,i,'scan');if(r>=0)setLed(rmL,r,'scan');
+  lcd('SCANNING…',`PIN ${LB[i]}  ${Math.round((i+1)/9*100)}%`);L.bar.style.width=(i+1)/9*100+'%';
+  if(S.mode===1)drawTDR((i+1)/9);snd.tick();await sleep(140);if(my!==S.run)return;
+  setLed(mxL,i,'seen');setLed(mnL,i,'seen');if(r>=0)setLed(rmL,r,'seen')}
+ const r=finish();S.busy=false;(r.fail?snd.fail:r.warn?snd.warn:snd.pass)()}
+
+/* ===== Modos, botones, encendido ===== */
+function ready(){head();L.bar.style.width='0';lcd('READY',HINT[S.mode]);L.l3.textContent='';if(S.mode===1)drawTDR(0)}
+function setMode(i){if(!S.on)return;S.mode=(i+4)%4;S.run++;S.busy=false;S.res=null;clearLeds();L.lcd.classList.toggle('tdr',S.mode===1);
+ $('#dial').style.transform=`rotate(${-45+90*S.mode}deg)`;$$('.rot b').forEach(b=>b.classList.toggle('on',+b.dataset.m===S.mode));pinLine();ready()}
+function move(d){if(!S.res)return;S.cur=(S.cur+d+9)%9;pinLine()}
+function selectBtn(){S.unit=S.unit==='m'?'ft':'m';head();if(S.mode===1&&S.res&&!S.busy){finish()}else if(S.mode===1)drawTDR(0)}
+async function power(){
+ snd.click();
+ if(S.on){S.on=false;S.run++;S.busy=false;L.lcd.classList.add('off');clearLeds();return}
+ S.on=true;const my=++S.run;L.lcd.classList.remove('off');L.lcd.classList.remove('tdr');head();lcd('CT-900 PRO','SELF-TEST…');updateBatt();
+ if(S.batt<3){lcd('BATT LOW','REPLACE BATTERIES','bad');beep(200,.4,'sawtooth');return}
+ for(let i=0;i<9;i++){[mxL,mnL,rmL].forEach(a=>setLed(a,i,'ok'));L.bar.style.width=(i+1)/9*100+'%';await sleep(70);if(my!==S.run)return}
+ ind('#iPass','ok');ind('#iFail','open');ind('#iShd','high');await sleep(300);if(my!==S.run)return;beep(1500,.1);setMode(S.mode)}
+$('#dev').addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
+ if(a==='pwr')return power();if(!S.on||S.batt<3)return;snd.click();({mode:()=>setMode(S.mode+1),sel:selectBtn,up:()=>move(-1),dn:()=>move(1),test})[a]()});
+$('#dial').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();if(S.on)setMode(S.mode+1)}});
+$$('.rot b').forEach(b=>b.onclick=()=>{if(S.on){snd.click();setMode(+b.dataset.m)}});
+$('#snd').onclick=e=>{mute=!mute;e.target.textContent='Sonido: '+(mute?'no':'sí');snd.click()};
+
+/* ===== Esquema del cable virtual ===== */
+function renderWire(){
+ const Y=i=>18+i*17,X1=46,X2=554,P=Math.max(5,Math.min(92,cable.fdist/cable.len*100)),st=S.res&&S.mode===0?analyze().st:null;let h='';
+ for(let i=0;i<8;i++){
+  const j=cable.map[i],y1=Y(i),y2=Y(j),d=`M${X1} ${y1}C230 ${y1} 370 ${y2} ${X2} ${y2}`,o=cable.open[i];
+  if(st)h+=`<path d="${d}" class="glow ${st[i]}"/>`;
+  h+=`<path id="w${i}" d="${d}" pathLength="100" class="wr" stroke="${COLORS[i]}" ${o?`stroke-dasharray="${P} 4 ${96-P}"`:''}/>`;
+  if(STRIPE[i]&&!o)h+=`<path d="${d}" pathLength="100" class="wr st"/>`;
+  h+=`<text x="26" y="${y1+4}">${i+1}</text><text x="566" y="${y1+4}">${i+1}</text>`}
+ const sy=156;h+=cable.shield==='UTP'?`<text x="46" y="${sy+4}">UTP · sin malla</text>`
+  :`<path d="M${X1} ${sy}H${X2}" stroke="#9aa3ab" stroke-width="4" fill="none" ${cable.shieldOk?'':`pathLength="100" stroke-dasharray="${P} 4 ${96-P}"`}/><text x="${X1}" y="${sy-7}">Malla ${cable.shield}</text>`;
+ cable.shorts.forEach(([a,b])=>{const x=X1+P/100*(X2-X1);h+=`<path class="sb" d="M${x} ${Y(a)}l5 ${(Y(b)-Y(a))/4}l-10 ${(Y(b)-Y(a))/2}l5 ${(Y(b)-Y(a))/4}"/>`});
+ $('#wsvg').innerHTML=h;let x2='';
+ cable.open.forEach((o,i)=>{if(o){const p=$('#w'+i),t=p.getPointAtLength((P+2)/100*p.getTotalLength());x2+=`<text class="xm" x="${t.x-6}" y="${t.y+5}">✕</text>`}});
+ Object.keys(cable.high).forEach(i=>{const p=$('#w'+i),t=p.getPointAtLength(p.getTotalLength()/2);x2+=`<rect class="rz" x="${t.x-10}" y="${t.y-5}" width="20" height="10" rx="2"/>`});
+ $('#wsvg').insertAdjacentHTML('beforeend',x2)}
+
+/* ===== Panel de inyección de fallas ===== */
+const note=t=>$('#note').textContent=t;
+function faultItems(){const f=[];
+ cable.open.forEach((o,i)=>o&&f.push([`Hilo ${i+1} cortado`,()=>cable.open[i]=false]));
+ cable.shorts.forEach((s,k)=>f.push([`Cortocircuito ${s[0]+1}-${s[1]+1}`,()=>cable.shorts.splice(k,1)]));
+ if(cable.map.some((v,i)=>v!==i))f.push([cable.map.every((v,i)=>v===CROSS[i])?'Cable crossover':'Cruce: '+cable.map.map((v,i)=>v!==i?`${i+1}>${v+1}`:'').filter(Boolean).join(' '),()=>cable.map=[...ID]]);
+ Object.keys(cable.high).forEach(p=>f.push([`Resistencia alta hilo ${+p+1} (${cable.high[p]} Ω)`,()=>delete cable.high[p]]));
+ if(cable.split)f.push(['Par dividido 3-6 / 4-5',()=>cable.split=false]);
+ if(cable.shield!=='UTP'&&!cable.shieldOk)f.push(['Malla cortada',()=>cable.shieldOk=true]);
+ if(cable.poe!=='off')f.push([`PoE activo: ${POE[cable.poe].n}`,()=>{cable.poe='off';$('#poe').value='off'}]);return f}
+function renderFaults(){const ul=$('#flist');ul.innerHTML='';const f=faultItems();
+ if(!f.length)return ul.innerHTML='<li class="none">Cable sano · sin fallas</li>';
+ f.forEach(([t,fn])=>{const li=document.createElement('li'),b=document.createElement('button');li.innerHTML=`<span>${t}</span>`;b.textContent='✕';b.title='Quitar falla';b.onclick=()=>{fn();changed()};li.append(b);ul.append(li)})}
+function changed(){S.run++;S.busy=false;if(S.on){clearLeds();S.res=null;pinLine();if(S.batt>=3)ready()}renderWire();renderFaults();syncUI()}
+function syncUI(){$('#len').value=cable.len;$('#lenv').textContent=cable.len.toFixed(1)+' m';$('#fd').max=cable.len;$('#fd').value=Math.min(cable.fdist,cable.len);$('#fdv').textContent=Math.min(cable.fdist,cable.len).toFixed(1)+' m';$('#shield').value=cable.shield;$('#poe').value=cable.poe}
+function syncSel(){const t=$('#ftype').value;$('#pb').disabled=!['short','swap'].includes(t);$('#pa').disabled=['split','shield'].includes(t)}
+$('#pa').innerHTML=$('#pb').innerHTML=LB.slice(0,8).map((n,i)=>`<option value="${i}">${n}</option>`).join('');$('#pb').value=1;
+$('#poe').innerHTML=Object.entries(POE).map(([k,v])=>`<option value="${k}">${v.n}${v.v?' · '+v.v+' V':''}</option>`).join('');
+$('#ftype').onchange=syncSel;
+$('#apply').onclick=()=>{const t=$('#ftype').value,a=+$('#pa').value,b=+$('#pb').value;
+ if(['short','swap'].includes(t)&&a===b)return note('Elige dos hilos distintos (A y B).');
+ if(t==='open')cable.open[a]=true;
+ else if(t==='short'){if(!cable.shorts.some(s=>s.includes(a)&&s.includes(b)))cable.shorts.push([a,b])}
+ else if(t==='swap')[cable.map[a],cable.map[b]]=[cable.map[b],cable.map[a]];
+ else if(t==='high')cable.high[a]=120+Math.round(Math.random()*18)*10;
+ else if(t==='split')cable.split=true;
+ else{if(cable.shield==='UTP')cable.shield='FTP';cable.shieldOk=false}
+ note('Falla aplicada. Pulsa TEST en el equipo.');changed()};
+$('#pStr').onclick=()=>{cable.map=[...ID];note('Cable directo.');changed()};
+$('#pCro').onclick=()=>{cable.map=[...CROSS];note('Cable crossover (T568A/B).');changed()};
+$('#len').oninput=e=>{cable.len=+e.target.value;changed()};$('#fd').oninput=e=>{cable.fdist=+e.target.value;changed()};
+$('#shield').onchange=e=>{cable.shield=e.target.value;changed()};$('#poe').onchange=e=>{cable.poe=e.target.value;changed()};
+$('#reset').onclick=()=>{Object.assign(cable,fresh());note('Cable restaurado.');changed()};
+$('#newbat').onclick=()=>{S.batt=100;changed();if(S.on&&!L.l1.textContent.startsWith('READY'))ready();updateBatt()};
+
+/* ===== Inicio ===== */
+syncSel();changed();
+})();
+</script>
+</body>
+</html>
