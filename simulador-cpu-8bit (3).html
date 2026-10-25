@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulador de CPU RISC de 8 bits</title>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<style>
+:root{color-scheme:dark;--b:#38bdf8;--g:#22c55e;--a:#f59e0b;--bd:#334155}
+body{background:#0f172a;color:#e2e8f0;font-family:'JetBrains Mono','Courier New',monospace;font-size:13px}
+.pn{background:#1e293b;border:1px solid var(--bd);border-radius:.6rem;padding:.7rem}
+h2{font-size:.7rem;letter-spacing:.12em;color:#94a3b8;text-transform:uppercase;margin-bottom:.5rem}
+.btn{padding:.35rem .7rem;border-radius:.4rem;border:1px solid var(--bd);background:#0b1220;cursor:pointer;font:inherit}
+.btn:hover{border-color:var(--b);color:var(--b)}.pri{background:var(--g);color:#0f172a;border-color:var(--g);font-weight:700}.pri:hover{color:#0f172a;filter:brightness(1.1)}
+input,select,textarea{background:#0b1220;border:1px solid var(--bd);border-radius:.4rem;color:#e2e8f0;font:inherit;padding:.3rem .5rem}
+.reg{background:#0b1220;border:1px solid var(--bd);border-radius:.4rem;padding:.35rem .5rem;text-align:center;transition:.2s}
+.reg small{display:block;color:#64748b;font-size:.62rem}.reg b{display:block;color:var(--b);font-size:1.05rem}
+.reg.hot{border-color:var(--g);box-shadow:0 0 12px var(--g)}
+.bus{height:10px;border-radius:5px;background:#0b1220;border:1px solid var(--bd);margin:.15rem 0 .5rem}
+.bus.on{background:linear-gradient(90deg,#0b1220,var(--g),#0b1220);background-size:200% 100%;animation:fl .6s linear infinite;border-color:var(--g)}
+.bus.addr.on{background-image:linear-gradient(90deg,#0b1220,var(--b),#0b1220);border-color:var(--b)}
+@keyframes fl{to{background-position:-200% 0}}
+.ph{padding:.3rem .6rem;border:1px solid var(--bd);border-radius:.4rem;color:#64748b}
+.ph.on{color:#0f172a;background:var(--g);border-color:var(--g);box-shadow:0 0 12px var(--g);font-weight:700}
+.led{padding:.1rem .6rem;border-radius:.3rem;border:1px solid var(--bd);color:#64748b}
+.led.on{background:var(--a);color:#0f172a;border-color:var(--a);box-shadow:0 0 8px var(--a)}
+.ram{display:grid;grid-template-columns:2.4rem repeat(8,1fr);gap:2px}
+.ram i{font-style:normal;color:#64748b;font-size:10px;align-self:center}
+.m{background:#0b1220;border:1px solid #1e293b;text-align:center;padding:2px 0;font-size:11px;color:#475569}
+.m.d{background:#0e1a2b}.m.nz{color:#cbd5e1}.m.pc{outline:2px solid var(--b);color:var(--b)}.m.rd{background:#14532d;color:#fff}.m.wr{background:#78350f;color:#fff}
+.sb{fill:#0b1220;stroke:#475569;stroke-width:1.5}.st{fill:#cbd5e1;font:11px 'Courier New',monospace}.sl{stroke:#475569;fill:none;stroke-dasharray:3 3}
+#edw{position:relative;height:19rem}
+#hl,#src{position:absolute;inset:0;margin:0;padding:.4rem .5rem;font:inherit;line-height:20px;white-space:pre;border:1px solid var(--bd);border-radius:.4rem;box-sizing:border-box}
+#hl{overflow:hidden;color:transparent;pointer-events:none}
+#src{overflow:auto;resize:none;background:transparent;z-index:1;color:#e2e8f0}
+.ln{height:20px;width:max-content;min-width:100%}
+.ln.cf{background:rgba(56,189,248,.3);box-shadow:inset 3px 0 #38bdf8}.ln.cd{background:rgba(245,158,11,.3);box-shadow:inset 3px 0 #f59e0b}.ln.ce{background:rgba(34,197,94,.3);box-shadow:inset 3px 0 #22c55e}
+.ln.nx{box-shadow:inset 0 0 0 1px rgba(148,163,184,.6)}.ln.dn{background:rgba(34,197,94,.08)}
+.m.xf{box-shadow:inset 0 0 0 2px #38bdf8}.m.xd{box-shadow:inset 0 0 0 2px #f59e0b}.m.xe{box-shadow:inset 0 0 0 2px #22c55e}
+#pFETCH.on{background:var(--b);border-color:var(--b);box-shadow:0 0 12px var(--b)}#pDECODE.on{background:var(--a);border-color:var(--a);box-shadow:0 0 12px var(--a)}
+.tabon{background:var(--b);color:#0f172a;border-color:var(--b);font-weight:700}.tabon:hover{color:#0f172a}
+.tb{width:100%;border-collapse:collapse;font-size:.75rem;margin:.4rem 0}.tb td,.tb th{border:1px solid var(--bd);padding:.25rem .45rem;text-align:left;vertical-align:top}.tb th{background:#0b1220;color:#94a3b8}
+.code{background:#0b1220;border:1px solid var(--bd);border-radius:.4rem;padding:.5rem .7rem;overflow:auto;font-size:12px;line-height:1.5;white-space:pre}
+#vMan h3{color:#38bdf8;font-weight:700;font-size:1rem;margin-bottom:.4rem}#vMan p,#vMan ul{margin:.4rem 0}#vMan code{color:#22c55e;background:#0b1220;padding:0 .25rem;border-radius:.2rem}
+.dsp{background:#020617;border:1px solid var(--bd);border-radius:.5rem;padding:.4rem;display:flex;justify-content:center;gap:.4rem}
+</style></head>
+<body class="p-3">
+<header class="mb-3 flex flex-wrap items-baseline gap-3"><h1 class="text-lg font-bold"><span class="text-sky-400">▣ CPU-8</span> Simulador RISC de 8 bits</h1><span class="text-xs text-slate-400">Fetch ➔ Decode ➔ Execute · instrucciones de 2 bytes · RAM de 128 bytes</span><button class="btn pri ml-auto" onclick="tut(0)">🎓 Tutorial</button></header>
+<nav class="flex gap-2 mb-3"><button id="tSim" class="btn tabon" onclick="view('sim')">🖥️ Simulador</button><button id="tMan" class="btn" onclick="view('man')">📖 Manual</button></nav>
+<main id="vSim" class="grid lg:grid-cols-[1.1fr_1fr_1fr] gap-3">
+
+<section class="pn min-w-0">
+ <h2>Editor Assembler</h2>
+ <select id="sel" class="w-full mb-1" onchange="loadProg(this.value)"></select>
+ <div id="pd" class="text-xs text-slate-400 mb-2 min-h-[1rem]"></div>
+ <div id="edw"><div id="hl" aria-hidden="true"></div><textarea id="src" spellcheck="false" wrap="off" onscroll="syncS()" oninput="mkHl()"></textarea></div>
+ <div class="text-[10px] text-slate-400 mt-1"><span class="text-sky-400">■ FETCH</span> · <span class="text-amber-400">■ DECODE</span> · <span class="text-green-400">■ EXECUTE</span> · verde tenue = ya ejecutada · recuadro = siguiente</div>
+ <div id="err" class="text-xs"></div>
+ <div id="cur" class="text-xs text-sky-300 my-2 min-h-[1rem]"></div>
+ <div class="flex flex-wrap gap-2 mb-2">
+  <button id="pl" class="btn pri" onclick="play()">▶ Play</button>
+  <button class="btn" onclick="step()">⏭ Paso (fase)</button>
+  <button class="btn" onclick="stepI()">⏩ Instrucción</button>
+  <button class="btn" onclick="init()">↺ Reset</button>
+ </div>
+ <label class="text-xs text-slate-400">Reloj: <select id="hz"><option>1</option><option selected>2</option><option>5</option><option>10</option><option>50</option><option>200</option></select> Hz</label>
+ <div class="flex items-center gap-2 my-3 text-xs"><span class="ph" id="pFETCH">FETCH</span>➔<span class="ph" id="pDECODE">DECODE</span>➔<span class="ph" id="pEXECUTE">EXECUTE</span></div>
+ <div id="cyc" class="text-xs text-slate-400 mb-1"></div>
+ <div id="logs" class="text-xs space-y-1"></div>
+ <details class="mt-3 text-xs text-slate-400"><summary class="cursor-pointer text-slate-300">Referencia ISA</summary>
+  <pre class="mt-1 whitespace-pre-wrap">MOV Rd, n     Rd ← n
+ADD Rd, Rs    Rd ← Rd + Rs
+SUB Rd, Rs    Rd ← Rd − Rs
+INC/DEC Rd    Rd ← Rd ± 1
+STORE Rs,[a]  RAM[a] ← Rs
+LOAD Rd,[a]   Rd ← RAM[a]
+JMP etiqueta  PC ← dirección
+JZ etiqueta   salta si Z=1
+OUT Rs        muestra Rs
+HLT           detiene la CPU
+Byte 0 = opcode(4b) | reg(2b) | reg(2b)
+Byte 1 = inmediato o dirección
+Flags Z/C: los actualizan ADD, SUB, INC, DEC.
+Código en 0x00-0x3F; datos desde 0x40.</pre></details>
+</section>
+
+<section class="pn min-w-0">
+ <h2>Procesador interno</h2>
+ <div class="grid grid-cols-2 gap-2">
+  <div class="reg" id="pc"><small>PC · Program Counter</small><b id="vpc"></b></div>
+  <div class="reg" id="ir"><small>IR · Instrucción (2 bytes)</small><b id="vir"></b><small id="vdec"></small></div>
+  <div class="reg" id="mar"><small>MAR · Dirección</small><b id="vmar"></b></div>
+  <div class="reg" id="mdr"><small>MDR · Dato</small><b id="vmdr"></b></div>
+ </div>
+ <div class="text-[10px] text-slate-400 mt-3">BUS DE DIRECCIONES</div><div class="bus addr" id="ba"></div>
+ <div class="text-[10px] text-slate-400">BUS DE DATOS</div><div class="bus" id="bd"></div>
+ <div id="regs" class="grid grid-cols-2 gap-2 mb-3"></div>
+ <div class="reg" id="alu"><small>ALU · Unidad aritmético-lógica</small><b id="aluop">—</b>
+  <div class="flex justify-center gap-3 mt-2"><span class="led" id="fz">Z · Zero</span><span class="led" id="fc">C · Carry</span></div></div>
+ <p class="text-xs text-slate-400 mt-3">Los elementos que brillan en verde participan en la fase actual; los buses se animan cuando hay transferencia.</p>
+</section>
+
+<section class="pn min-w-0">
+ <h2>Memoria RAM (128 bytes)</h2>
+ <div id="ram" class="ram"></div>
+ <div class="text-[10px] text-slate-400 mt-1">Azul: PC · Verde: lectura · Naranja: escritura · Zona de datos desde 0x40</div>
+ <h2 class="mt-4">Pantalla de salida</h2>
+ <div class="dsp" id="seg"></div>
+ <div id="outl" class="text-xs text-green-400 mt-2 break-words min-h-[1rem]"></div>
+</section>
+</main>
+<section id="vMan" class="hidden grid lg:grid-cols-[13rem_1fr] gap-3"><aside id="mi" class="pn lg:sticky lg:top-3 self-start text-xs space-y-1"></aside><article id="mc2" class="pn min-w-0 space-y-6 text-sm leading-6"></article></section>
+<div id="tut" class="hidden fixed inset-0 z-30 bg-black/75 flex items-center justify-center p-3" onclick="if(event.target===this)tutClose()">
+ <div class="pn max-w-2xl w-full max-h-[92vh] overflow-y-auto">
+  <div class="flex justify-between items-start gap-2"><div><div id="tn" class="text-xs text-slate-400"></div><h3 id="tt" class="text-base font-bold text-sky-400"></h3></div><button class="btn" onclick="tutClose()">✕</button></div>
+  <div id="tg" class="my-3 rounded-lg bg-[#0b1220] border border-slate-700 p-3 min-h-[170px]"></div>
+  <div id="tp" class="text-sm leading-6 mb-3"></div>
+  <div class="flex flex-wrap gap-2 items-center"><button class="btn" onclick="tut(-1)">◀ Anterior</button><div id="td" class="flex gap-1"></div><button class="btn" onclick="tut(1)">Siguiente ▶</button><button id="tb" class="btn pri ml-auto" onclick="tryIt()"></button></div>
+ </div></div>
+
+<script>
+const $=id=>document.getElementById(id),h2=n=>n.toString(16).toUpperCase().padStart(2,'0');
+const OPS={HLT:0,MOV:1,ADD:2,SUB:3,INC:4,DEC:5,STORE:6,LOAD:7,JMP:8,JZ:9,OUT:10},NAMES=Object.keys(OPS);
+const PROGS={
+count:{n:'🟢 Contador del 1 al 10',d:'Bucle con contador: INC, DEC y JZ.',c:`; Cuenta de 1 a 10 con un bucle
+      MOV R1, 1      ; valor a mostrar
+      MOV R2, 10     ; repeticiones restantes
+bucle: OUT R1
+      INC R1
+      DEC R2         ; DEC actualiza la bandera Z
+      JZ fin         ; si R2 = 0, terminamos
+      JMP bucle
+fin:  HLT`},
+fib:{n:'🟡 Secuencia de Fibonacci',d:'Copiar y sumar registros; 10 términos.',c:`; Primeros 10 términos de Fibonacci
+; (no hay MOV Rd,Rs: se copia con MOV 0 + ADD)
+      MOV R0, 0      ; a
+      MOV R1, 1      ; b
+      MOV R3, 10     ; términos
+bucle: OUT R0
+      MOV R2, 0
+      ADD R2, R0     ; R2 = a
+      ADD R2, R1     ; R2 = a + b
+      MOV R0, 0
+      ADD R0, R1     ; a = b
+      MOV R1, 0
+      ADD R1, R2     ; b = a + b
+      DEC R3
+      JZ fin
+      JMP bucle
+fin:  HLT`},
+mul:{n:'🔴 Multiplicación por sumas sucesivas',d:'Multiplicar es sumar muchas veces; usa STORE y LOAD.',c:`; 6 x 7 = 6 + 6 + 6 + 6 + 6 + 6 + 6
+      MOV R0, 6      ; multiplicando
+      MOV R1, 7      ; multiplicador (contador)
+      MOV R2, 0      ; resultado
+bucle: ADD R2, R0
+      DEC R1
+      JZ fin
+      JMP bucle
+fin:  STORE R2, [0x40]  ; guarda el resultado en RAM
+      LOAD R3, [0x40]   ; y lo recupera
+      OUT R3
+      HLT`},
+down:{n:'🔵 Cuenta atrás 5 → 1',d:'El bucle más simple: DEC + JZ.',c:`; Cuenta atrás de 5 a 1
+      MOV R1, 5
+bucle: OUT R1
+      DEC R1
+      JZ fin
+      JMP bucle
+fin:  HLT`},
+sum:{n:'🟣 Suma 1 + 2 + … + 10',d:'Un acumulador que crece en cada vuelta (resultado: 55).',c:`; Suma de los 10 primeros números
+      MOV R0, 0      ; acumulador
+      MOV R1, 10     ; contador
+bucle: ADD R0, R1
+      DEC R1
+      JZ fin
+      JMP bucle
+fin:  OUT R0
+      HLT`},
+pow:{n:'🟠 Potencias de 2',d:'Doblar un número es sumarlo consigo mismo (ADD R1, R1).',c:`; 1, 2, 4, 8 ... 128
+      MOV R1, 1
+      MOV R2, 8
+bucle: OUT R1
+      ADD R1, R1     ; doblar
+      DEC R2
+      JZ fin
+      JMP bucle
+fin:  HLT`},
+ovf:{n:'⚡ Desbordamiento (Carry)',d:'200 + 100 no cabe en 8 bits: mira el LED C de la ALU.',c:`; 200 + 100 = 300 -> 300 - 256 = 44, con Carry
+      MOV R0, 200
+      MOV R1, 100
+      ADD R0, R1     ; observa el LED C
+      OUT R0
+      HLT`},
+ram:{n:'💾 Guardar y recuperar de la RAM',d:'STORE escribe en memoria (naranja) y LOAD lee (verde).',c:`; Guarda dos valores en RAM, léelos y súmalos
+      MOV R0, 5
+      STORE R0, [0x40]
+      MOV R0, 7
+      STORE R0, [0x41]
+      LOAD R1, [0x40]
+      LOAD R2, [0x41]
+      ADD R1, R2
+      OUT R1
+      HLT`}};
+let cpu,timer=null,src=[];
+
+function asm(text){
+ const lines=text.split('\n'),labels={},items=[],err=[];let addr=0;
+ lines.forEach((raw,i)=>{let l=raw.split(';')[0].trim();if(!l)return;
+  const lb=l.match(/^([A-Za-z_]\w*):\s*(.*)$/);if(lb){labels[lb[1].toLowerCase()]=addr;l=lb[2].trim();if(!l)return}
+  const m=l.match(/^(\w+)\s*(.*)$/);if(!m){err.push('Línea '+(i+1)+': sintaxis no válida');return}
+  items.push({op:m[1].toUpperCase(),a:m[2]?m[2].split(',').map(s=>s.trim()):[],line:i+1,addr});addr+=2});
+ const mem=Array(128).fill(0),map={};
+ const reg=s=>{const m=/^R([0-3])$/i.exec(s||'');if(!m)throw'registro no válido «'+s+'» (R0-R3)';return+m[1]};
+ const num=s=>{if(/^(0x[0-9a-f]+|\d+)$/i.test(s||'')){if(+s>255)throw'valor fuera de 0-255';return+s}throw'número no válido «'+s+'»'};
+ const ad=s=>{const m=/^\[(.+)\]$/.exec(s||'');if(!m)throw'se esperaba una dirección, ej. [0x40]';const v=num(m[1]);if(v>127)throw'dirección fuera de la RAM (0-0x7F)';return v};
+ const lab=s=>{const k=(s||'').toLowerCase();if(!(k in labels))throw'etiqueta desconocida «'+s+'»';return labels[k]};
+ items.forEach(it=>{try{
+  if(!(it.op in OPS))throw'instrucción desconocida «'+it.op+'»';
+  const a=it.a,n=a.length;let b0=OPS[it.op]<<4,b1=0;
+  const need=k=>{if(n!==k)throw it.op+' necesita '+k+' operando(s)'};
+  if(it.op==='MOV'){need(2);b0|=reg(a[0])<<2;b1=num(a[1])}
+  else if(it.op==='ADD'||it.op==='SUB'){need(2);b0|=reg(a[0])<<2|reg(a[1])}
+  else if(['INC','DEC','OUT'].includes(it.op)){need(1);b0|=reg(a[0])<<2}
+  else if(it.op==='STORE'||it.op==='LOAD'){need(2);b0|=reg(a[0])<<2;b1=ad(a[1])}
+  else if(it.op==='JMP'||it.op==='JZ'){need(1);b1=lab(a[0])}
+  else need(0);
+  if(it.addr+1>127)throw'el programa no cabe en la RAM';
+  mem[it.addr]=b0;mem[it.addr+1]=b1;map[it.addr]=it.line;
+ }catch(e){err.push('Línea '+it.line+': '+e)}});
+ return{mem,map,err}}
+
+function dis(i0,i1){const o=i0>>4,d=(i0>>2)&3,s=i0&3,n=NAMES[o];if(!n)return'???';
+ return n+({MOV:` R${d}, ${i1}`,ADD:` R${d}, R${s}`,SUB:` R${d}, R${s}`,INC:` R${d}`,DEC:` R${d}`,STORE:` R${d}, [0x${h2(i1)}]`,LOAD:` R${d}, [0x${h2(i1)}]`,JMP:` 0x${h2(i1)}`,JZ:` 0x${h2(i1)}`,OUT:` R${d}`}[n]||'')}
+function log(t){cpu.logs.unshift(`[${cpu.cyc}] ${t}`);cpu.logs=cpu.logs.slice(0,7)}
+
+function init(){src=$('src').value.split('\n');const r=asm($('src').value);
+ cpu={mem:r.mem,map:r.map,pc:0,r:[0,0,0,0],z:0,c:0,mar:0,mdr:0,i0:0,i1:0,ph:'FETCH',last:'',ca:null,seen:new Set(),halted:r.err.length>0,out:[],alu:null,hot:[],busA:0,busD:0,rd:[],wr:-1,dec:'',logs:[],cyc:0};
+ $('err').innerHTML=r.err.map(e=>`<div class="text-red-400">⚠ ${e}</div>`).join('');
+ log(r.err.length?'Corrige los errores del programa y pulsa Reset.':'Programa ensamblado. Pulsa Paso o Play.');stop();render()}
+
+function step(){const c=cpu;if(c.halted)return;c.hot=[];c.busA=c.busD=0;c.rd=[];c.wr=-1;c.cyc++;c.last=c.ph;
+ if(c.ph==='FETCH'){const a0=c.pc;c.ca=a0;c.mar=a0;c.mdr=c.mem[a0];c.i0=c.mdr;c.pc=(a0+1)&127;
+  const a1=c.pc;c.mar=a1;c.mdr=c.mem[a1];c.i1=c.mdr;c.pc=(a1+1)&127;c.rd=[a0,a1];c.hot=['pc','mar','mdr','ir'];c.busA=c.busD=1;
+  log(`FETCH: MAR←PC (0x${h2(a0)}), MDR←RAM = 0x${h2(c.i0)} → IR; operando en 0x${h2(a1)} = 0x${h2(c.i1)}; PC ← 0x${h2(c.pc)}`);c.ph='DECODE'}
+ else if(c.ph==='DECODE'){if((c.i0>>4)>10){c.halted=true;c.dec='???';log('DECODE: opcode no válido, la CPU se detiene')}
+  else{c.dec=dis(c.i0,c.i1);c.hot=['ir'];log(`DECODE: 0x${h2(c.i0)} 0x${h2(c.i1)} → ${c.dec}`);c.ph='EXECUTE'}}
+ else{const o=c.i0>>4,d=(c.i0>>2)&3,s=c.i0&3,v=c.i1,R=c.r;c.alu=null;let t='EXECUTE: ';
+  const al=(sym,A,B,res)=>{c.alu={sym,A,B,res:res&255};c.z=(res&255)===0?1:0;c.c=(res>255||res<0)?1:0;c.hot=['alu','r'+d];R[d]=res&255;t+=`ALU ${A} ${sym} ${B} = ${res&255} → R${d} (Z=${c.z}, C=${c.c})`};
+  if(o===0){c.halted=true;t+='HLT, la CPU se detiene'}
+  else if(o===1){R[d]=v;c.hot=['r'+d];c.busD=1;t+=`R${d} ← ${v}`}
+  else if(o===2)al('+',R[d],R[s],R[d]+R[s]);
+  else if(o===3)al('−',R[d],R[s],R[d]-R[s]);
+  else if(o===4)al('+',R[d],1,R[d]+1);
+  else if(o===5)al('−',R[d],1,R[d]-1);
+  else if(o===6){c.mar=v;c.mdr=R[d];c.mem[v]=R[d];c.wr=v;c.busA=c.busD=1;c.hot=['mar','mdr','r'+d];t+=`RAM[0x${h2(v)}] ← R${d} (${R[d]})`}
+  else if(o===7){c.mar=v;c.mdr=c.mem[v];R[d]=c.mdr;c.rd=[v];c.busA=c.busD=1;c.hot=['mar','mdr','r'+d];t+=`R${d} ← RAM[0x${h2(v)}] (${R[d]})`}
+  else if(o===8){c.pc=v;c.hot=['pc'];t+=`salto: PC ← 0x${h2(v)}`}
+  else if(o===9){if(c.z){c.pc=v;c.hot=['pc'];t+=`Z=1, salto: PC ← 0x${h2(v)}`}else t+='Z=0, no salta'}
+  else{c.out.push(R[d]);c.hot=['r'+d];c.busD=1;t+=`OUT R${d} → pantalla (${R[d]})`}
+  c.ph='FETCH';c.seen.add(c.map[c.ca]);log(t)}
+ render();if(c.halted)stop()}
+function stepI(){if(cpu.halted)return;do step();while(cpu.ph!=='FETCH'&&!cpu.halted)}
+function play(){if(timer){stop();return}if(cpu.halted)return;timer=setInterval(step,1000/+$('hz').value);$('pl').textContent='⏸ Pausa'}
+function stop(){clearInterval(timer);timer=null;$('pl').textContent='▶ Play'}
+
+const SEG={0:'abcdef',1:'bc',2:'abdeg',3:'abcdg',4:'bcfg',5:'acdfg',6:'acdefg',7:'abc',8:'abcdefg',9:'abcdfg'},
+ RC={a:[8,2,24,6],b:[32,8,6,24],c:[32,38,6,24],d:[8,62,24,6],e:[2,38,6,24],f:[2,8,6,24],g:[8,32,24,6]};
+const seg=ch=>`<svg viewBox="0 0 40 70" class="w-10 h-16">${Object.keys(RC).map(k=>`<rect x="${RC[k][0]}" y="${RC[k][1]}" width="${RC[k][2]}" height="${RC[k][3]}" rx="2" fill="${(SEG[ch]||'').includes(k)?'#22c55e':'#10202e'}"/>`).join('')}</svg>`;
+
+function render(){const c=cpu;
+ $('vpc').textContent='0x'+h2(c.pc);$('vmar').textContent='0x'+h2(c.mar);$('vmdr').textContent='0x'+h2(c.mdr);
+ $('vir').textContent=h2(c.i0)+' '+h2(c.i1);$('vdec').textContent=c.dec||'—';
+ c.r.forEach((v,i)=>{$('rv'+i).textContent='0x'+h2(v);$('rd'+i).textContent=v+' dec · '+v.toString(2).padStart(8,'0')});
+ ['pc','mar','mdr','ir','alu','r0','r1','r2','r3'].forEach(k=>$(k).classList.toggle('hot',c.hot.includes(k)));
+ $('ba').classList.toggle('on',!!c.busA);$('bd').classList.toggle('on',!!c.busD);
+ $('aluop').textContent=c.alu?`${c.alu.A} ${c.alu.sym} ${c.alu.B} = ${c.alu.res}`:'—';
+ $('fz').classList.toggle('on',!!c.z);$('fc').classList.toggle('on',!!c.c);
+ ['FETCH','DECODE','EXECUTE'].forEach(p=>$('p'+p).classList.toggle('on',c.last===p));
+ const kk={FETCH:'f',DECODE:'d',EXECUTE:'e'}[c.last]||'',cells=document.querySelectorAll('.m');
+ for(let i=0;i<128;i++){cells[i].className='m'+(i>=64?' d':'')+(c.mem[i]?' nz':'')+(i===c.pc?' pc':'')+(c.rd.includes(i)?' rd':'')+(i===c.wr?' wr':'')+(kk&&c.ca!=null&&(i===c.ca||i===c.ca+1)?' x'+kk:'');cells[i].textContent=h2(c.mem[i])}
+ const v=c.out.length?c.out[c.out.length-1]:null;
+ $('seg').innerHTML=[...(v===null?'   ':String(v).padStart(3,' '))].map(seg).join('');
+ $('outl').textContent=c.out.length?'Salidas: '+c.out.slice(-24).join(', '):'';
+ const a=c.ph==='FETCH'?c.pc:(c.pc-2)&127,ln=c.map[a];
+ $('cur').textContent=ln&&!c.halted?`▶ Línea ${ln}: ${(src[ln-1]||'').split(';')[0].trim()}`:(c.halted&&!c.cyc?'':c.halted?'■ CPU detenida':'');
+ mkHl();$('cyc').textContent='Ciclos de reloj: '+c.cyc;
+ $('logs').innerHTML=c.logs.map((l,i)=>`<div class="${i?'text-slate-500':'text-slate-200'}">${l}</div>`).join('')}
+
+function syncS(){$('hl').scrollTop=$('src').scrollTop;$('hl').scrollLeft=$('src').scrollLeft}
+function mkHl(){const c=cpu,k={FETCH:'f',DECODE:'d',EXECUTE:'e'}[c&&c.last]||'',cur=c&&c.ca!=null&&k?c.map[c.ca]:0,nx=c&&c.ph==='FETCH'&&!c.halted?c.map[c.pc]:0,sc=$('src');
+ $('hl').innerHTML=sc.value.split('\n').map((t,i)=>{const n=i+1;return `<div class="ln${n===cur?' c'+k:n===nx?' nx':c&&c.seen&&c.seen.has(n)?' dn':''}">${t.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>`}).join('');
+ const ln=cur||nx;if(ln){const y=(ln-1)*20;if(y<sc.scrollTop)sc.scrollTop=y;else if(y+40>sc.scrollTop+sc.clientHeight)sc.scrollTop=y+40-sc.clientHeight}syncS()}
+function loadProg(k){$('src').value=PROGS[k].c;$('pd').textContent=PROGS[k].d||'';init()}
+
+/* ===== Tutorial y gráficos animados ===== */
+const SV=b=>`<svg viewBox="0 0 360 150" class="w-full max-h-48">${b}</svg>`,
+ box=(x,y,w,h,t)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="6" class="sb"/><text x="${x+w/2}" y="${y+h/2+4}" text-anchor="middle" class="st">${t}</text>`,
+ tx=(x,y,t,c)=>`<text x="${x}" y="${y}" text-anchor="middle" class="st"${c?` style="fill:${c}"`:''}>${t}</text>`,
+ dot=(p,c,d,b=0)=>`<circle r="5" style="fill:${c}"><animateMotion path="${p}" dur="${d}s" begin="${b}s" repeatCount="indefinite"/></circle>`,
+ node=(x,y,t,v,k)=>`<circle cx="${x}" cy="${y}" r="30" class="sb"><animate attributeName="stroke" values="${v}" keyTimes="${k}" dur="6s" calcMode="discrete" repeatCount="indefinite"/></circle>${tx(x,y+4,t)}`,
+ grp=(x,w,c,v,k)=>`<rect x="${x}" y="17" width="${w}" height="36" rx="6" style="fill:${c}"><animate attributeName="fill-opacity" values="${v}" keyTimes="${k}" dur="3s" calcMode="discrete" repeatCount="indefinite"/></rect>`;
+const GR={
+block:()=>SV(`<rect x="10" y="8" width="150" height="134" rx="8" class="sb"/>${tx(85,28,'CPU de 8 bits','#38bdf8')}${tx(85,58,'PC · IR · MAR · MDR')}${tx(85,82,'R0 R1 R2 R3')}${tx(85,106,'ALU  (flags Z, C)')}${box(230,8,120,56,'RAM 128 B')}${box(230,86,120,56,'Pantalla')}<path d="M160 30H230M160 44H230M160 114H230" class="sl"/>`+dot('M160 30H230','#38bdf8',1.6)+dot('M230 44H160','#22c55e',1.6,.8)+dot('M160 114H230','#f59e0b',2)),
+mem:()=>SV('14 0A 18 05 26 00 A4 00'.split(' ').map((b,i)=>box(10+i*42,50,40,32,b)+tx(30+i*42,100,'0x0'+i,'#64748b')).join('')+`<rect y="44" width="82" height="44" rx="6" fill="none" stroke="#38bdf8" stroke-width="2"><animate attributeName="x" values="8;92;176;260" dur="4s" calcMode="discrete" repeatCount="indefinite"/></rect><text y="32" text-anchor="middle" class="st" style="fill:#38bdf8">PC ▼<animate attributeName="x" values="49;133;217;301" dur="4s" calcMode="discrete" repeatCount="indefinite"/></text>`+tx(180,130,'MOV R1,10 · MOV R2,5 · ADD R1,R2 · OUT R1')),
+cycle:()=>SV('<path d="M50 75L180 25L310 75L180 125Z" class="sl"/>'+node(50,75,'FETCH','#22c55e;#475569;#22c55e','0;.1;.9')+node(180,25,'DECODE','#475569;#22c55e;#475569','0;.2;.35')+node(310,75,'EXECUTE','#475569;#22c55e;#475569','0;.45;.6')+tx(180,144,'siguiente instrucción','#64748b')+dot('M50 75L180 25L310 75L180 125Z','#22c55e',6)),
+fetch:()=>SV(box(10,10,70,30,'PC')+box(100,10,70,30,'MAR')+box(200,10,150,60,'RAM')+box(100,100,70,30,'MDR')+box(10,100,70,30,'IR')+dot('M45 25H275','#38bdf8',3)+dot('M275 60L135 115H45','#22c55e',3,1.5)+tx(285,100,'● dirección','#38bdf8')+tx(285,120,'● dato','#22c55e')),
+enc:()=>SV(grp(18,160,'#38bdf8','.5;.1;.1','0;.33;.66')+grp(178,80,'#22c55e','.1;.5;.1','0;.33;.66')+grp(258,80,'#f59e0b','.1;.1;.5','0;.33;.66')+[...'00010100'].map((c,i)=>box(20+i*40,20,36,30,c)).join('')+[...'00001010'].map((c,i)=>box(20+i*40,95,36,30,c)).join('')+tx(98,66,'opcode 0001 = MOV','#38bdf8')+tx(218,66,'Rd = R1','#22c55e')+tx(298,66,'Rs (sin uso)','#f59e0b')+tx(180,12,'Byte 0 = 0x14')+tx(180,142,'Byte 1 = 0x0A = inmediato 10  →  MOV R1, 10')),
+adder:()=>'<div id="adx" class="text-center"></div>',
+loop:()=>SV(box(15,60,60,30,'OUT R1')+box(85,60,60,30,'INC R1')+box(155,60,60,30,'DEC R2')+`<path d="M255 47L283 75L255 103L227 75Z" class="sb"/>${tx(255,79,'Z?')}`+box(300,60,50,30,'HLT')+'<path d="M75 75H85M145 75H155M215 75H227M283 75H300M255 103V130H45V90" class="sl"/>'+tx(292,52,'Z=1','#22c55e')+tx(150,145,'Z=0 → JMP bucle','#f59e0b')+dot('M45 75H255V130H45Z','#22c55e',5))};
+let adT=null;
+function adder(){clearInterval(adT);const el=$('adx'),a='11001000',b='01100100',E='\u00a0';let t=0,cy=0,hl=-1,res=Array(8).fill('·'),ci=Array(8).fill(E);
+ const row=(l,s)=>`<div class="flex justify-center gap-3"><span class="w-24 text-right text-xs text-slate-400 self-center">${l}</span><span class="text-xl tracking-[.35em] w-56 text-left">${[...s].map((x,i)=>i===hl?`<span class="text-amber-400">${x}</span>`:x).join('')}</span></div>`;
+ const draw=()=>{el.innerHTML=row('acarreo',ci.join(''))+row('A = 200',a)+row('B = 100',b)+row('R',res.join(''))+`<div class="text-xs mt-2 ${t>=8?'text-green-400':'text-slate-400'}">${t>=8?'Resultado: '+parseInt(res.join(''),2)+' · C='+cy+' (desbordamiento) · Z=0':t?'Columna '+t+' de 8, de derecha a izquierda':'Empezamos por el bit menos significativo'}</div>`};
+ const tick=()=>{hl=-1;if(t<8){const c=7-t,s=+a[c]+ +b[c]+cy;res[c]=s&1;cy=s>>1;if(c>0)ci[c-1]=cy?'1':E;hl=c}t++;if(t>11){t=0;cy=0;res.fill('·');ci.fill(E)}draw()};
+ draw();adT=setInterval(tick,800)}
+const LES=[
+{t:'¿Qué es un microprocesador?',g:'block',prog:'count',b:'Cargar el contador',p:'Un microprocesador ejecuta programas guardados en memoria. Esta CPU de 8 bits maneja números de 0 a 255 y tiene 4 registros (R0–R3), una ALU que calcula y 128 bytes de RAM. Los puntos del dibujo son datos viajando entre la CPU, la RAM y la pantalla.'},
+{t:'El programa vive en la memoria',g:'mem',prog:'ram',b:'Ver STORE y LOAD',p:'Cada instrucción ocupa <b>2 bytes</b> consecutivos: uno con la operación y otro con el número o la dirección. El <b>PC</b> (Program Counter) apunta a la siguiente instrucción y avanza de 2 en 2. Convención: código en 0x00–0x3F y datos desde 0x40.'},
+{t:'El ciclo de instrucción',g:'cycle',prog:'count',b:'Probar paso a paso',p:'Cada instrucción pasa por tres fases: <b>FETCH</b> (traerla de la memoria), <b>DECODE</b> (interpretarla) y <b>EXECUTE</b> (hacerla). Luego el ciclo se repite con la siguiente. Usa «Paso (fase)» y observa qué se ilumina en cada fase.'},
+{t:'FETCH: traer la instrucción',g:'fetch',prog:'down',b:'Ver el FETCH en vivo',p:'El PC pasa su valor al <b>MAR</b>; la dirección viaja por el bus de direcciones (azul) hasta la RAM, y el dato vuelve por el bus de datos (verde) al <b>MDR</b> y se copia en el <b>IR</b>. Después el PC avanza 2 posiciones.'},
+{t:'DECODE: leer los bits',g:'enc',prog:'ovf',b:'Probar MOV y ADD',p:'Los 8 bits del primer byte se dividen en <b>opcode</b> (4 bits: qué hacer) y dos campos de 2 bits con los registros. El segundo byte es un número o una dirección. Así, 0x14 0x0A significa <b>MOV R1, 10</b>. La fase DECODE muestra esta traducción en el registro IR.'},
+{t:'EXECUTE y la ALU',g:'adder',prog:'ovf',b:'Probar el desbordamiento',p:'La ALU suma bit a bit de derecha a izquierda arrastrando el acarreo. Si el resultado no cabe en 8 bits se enciende la bandera <b>C</b> (Carry) y el valor «da la vuelta»: 200 + 100 = 44. La bandera <b>Z</b> se activa cuando el resultado es 0.'},
+{t:'Saltos y bucles',g:'loop',prog:'sum',b:'Probar la suma 1…10',p:'<b>JMP</b> salta siempre; <b>JZ</b> salta solo si la bandera Z está activa. Con DEC + JZ se construyen bucles con contador: la CPU repite el bloque hasta que el contador llega a 0 y entonces sale hacia HLT.'},
+{t:'¡Tu turno!',g:'cycle',prog:'pow',b:'Abrir las potencias de 2',p:'Retos: <b>1)</b> haz que el contador llegue hasta 5. <b>2)</b> calcula 9 × 4 modificando la multiplicación. <b>3)</b> escribe un programa que muestre 3, 6, 9, 12 y 15 sumando de 3 en 3. Edita el código, pulsa Reset y ejecútalo paso a paso.'}];
+let li=0;
+function tut(d){li=Math.min(LES.length-1,Math.max(0,li+d));const L=LES[li];clearInterval(adT);$('tut').classList.remove('hidden');
+ $('tn').textContent='Lección '+(li+1)+' de '+LES.length;$('tt').textContent=L.t;$('tg').innerHTML=GR[L.g]();$('tp').innerHTML=L.p;$('tb').textContent='▶ '+L.b;
+ $('td').innerHTML=LES.map((_,i)=>`<span class="w-2 h-2 rounded-full ${i===li?'bg-sky-400':'bg-slate-600'}"></span>`).join('');if(L.g==='adder')adder()}
+function tutClose(){clearInterval(adT);$('tut').classList.add('hidden')}
+function tryIt(){const k=LES[li].prog;$('sel').value=k;loadProg(k);tutClose()}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')tutClose()});
+/* ===== Manual ===== */
+const esc=t=>t.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const hc=c=>c.split('\n').map(l=>{const i=l.indexOf(';'),a=i<0?l:l.slice(0,i),b=i<0?'':l.slice(i);
+ return esc(a).replace(/^(\s*)([A-Za-z_]\w*:)|\b(HLT|MOV|ADD|SUB|INC|DEC|STORE|LOAD|JMP|JZ|OUT)\b|\b(R[0-3])\b|(0x[0-9a-f]+|\b\d+\b)/gi,(m,s,lb,op,rg,nm)=>lb?s+`<span style="color:#f59e0b">${lb}</span>`:op?`<b style="color:#38bdf8">${op}</b>`:rg?`<span style="color:#22c55e">${rg}</span>`:`<span style="color:#c084fc">${nm}</span>`)+(b?`<span style="color:#64748b">${esc(b)}</span>`:'')}).join('\n');
+const PAT=[
+{n:'Copiar un registro',d:'No existe MOV Rd,Rs: se pone a 0 el destino y se suma el origen.',c:`; Copiar R0 en R2
+      MOV R0, 42
+      MOV R2, 0
+      ADD R2, R0     ; R2 = 0 + R0
+      OUT R2
+      HLT`},
+{n:'Intercambiar dos registros',d:'Se necesita un tercer registro auxiliar.',c:`; Intercambiar R0 y R1 usando R2
+      MOV R0, 3
+      MOV R1, 9
+      MOV R2, 0
+      ADD R2, R0     ; R2 = R0
+      MOV R0, 0
+      ADD R0, R1     ; R0 = R1
+      MOV R1, 0
+      ADD R1, R2     ; R1 = antiguo R0
+      OUT R0         ; 9
+      OUT R1         ; 3
+      HLT`},
+{n:'Comparar (si / entonces)',d:'Se resta una copia y se consulta Z: si vale 1, los valores son iguales.',c:`; ¿R0 == R1?  Salida: 1 = iguales, 0 = distintos
+      MOV R0, 7
+      MOV R1, 7
+      MOV R2, 0
+      ADD R2, R0     ; copia, para no destruir R0
+      SUB R2, R1     ; Z=1 si son iguales
+      JZ iguales
+      MOV R3, 0
+      JMP fin
+iguales: MOV R3, 1
+fin:  OUT R3
+      HLT`},
+{n:'Tabla del 3 (bucle con paso)',d:'Acumula un paso fijo en cada vuelta de un bucle con contador.',c:`; 3, 6, 9 ... 30
+      MOV R0, 0
+      MOV R1, 3      ; paso
+      MOV R2, 10     ; repeticiones
+bucle: ADD R0, R1
+      OUT R0
+      DEC R2         ; el JZ mira este DEC
+      JZ fin
+      JMP bucle
+fin:  HLT`},
+{n:'División exacta por restas',d:'Cuenta cuántas veces cabe el divisor hasta llegar a 0 (solo divisiones exactas).',c:`; 20 / 5 = 4
+      MOV R0, 20     ; dividendo
+      MOV R1, 5      ; divisor
+      MOV R2, 0      ; cociente
+bucle: INC R2         ; primero INC...
+      SUB R0, R1     ; ...y después SUB, para que Z venga de la resta
+      JZ fin
+      JMP bucle
+fin:  OUT R2
+      HLT`}];
+const ALL=[...Object.values(PROGS),...PAT],NP=Object.keys(PROGS).length;
+const ISA=[['HLT','0 · 0000','0000 0000','—','Detiene el procesador','—'],['MOV Rd, n','1 · 0001','0001 dd 00','n','Rd ← n (0–255)','—'],['ADD Rd, Rs','2 · 0010','0010 dd ss','—','Rd ← Rd + Rs','Z C'],['SUB Rd, Rs','3 · 0011','0011 dd ss','—','Rd ← Rd − Rs','Z C'],['INC Rd','4 · 0100','0100 dd 00','—','Rd ← Rd + 1','Z C'],['DEC Rd','5 · 0101','0101 dd 00','—','Rd ← Rd − 1','Z C'],['STORE Rs, [a]','6 · 0110','0110 rr 00','a','RAM[a] ← Rs','—'],['LOAD Rd, [a]','7 · 0111','0111 dd 00','a','Rd ← RAM[a]','—'],['JMP etiqueta','8 · 1000','1000 00 00','dir','PC ← dir','—'],['JZ etiqueta','9 · 1001','1001 00 00','dir','Si Z=1: PC ← dir','—'],['OUT Rs','10 · 1010','1010 rr 00','—','Muestra Rs en la pantalla','—']];
+function view(v){const m=v==='man';if(m)stop();$('vSim').classList.toggle('hidden',m);$('vMan').classList.toggle('hidden',!m);$('tSim').classList.toggle('tabon',!m);$('tMan').classList.toggle('tabon',m);scrollTo(0,0)}
+function useCode(i){const p=ALL[i];$('src').value=p.c;$('pd').textContent=p.d||'';if(i<NP)$('sel').value=Object.keys(PROGS)[i];else $('sel').selectedIndex=-1;init();view('sim')}
+function copyCode(i,b){try{navigator.clipboard.writeText(ALL[i].c).then(()=>{b.textContent='✓ Copiado';setTimeout(()=>b.textContent='📋 Copiar',1500)},()=>{})}catch(e){}}
+function buildManual(){
+ const T=(h,r)=>`<table class="tb"><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr>${r.map(x=>`<tr>${x.map(y=>`<td>${y}</td>`).join('')}</tr>`).join('')}</table>`;
+ const CB=i=>`<div class="mb-4"><div class="flex flex-wrap items-center gap-2 mb-1"><b>${ALL[i].n}</b><span class="text-xs text-slate-400 flex-1 min-w-[10rem]">${ALL[i].d||''}</span><button class="btn" onclick="useCode(${i})">▶ Cargar</button><button class="btn" onclick="copyCode(${i},this)">📋 Copiar</button></div><pre class="code">${hc(ALL[i].c)}</pre></div>`;
+ const SEC=[
+['Introducción',`<p>La <b>CPU-8</b> es un microprocesador didáctico de 8 bits con arquitectura <b>RISC</b>: pocas instrucciones, todas del mismo tamaño (2 bytes) y un ciclo de ejecución en tres fases: <b>FETCH</b>, <b>DECODE</b> y <b>EXECUTE</b>. Este manual es la referencia para programarla; para una introducción guiada con animaciones usa el botón «🎓 Tutorial».</p>`],
+['Arquitectura',T(['Elemento','Tamaño','Función'],[['R0–R3','8 bits','Registros de uso general. Guardan números de 0 a 255 (sin signo).'],['PC','7 bits','Program Counter: dirección de la siguiente instrucción; avanza de 2 en 2.'],['IR','16 bits','Registro de instrucción: contiene los 2 bytes de la instrucción en curso.'],['MAR / MDR','7 / 8 bits','Dirección y dato del último acceso a memoria.'],['ALU','—','Ejecuta ADD, SUB, INC y DEC y actualiza las banderas.'],['Z, C','1 bit','Banderas de cero (Zero) y acarreo (Carry).'],['RAM','128 × 8 bits','Una sola memoria para programa y datos.'],['Salida','—','Pantalla de 7 segmentos con valores de 0 a 255.']])+'<p>Toda la aritmética es <b>módulo 256</b>: 250 + 10 da 4 (con C=1) y 0 − 1 da 255 (con C=1).</p>'],
+['Mapa de memoria',T(['Rango','Uso'],[['0x00 – 0x3F','Código: hasta 32 instrucciones de 2 bytes.'],['0x40 – 0x7F','Datos: zona recomendada para STORE y LOAD.'],['> 0x7F','No existe: da error al ensamblar.']])+'<p>El simulador no impide escribir en la zona de código (un programa podría modificarse a sí mismo), pero es una fuente habitual de errores.</p>'],
+['Conjunto de instrucciones',T(['Sintaxis','Opcode','Byte 0','Byte 1','Efecto','Flags'],ISA)+'<p><code>Rd</code> registro destino, <code>Rs</code> registro origen, <code>n</code> número 0–255, <code>[a]</code> dirección 0x00–0x7F, <code>dd</code>/<code>ss</code>/<code>rr</code> números de registro en 2 bits.</p>'],
+['Sintaxis del ensamblador',`<ul class="list-disc pl-5"><li>Una instrucción por línea; los operandos se separan con comas.</li><li>Los comentarios empiezan con <code>;</code> y llegan hasta el final de la línea.</li><li>Una <b>etiqueta</b> es un nombre seguido de <code>:</code>, solo o antes de una instrucción. Se usa como destino de JMP y JZ.</li><li>Números en decimal (<code>10</code>) o hexadecimal (<code>0x0A</code>), de 0 a 255.</li><li>Las direcciones de memoria van entre corchetes: <code>[0x40]</code> o <code>[64]</code>.</li><li>Registros: <code>R0</code>, <code>R1</code>, <code>R2</code>, <code>R3</code>. Mayúsculas y minúsculas son equivalentes.</li><li>Los errores aparecen bajo el editor con su número de línea.</li></ul><pre class="code">${hc('inicio: MOV R1, 0x0A   ; carga 10 en R1\n      STORE R1, [0x40] ; guarda en RAM\n      JMP inicio       ; salta a la etiqueta')}</pre>`],
+['Banderas Z y C',T(['Instrucciones','Z (Zero)','C (Carry)'],[['ADD, SUB, INC, DEC','1 si el resultado es 0','1 si ADD supera 255 o SUB baja de 0'],['MOV, LOAD, STORE, JMP, JZ, OUT, HLT','no cambia','no cambia']])+'<p><b>JZ</b> consulta la bandera de la <i>última</i> operación aritmética. Si entre un DEC y su JZ colocas otro ADD, SUB, INC o DEC, Z ya no refleja el DEC. La bandera C no tiene salto asociado en esta ISA, pero se puede observar en el LED de la ALU.</p>'],
+['Codificación binaria',`<p>Cada instrucción son 2 bytes. En el <b>byte 0</b>, los bits 7–4 son el opcode, los bits 3–2 el primer registro y los bits 1–0 el segundo. El <b>byte 1</b> es el inmediato o la dirección.</p>`+T(['Instrucción','Byte 0','Byte 1'],[['MOV R1, 10','0001 01 00 = 0x14','0x0A'],['ADD R1, R2','0010 01 10 = 0x26','0x00'],['STORE R0, [0x40]','0110 00 00 = 0x60','0x40'],['JMP 0x06','1000 00 00 = 0x80','0x06']])],
+['Cómo usar el simulador',`<ul class="list-disc pl-5"><li><b>Reset</b> ensambla el código del editor y reinicia la CPU. Púlsalo siempre después de editar.</li><li><b>Paso (fase)</b> ejecuta una sola fase; <b>Instrucción</b> ejecuta las tres; <b>Play</b> ejecuta de forma continua a 1–200 Hz.</li><li>El color indica la fase: <span class="text-sky-400">azul FETCH</span>, <span class="text-amber-400">ámbar DECODE</span>, <span class="text-green-400">verde EXECUTE</span>. Se aplica a la línea del editor, a los bytes en la RAM y a los indicadores de fase.</li><li>Los buses se animan cuando hay transferencia y los componentes implicados brillan en verde.</li><li>Las salidas de OUT aparecen en la pantalla de 7 segmentos y en el historial.</li></ul>`],
+['Patrones de programación','<p>Recetas habituales para esta ISA, que no tiene MOV entre registros, comparaciones ni saltos condicionados distintos de JZ.</p>'+PAT.map((_,i)=>CB(NP+i)).join('')],
+['Programas de ejemplo',Object.keys(PROGS).map((_,i)=>CB(i)).join('')],
+['Errores frecuentes',`<ul class="list-disc pl-5"><li><b>JZ no salta como esperabas:</b> hay una operación aritmética entre el DEC/SUB y el JZ que ha cambiado Z.</li><li><b>Un registro cambia de valor:</b> usaste ADD/SUB sobre un registro que aún necesitabas. Haz una copia antes.</li><li><b>Datos que corrompen el programa:</b> guardaste en una dirección menor que 0x40 y pisaste código.</li><li><b>Bucle infinito:</b> falta el DEC del contador o el JZ de salida. Pausa y observa los registros.</li><li><b>Sin HLT:</b> el PC sigue leyendo memoria; como el byte 0x00 equivale a HLT, se detiene en el primer hueco, pero conviene ponerlo siempre.</li><li><b>Valor fuera de rango:</b> los números van de 0 a 255 y las direcciones de 0x00 a 0x7F.</li></ul>`],
+['Glosario',T(['Término','Significado'],[['ALU','Unidad aritmético-lógica: realiza las operaciones.'],['Opcode','Código numérico que identifica la operación.'],['Registro','Memoria muy rápida dentro de la CPU.'],['Bus','Conjunto de líneas por las que viajan direcciones o datos.'],['Carry','Acarreo: el resultado no cabe en 8 bits.'],['Zero','Indica que el último resultado fue 0.'],['Etiqueta','Nombre simbólico de una dirección de memoria.'],['RISC','Arquitectura con pocas instrucciones simples y de formato fijo.']])]];
+ $('mi').innerHTML='<div class="text-slate-300 font-bold mb-1">ÍNDICE</div>'+SEC.map((x,i)=>`<a href="#" class="block text-sky-300 hover:underline" onclick="event.preventDefault();$('m${i}').scrollIntoView({behavior:'smooth'})">${i+1}. ${x[0]}</a>`).join('');
+ $('mc2').innerHTML=SEC.map((x,i)=>`<section id="m${i}"><h3>${i+1}. ${x[0]}</h3>${x[1]}</section>`).join('')}
+$('sel').innerHTML=Object.keys(PROGS).map(k=>`<option value="${k}">${PROGS[k].n}</option>`).join('');
+$('regs').innerHTML=[0,1,2,3].map(i=>`<div class="reg" id="r${i}"><small>R${i}</small><b id="rv${i}"></b><small id="rd${i}"></small></div>`).join('');
+$('ram').innerHTML=Array.from({length:16},(_,r)=>`<i>0x${h2(r*8)}</i>`+Array.from({length:8},()=>'<div class="m"></div>').join('')).join('');
+$('hz').onchange=()=>{if(timer){stop();play()}};
+buildManual();loadProg('count');
+</script></body></html>

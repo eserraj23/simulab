@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WIFI ROUTER LAB</title>
+<style>
+:root{--bg:#eef2f8;--card:#fff;--tx:#14213a;--mu:#52607a;--ac:#1f5fd6;--ac2:#0b3a8f;--bd:#d3dbe8;--ok:#13795b;--wa:#9a5b00;--er:#b3261e;--in:#f7f9fd}
+[data-t=d]{--bg:#0d1526;--card:#16213a;--tx:#e8eefb;--mu:#9fb0cf;--ac:#6ea2ff;--ac2:#a9c6ff;--bd:#2b3b5e;--ok:#4fd1a5;--wa:#f0b64a;--er:#ff8a80;--in:#0f182d}
+*{box-sizing:border-box}body{margin:0;font:15px/1.45 system-ui,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--tx)}
+header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:8px 14px;background:var(--card);border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:5}
+header b{font-size:17px;letter-spacing:.02em}.sp{flex:1}
+.pill{padding:3px 10px;border-radius:12px;font-size:13px;font-weight:600;border:1px solid currentColor}
+.OK{color:var(--ok)}.WA{color:var(--wa)}.ER{color:var(--er)}
+button,select,input{font:inherit;color:var(--tx)}
+button{background:var(--ac);color:#fff;border:0;border-radius:6px;padding:6px 12px;cursor:pointer}
+button.g{background:transparent;color:var(--ac);border:1px solid var(--bd)}button.d{background:var(--er);color:#fff}
+button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(--ac2);outline-offset:1px}
+input,select{background:var(--in);border:1px solid var(--bd);border-radius:6px;padding:6px 8px;width:100%;max-width:340px}
+input[type=checkbox]{width:auto}input[type=range]{padding:0}
+.wrap{display:flex;min-height:calc(100vh - 52px)}
+nav{width:230px;background:var(--card);border-right:1px solid var(--bd);padding:8px;flex:none}
+nav button{display:flex;gap:8px;align-items:center;width:100%;text-align:left;background:transparent;color:var(--tx);margin:1px 0}
+nav button.on{background:var(--ac);color:#fff}nav svg{width:17px;height:17px;flex:none;fill:none;stroke:currentColor;stroke-width:2}
+main{flex:1;padding:16px;min-width:0}#mb{display:none}
+h2{margin:0 0 12px}h3{margin:0 0 8px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.c{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:12px;box-shadow:0 1px 3px #0001}
+label{display:block;margin:8px 0 2px;font-weight:600}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.m{color:var(--mu);font-size:13px}table{width:100%;border-collapse:collapse;display:block;overflow-x:auto}
+th,td{padding:6px 8px;border-bottom:1px solid var(--bd);text-align:left;white-space:nowrap}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px}.kv span:nth-child(odd){color:var(--mu)}
+.pr{padding:6px 10px;border-left:4px solid;margin:4px 0;border-radius:4px;background:var(--in)}
+canvas{width:100%;height:170px;background:var(--in);border-radius:8px}
+#toast{position:fixed;right:14px;bottom:14px;display:flex;flex-direction:column;gap:6px;z-index:9}
+#toast div{background:var(--tx);color:var(--bg);padding:8px 14px;border-radius:8px}
+#md{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;z-index:8}#md>div{background:var(--card);padding:18px;border-radius:10px;max-width:520px;max-height:80vh;overflow:auto}
+.bar{height:10px;background:var(--bd);border-radius:5px;overflow:hidden}.bar i{display:block;height:100%;background:var(--ac)}
+.spin{animation:s 1s linear infinite;display:inline-block}@keyframes s{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+@media(max-width:800px){nav{display:none;position:absolute;z-index:4;width:100%}nav.o{display:block}#mb{display:inline-block}.wrap{display:block}}
+#lg{position:fixed;inset:0;background:var(--bg);display:none;align-items:center;justify-content:center;z-index:20}summary{cursor:pointer}details.c p{margin:8px 0}</style></head><body>
+<header><button id="mb" aria-label="Abrir menú" onclick="document.querySelector('nav').classList.toggle('o')">☰</button>
+<svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="18" width="26" height="9" rx="3" fill="#1f5fd6"/><path d="M8 14a11 11 0 0 1 16 0M11 11a7 7 0 0 1 10 0" stroke="#1f5fd6" stroke-width="2.4" fill="none" stroke-linecap="round"/><circle cx="9" cy="22.5" r="1.4" fill="#fff"/></svg>
+<b>WIFI ROUTER LAB</b><span class="m" id="mdl"></span><span class="sp"></span>
+<span id="st" class="pill"></span><span id="inet" class="pill"></span>
+<button class="g" onclick="toggleTheme()" aria-label="Cambiar tema claro u oscuro">Tema</button>
+<button class="g" onclick="go('ayuda')">Ayuda</button><button class="g" onclick="logout()">Cerrar sesión</button><button class="d" onclick="factory()">Valores de fábrica</button></header>
+<div class="wrap"><nav aria-label="Secciones" id="nav"></nav><main id="main" tabindex="-1"></main></div>
+<div id="toast" role="status" aria-live="polite"></div><div id="md"><div id="mdc"></div></div>
+<div id="lg" role="dialog" aria-modal="true" aria-labelledby="lgt"><div class="c" style="max-width:360px;width:90%"><h3 id="lgt">Acceso de administrador</h3><label for="lp">Contraseña</label><input id="lp" type="password" autocomplete="current-password"><p id="lm" class="ER" role="alert"></p><button onclick="doLogin()">Entrar</button><p class="m" id="lh"></p><p class="m">Protección educativa: se comprueba en el navegador.</p></div></div>
+<script>
+'use strict';
+/* ===== Utilidades IPv4 ===== */
+const ip2n=s=>s.split('.').reduce((a,b)=>a*256+ +b,0);
+const n2ip=n=>[24,16,8,0].map(k=>Math.floor(n/2**k)%256).join('.');
+const vIP=s=>/^(\d{1,3})(\.\d{1,3}){3}$/.test(s)&&s.split('.').every(x=>+x<=255);
+const vMask=s=>{if(!vIP(s))return false;const n=ip2n(s);const inv=(~n>>>0);return n!==0&&(inv&(inv+1))===0};
+const cidr=m=>ip2n(m).toString(2).replace(/0/g,'').length;
+const maskFromCidr=c=>n2ip(c==0?0:(0xFFFFFFFF<<(32-c))>>>0);
+const net=(ip,m)=>(ip2n(ip)&ip2n(m))>>>0, bc=(ip,m)=>(net(ip,m)|(~ip2n(m)>>>0))>>>0;
+const inNet=(ip,nw,m)=>vIP(ip)&&net(ip,m)===(ip2n(nw)&ip2n(m))>>>0;
+const vPort=p=>Number.isInteger(+p)&&+p>=1&&+p<=65535;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+/* ===== Estado ===== */
+const KEY='wifi_router_lab_v1';
+const DEF=()=>({v:1,dark:false,model:'WIFI ROUTER LAB R1000',name:'ROUTER-AULA',up0:Date.now(),
+wifi:{on:true,ssid:'AULA_WIFI',hidden:false,band:'2.4',mode:'n',auto:false,ch:6,bw:20,pow:70,pmax:20,max:32,cc:'ES',
+ guest:false,gssid:'AULA_INVITADOS',gpass:'',gmax:8,giso:true,glan:true},
+sec:{mode:'wpa2',pass:'aula12345',minlen:8,rekey:3600,iso:false,wps:false},
+lan:{ip:'192.168.1.1',mask:'255.255.255.0',dns1:'8.8.8.8',dns2:'1.1.1.1'},
+dhcp:{on:true,start:'192.168.1.100',end:'192.168.1.200',lease:86400,gw:'192.168.1.1',dns:'192.168.1.1'},
+wan:{mode:'dhcp',up:true,ip:'203.0.113.25',mask:'255.255.255.0',gw:'203.0.113.1',d1:'9.9.9.9',d2:'1.1.1.1',user:'',pass:'',down:300,upl:50,t0:Date.now()},
+routes:[{dst:'0.0.0.0',mask:'0.0.0.0',gw:'203.0.113.1',iface:'WAN',metric:1,type:'Predeterminada'}],
+nat:[{name:'HTTP',ip:'192.168.1.101',ext:80,int:80,proto:'TCP',on:true}],
+qos:{on:true,down:300,up:50},
+dev:[['PC-AULA-01','PC','cable',2,'high'],['PORTATIL-01','Portátil','wifi',5,'normal'],['MOVIL-01','Móvil','wifi',2,'normal'],['TABLET-01','Tableta','wifi',5,'normal'],['IMPRESORA-WIFI','Impresora','wifi',1,'low'],['SMART-TV','TV','wifi',3,'normal']]
+ .map((d,i)=>({n:d[0],t:d[1],link:d[2],bands:d[3]==2?['2.4']:d[3]==5?['2.4','5']:d[3]==3?['2.4','5','6']:['2.4'],mac:'02:1A:2B:3C:4D:'+(16+i).toString(16).toUpperCase(),sip:'',blocked:false,prio:d[4],lim:0})),
+adm:{h:h53('admin'),req:true,def:true,fails:0,lock:0},
+cov:{router:[150,250],pos:{},obs:[{x:420,y:0,w:10,h:200,db:7,m:'Ladrillo'},{x:420,y:310,w:10,h:190,db:7,m:'Ladrillo'},{x:200,y:100,w:80,h:12,db:3,m:'Tabique'}]},
+log:[]});
+function h53(s){let a=0xdeadbeef,b=0x41c6ce57;s='wrl|'+s;for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);a=Math.imul(a^c,2654435761);b=Math.imul(b^c,1597334677)}a=Math.imul(a^(a>>>16),2246822507)^Math.imul(b^(b>>>13),3266489909);b=Math.imul(b^(b>>>16),2246822507)^Math.imul(a^(a>>>13),3266489909);return(4294967296*(2097151&b)+(a>>>0)).toString(36)}
+let S;
+try{S=JSON.parse(localStorage.getItem(KEY));if(!S||S.v!==1)S=null}catch(e){S=null}
+if(!S){S=DEF()}
+if(!S.cov||!Array.isArray(S.cov.obs))S.cov=DEF().cov;if(!S.adm)S.adm=DEF().adm;
+S.wifi.gpass=S.wifi.gpass||'';
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function L(cat,lvl,msg){S.log.unshift({t:new Date().toLocaleTimeString(),cat,lvl,msg});S.log.length=Math.min(S.log.length,200)}
+function toast(m){const d=document.createElement('div');d.textContent=m;document.getElementById('toast').append(d);setTimeout(()=>d.remove(),2800)}
+/* ===== Motor de simulación ===== */
+const MODES={ '2.4':['b','g','n','ax','be'],'5':['n','ac','ax','be'],'6':['ax','be']};
+const MN={b:'802.11b',g:'802.11g',n:'802.11n (Wi-Fi 4)',ac:'802.11ac (Wi-Fi 5)',ax:'802.11ax (Wi-Fi 6/6E)',be:'802.11be (Wi-Fi 7)'};
+const CH={'2.4':cc=>cc=='US'?rng(1,11):rng(1,13),'5':()=>[36,40,44,48,52,56,60,64,100,104,108,112,116,120,124,128,132,136,140],'6':()=>rng(1,229).filter(x=>x%4==1&&x<=93)};
+function rng(a,b){const r=[];for(let i=a;i<=b;i++)r.push(i);return r}
+const BW={'2.4':[20,40],'5':[20,40,80,160],'6':[20,40,80,160,320]};
+const C6=['ES','US','DE','FR'];
+function bwOk(w,band,mode){if(band=='2.4')return w==20||(w==40&&mode!='b'&&mode!='g');if(w>=80&&!['ac','ax','be'].includes(mode))return false;if(w==320)return mode=='be'&&band=='6';return w!=160||mode!='ac'||true}
+function sanitizeWifi(){const w=S.wifi;if(w.band=='6'&&!C6.includes(w.cc))w.band='5';
+ if(!MODES[w.band].includes(w.mode))w.mode=MODES[w.band][MODES[w.band].length-2];
+ if(!BW[w.band].includes(+w.bw)||!bwOk(+w.bw,w.band,w.mode))w.bw=20;
+ const chs=CH[w.band](w.cc);if(!chs.includes(+w.ch))w.ch=chs[Math.min(5,chs.length-1)];
+ if(w.auto){w.ch=chs[Math.floor(chs.length/2)]}}
+function leases(){const d=S.dhcp,res={};if(!d.on||!vIP(d.start)||!vIP(d.end))return res;let p=ip2n(d.start);const used=new Set(S.dev.filter(x=>x.sip).map(x=>x.sip));
+ S.dev.forEach(x=>{if(x.sip)return;while(p<=ip2n(d.end)&&(used.has(n2ip(p))||n2ip(p)===S.lan.ip))p++;if(p<=ip2n(d.end)){res[x.mac]=n2ip(p);used.add(n2ip(p))}})
+ return res}
+function sim(){const w=S.wifi,wan=S.wan,l=S.lan,lease=leases(),r={};r.devs=S.dev.map(x=>{
+ const o={d:x,ip:x.sip&&inNet(x.sip,l.ip,l.mask)?x.sip:lease[x.mac]||'',why:'',on:false,band:'',rssi:0};
+ if(x.blocked)o.why='Bloqueado';
+ else if(x.link=='wifi'){if(!w.on)o.why='Radio apagada';else if(!x.bands.includes(w.band))o.why='Banda '+w.band+' GHz no compatible';
+  else if(S.sec.mode!='open'&&!S.sec.pass)o.why='Sin clave';else{o.band=w.band;o.rssi=rssiDev(x,w.band);if(o.rssi<-85)o.why='Señal insuficiente';}}
+ if(!o.why&&!o.ip)o.why='Sin IP (DHCP desactivado o rango agotado)';
+ o.on=!o.why;return o});
+ const wc=r.devs.filter(o=>o.on&&o.d.link=='wifi').length;if(wc>w.max){let k=0;r.devs.forEach(o=>{if(o.on&&o.d.link=='wifi'&&++k>w.max){o.on=false;o.why='Límite de clientes'}})}
+ r.wanUp=wan.up&&wan.mode!='off'&&(wan.mode!='static'||(vIP(wan.ip)&&vMask(wan.mask)&&vIP(wan.gw)))&&(wan.mode!='pppoe'||!!wan.user);
+ r.inet=r.wanUp;
+ const dem={Móvil:25,Tableta:40,Portátil:80,PC:60,TV:75,Impresora:2};let tot=0;
+ const wt={high:4,normal:2,low:1};const on=r.devs.filter(o=>o.on);
+ const cap=Math.min(wan.down,S.qos.down);on.forEach(o=>{o.dem=r.inet?Math.min(dem[o.d.t]||20,o.d.lim||999):0;tot+=o.dem});
+ if(tot>cap){const useQ=S.qos.on;let rem=cap,act=on.filter(o=>o.dem>0);act.forEach(o=>o.got=0);
+  while(rem>.01&&act.length){const sw=act.reduce((a,o)=>a+(useQ?wt[o.d.prio]:1),0);let used=0;act.forEach(o=>{const s=Math.min(rem*(useQ?wt[o.d.prio]:1)/sw,o.dem-o.got);o.got+=s;used+=s});rem-=used;act=act.filter(o=>o.got<o.dem-.01)}
+  }else on.forEach(o=>o.got=o.dem);
+ on.forEach(o=>o.got=o.got||0);r.down=on.reduce((a,o)=>a+o.got,0);r.cap=cap;r.pr=problems(r);
+ r.state=r.pr.some(p=>p.l=='ER')?'ER':r.pr.length?'WA':'OK';return r}
+function problems(r){const P=[],l=S.lan,d=S.dhcp,add=(l,m)=>P.push({l,m});
+ if(!vIP(l.ip))add('ER','IP LAN no válida.');else if(!vMask(l.mask))add('ER','Máscara LAN no válida (debe ser contigua).');
+ else{const n=net(l.ip,l.mask),b=bc(l.ip,l.mask);if(ip2n(l.ip)===n)add('ER','La IP LAN es la dirección de red; usa un host.');if(ip2n(l.ip)===b)add('ER','La IP LAN es la dirección de broadcast; usa un host.');
+ if(d.on){if(!vIP(d.start)||!vIP(d.end))add('ER','Rango DHCP con IP no válida.');else{if(ip2n(d.start)>ip2n(d.end))add('ER','El inicio DHCP es mayor que el final.');
+  if(!inNet(d.start,l.ip,l.mask)||!inNet(d.end,l.ip,l.mask))add('ER','El rango DHCP no pertenece a la subred LAN '+n2ip(n)+'/'+cidr(l.mask)+'.');
+  else if(ip2n(d.start)<=n||ip2n(d.end)>=b)add('ER','El rango DHCP incluye la dirección de red o broadcast.');
+  if(ip2n(l.ip)>=ip2n(d.start)&&ip2n(l.ip)<=ip2n(d.end))add('WA','La IP del router está dentro del rango DHCP; riesgo de conflicto.')}}
+ if(S.wan.mode=='static'&&vIP(S.wan.ip)&&vMask(S.wan.mask)&&net(S.wan.ip,S.wan.mask)===n)add('ER','Conflicto: la subred WAN coincide con la LAN.');}
+ if(S.adm.def)add('WA','Contraseña de administrador por defecto: cámbiala en Administración.');if(!S.adm.req)add('WA','El acceso de administración no pide contraseña.');
+ if(!r.wanUp)add('WA','WAN desconectada: no hay Internet simulado.');
+ const w=S.wifi;if(!w.on)add('WA','Radio Wi-Fi desactivada.');if(!/^.{1,32}$/.test(w.ssid))add('ER','SSID de 1 a 32 caracteres.');
+ if(S.sec.mode=='open')add('WA','Red abierta: tráfico sin cifrar.');else if(S.sec.pass.length<Math.max(8,S.sec.minlen)||S.sec.pass.length>63)add('ER','La clave debe tener entre '+Math.max(8,S.sec.minlen)+' y 63 caracteres.');
+ if(w.band=='2.4'&&S.sec.mode=='wpa3'&&w.mode=='b')add('ER','WPA3 no es compatible con 802.11b.');
+ if(w.band=='2.4'&&w.bw==40)add('WA','40 MHz en 2,4 GHz provoca solapamientos con redes vecinas.');
+ if(S.sec.wps)add('WA','WPS activo: es una vía de ataque conocida.');
+ if(!S.routes.some(x=>x.mask=='0.0.0.0'))add('WA','No hay ruta predeterminada: no se alcanzará Internet.');
+ return P}
+function routesAll(){const l=S.lan,R=[];if(vIP(l.ip)&&vMask(l.mask))R.push({dst:n2ip(net(l.ip,l.mask)),mask:l.mask,gw:'0.0.0.0',iface:'LAN',metric:0,type:'Conectada',auto:1});
+ const w=S.wan;if(w.mode=='static'&&vIP(w.ip)&&vMask(w.mask))R.push({dst:n2ip(net(w.ip,w.mask)),mask:w.mask,gw:'0.0.0.0',iface:'WAN',metric:0,type:'Conectada',auto:1});
+ return R.concat(S.routes)}
+function lookup(dst){let best=null;routesAll().forEach(r=>{if(!vIP(r.dst)||!vMask(r.mask)&&r.mask!='0.0.0.0')return;if(inNet(dst,r.dst,r.mask)){const c=r.mask=='0.0.0.0'?0:cidr(r.mask);
+ if(!best||c>best.c||(c==best.c&&r.metric<best.r.metric))best={r,c}}});return best}
+/* ===== UI ===== */
+const SECS=[['panel','Panel principal','M3 12l9-8 9 8M5 10v10h14V10'],['wifi','Configuración Wi-Fi','M2 9a15 15 0 0 1 20 0M5 13a10 10 0 0 1 14 0M9 17a4 4 0 0 1 6 0'],['seg','Seguridad inalámbrica','M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z'],['lan','Red LAN','M4 5h16v6H4zM4 15h16v4H4z'],['dhcp','Servidor DHCP','M4 4h16v16H4zM8 9h8M8 13h8'],['wan','Internet / WAN','M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M3 12h18M12 3c3 3 3 15 0 18'],['rutas','Enrutamiento','M5 19V9l7-5 7 5v10M9 19v-6h6v6'],['nat','NAT y puertos','M4 8h12l-3-3M20 16H8l3 3'],['acc','Control de acceso','M5 11h14v9H5zM8 11V7a4 4 0 0 1 8 0v4'],['qos','QoS y ancho de banda','M4 20V10M10 20V4M16 20v-8M22 20H2'],['cob','Cobertura Wi-Fi','M3 12a9 9 0 1 0 18 0 9 9 0 1 0-18 0M8 12a4 4 0 1 0 8 0 4 4 0 1 0-8 0'],['adm','Administración','M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8M12 2v3M12 19v3M2 12h3M19 12h3'],['diag','Diagnóstico','M3 12h4l3-8 4 16 3-8h4'],['log','Registro de eventos','M6 3h12v18H6zM9 8h6M9 12h6M9 16h4'],['ayuda','Ayuda y teoría','M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 1-1 1.7M12 17h.01']];
+let cur='panel',timer=null,R;
+const nav=document.getElementById('nav');
+nav.innerHTML=SECS.map(s=>`<button data-s="${s[0]}" onclick="go('${s[0]}')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${s[2]}"/></svg>${s[1]}</button>`).join('');
+function go(s){cur=s;document.querySelector('nav').classList.remove('o');render()}
+function toggleTheme(){S.dark=!S.dark;save();render()}
+function factory(){const m=document.getElementById('md');document.getElementById('mdc').innerHTML='<h3>Restaurar valores de fábrica</h3><p>Se borrará la configuración guardada y el registro.</p><div class="row"><button class="d" onclick="doFactory()">Restaurar</button><button class="g" onclick="closeM()">Cancelar</button></div>';m.style.display='flex'}
+function closeM(){document.getElementById('md').style.display='none'}
+function doFactory(){S=DEF();L('Sistema','INFO','Restauración de fábrica');save();closeM();toast('Valores de fábrica restaurados');render()}
+/* set por ruta "a.b" con conversión de tipo */
+function setv(p,v,t){const k=p.split('.');let o=S;for(let i=0;i<k.length-1;i++)o=o[k[i]];const f=k[k.length-1];
+ const nv=t=='b'?v:t=='n'?+v:v;if(o[f]===nv)return;o[f]=nv;
+ if(p=='wifi.ssid')L('Wi-Fi','INFO','SSID cambiado a '+nv);else if(p=='wifi.ch')L('Wi-Fi','INFO','Canal cambiado a '+nv);else if(/pass/.test(p))L('Seguridad','INFO','Contraseña modificada');else if(p.startsWith('sec'))L('Seguridad','INFO','Parámetro de seguridad '+f+' modificado');else L('Config','INFO',p+' = '+nv);
+ if(p=='wifi.on')L('Wi-Fi','INFO','Radio '+(nv?'activada':'desactivada'));
+ sanitizeWifi();save();render()}
+const inp=(p,lab,o={})=>{const k=p.split('.');let v=S;k.forEach(x=>v=v[x]);const id='f_'+p.replace('.','_');
+ if(o.type=='check')return `<label><input type="checkbox" id="${id}" ${v?'checked':''} onchange="setv('${p}',this.checked,'b')"> ${lab}</label>`;
+ if(o.opts)return `<label for="${id}">${lab}</label><select id="${id}" onchange="setv('${p}',this.value,'${o.n?'n':'s'}')">${o.opts.map(x=>{const a=Array.isArray(x)?x:[x,x];return `<option value="${a[0]}" ${a[0]==v?'selected':''}>${a[1]}</option>`}).join('')}</select>`;
+ return `<label for="${id}">${lab}</label><input id="${id}" type="${o.type||'text'}" value="${esc(v)}" ${o.min!=null?`min="${o.min}" max="${o.max}"`:''} onchange="setv('${p}',this.value,'${o.n?'n':'s'}')">`};
+function tbl(h,rows){return `<table><thead><tr>${h.map(x=>`<th scope="col">${x}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`}
+const probs=()=>R.pr.length?R.pr.map(p=>`<div class="pr ${p.l}" style="border-color:currentColor">${p.m}</div>`).join(''):'<div class="pr OK">Sin problemas detectados.</div>';
+function uptime(){const s=Math.floor((Date.now()-S.up0)/1000);return Math.floor(s/3600)+'h '+Math.floor(s%3600/60)+'m '+s%60+'s'}
+function render(){clearInterval(timer);document.body.dataset.t=S.dark?'d':'l';sanitizeWifi();R=sim();
+ nav.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.s==cur));
+ document.getElementById('mdl').textContent=S.model;const st=document.getElementById('st');st.textContent={OK:'OPERATIVO',WA:'ADVERTENCIA',ER:'ERROR'}[R.state];st.className='pill '+R.state;
+ const ie=document.getElementById('inet');ie.textContent=R.inet?'Internet simulado: sí':'Internet simulado: no';ie.className='pill '+(R.inet?'OK':'ER');
+ const m=document.getElementById('main');m.innerHTML=({panel,wifi,seg,lan,dhcp,wan,rutas,nat,acc,qos,cob,adm,diag,log,ayuda})[cur]()+'<p class="m">Simulador educativo: no realiza conexiones, escaneos ni cambios reales. Modelo de radio y normativa simplificados.</p>';
+ if(cur=='panel')startChart();if(cur=='cob')initCov()}
+/* ---- Panel ---- */
+const H=[];function panel(){const w=S.wifi,on=R.devs.filter(o=>o.on);
+ const kv=[['Estado',{OK:'Operativo',WA:'Advertencia',ER:'Error'}[R.state]],['IP WAN',R.wanUp?(S.wan.mode=='static'?S.wan.ip:'203.0.113.25'):'—'],['IP LAN',S.lan.ip],['Máscara',S.lan.mask],['Puerta de enlace',S.wan.gw],['MAC router','02:1A:2B:00:00:01'],['Dispositivos',on.length+' / '+S.dev.length],['SSID',w.on?esc(w.ssid):'(radio apagada)'],['Banda',w.band+' GHz'],['Canal / ancho',w.ch+' / '+w.bw+' MHz'],['Seguridad',({open:'Abierta',wpa2:'WPA2-Personal AES',wpa3:'WPA3-Personal',mix:'WPA2/WPA3',wpa2e:'WPA2-Enterprise',wpa3e:'WPA3-Enterprise'})[S.sec.mode]],['DHCP',S.dhcp.on?'Activo':'Apagado'],['Uptime','<span id="up">'+uptime()+'</span>'],['Velocidad teórica',theo()+' Mbps'],['Consumo','<span id="cons">'+R.down.toFixed(0)+'</span> / '+R.cap+' Mbps']];
+ return `<h2>Panel principal</h2><div class="c"><h3>Problemas</h3>${probs()}</div><div class="grid"><div class="c"><h3>Router</h3><div class="kv">${kv.map(k=>`<span>${k[0]}</span><span>${k[1]}</span>`).join('')}</div></div>
+ <div class="c"><h3>Topología</h3>${topo()}</div></div>
+ <div class="c"><h3>Tráfico de descarga y subida (Mbps)</h3><canvas id="cv" width="900" height="170" aria-label="Gráfico de tráfico"></canvas><p class="m">Verde: bajada. Azul: subida. Datos simulados según la configuración y la WAN.</p></div>
+ <div class="c"><h3>Dispositivos</h3>${tbl(['Nombre','IP','MAC','Conexión','Estado','Señal'],R.devs.map(o=>[`<a href="#" onclick="devInfo(${S.dev.indexOf(o.d)});return false">${esc(o.d.n)}</a>`,o.ip||'—',o.d.mac,o.d.link=='wifi'?'Wi-Fi '+(o.band||'—')+' GHz':'Cable',o.on?'<b class="OK">Conectado</b>':'<span class="ER">'+o.why+'</span>',o.on&&o.d.link=='wifi'?sig(o.rssi):'—']))}</div>`}
+function theo(){const w=S.wifi,b={20:1,40:2,80:4.2,160:8.5,320:17}[w.bw]*72*({b:.15,g:.75,n:1,ac:2.4,ax:3.2,be:5}[w.mode]||1);return Math.round(Math.min(b,S.wan.down*3))}
+function sig(r){return r+' dBm ('+(r>-55?'Excelente':r>-65?'Buena':r>-75?'Aceptable':'Débil')+')'}
+function topo(){const d=R.devs,n=d.length;let s=`<svg viewBox="0 0 400 260" style="width:100%" role="img" aria-label="Diagrama de red"><g stroke-width="2" fill="none">`;
+ s+=`<line x1="200" y1="130" x2="200" y2="25" stroke="${R.inet?'#13795b':'#b3261e'}" ${R.inet?'stroke-dasharray="6 4"><animate attributeName="stroke-dashoffset" to="-20" dur="1s" repeatCount="indefinite"/>':'stroke-dasharray="2 6">'}</line>`;
+ d.forEach((o,i)=>{const a=Math.PI*(0.12+0.76*i/(n-1)),x=200+170*Math.cos(Math.PI-a+0)*-1,y=130+105*Math.sin(a)*0+ (i%2?105:75);const xx=40+i*64;
+  s+=`<line x1="200" y1="150" x2="${xx}" y2="${y+0}" stroke="${o.on?'#1f5fd6':'#8892a6'}" ${o.d.link=='wifi'?'stroke-dasharray="4 4"':''} opacity="${o.on?1:.4}"/>`});
+ s+=`</g><rect x="165" y="115" width="70" height="36" rx="6" fill="#1f5fd6"/><text x="200" y="138" fill="#fff" font-size="11" text-anchor="middle">Router</text><circle cx="200" cy="20" r="14" fill="${R.inet?'#13795b':'#b3261e'}"/><text x="200" y="24" fill="#fff" font-size="10" text-anchor="middle">Net</text>`;
+ d.forEach((o,i)=>{const xx=40+i*64,y=(i%2?105:75)+0;s+=`<g opacity="${o.on?1:.45}"><rect x="${xx-26}" y="${y+150-75-0>0?170+(i%2)*40:170}" width="52" height="22" rx="4" fill="${o.on?'#14213a':'#555'}"/><text x="${xx}" y="${186+(i%2)*40}" fill="#fff" font-size="8" text-anchor="middle">${esc(o.d.n.slice(0,9))}</text></g>`});
+ return s+'</svg>'}
+function devInfo(i){const o=R.devs[i];document.getElementById('mdc').innerHTML=`<h3>${esc(o.d.n)}</h3><div class="kv"><span>Tipo</span><span>${o.d.t}</span><span>IP</span><span>${o.ip||'—'}</span><span>MAC</span><span>${o.d.mac}</span><span>Bandas</span><span>${o.d.bands.join(', ')} GHz</span><span>Estado</span><span>${o.on?'Conectado':o.why}</span><span>Señal</span><span>${o.on&&o.band?sig(o.rssi):'—'}</span></div><p><button onclick="closeM()">Cerrar</button></p>`;document.getElementById('md').style.display='flex'}
+function startChart(){const c=document.getElementById('cv');if(!c)return;const x=c.getContext('2d');
+ const dn=R.down,up=R.inet?Math.min(S.wan.upl,dn*.15):0;for(let i=0;i<2;i++);
+ if(!H.length)for(let i=0;i<60;i++)H.push([0,0]);
+ const tick=()=>{const j=()=>.85+Math.random()*.3;H.push([R.down*j(),(R.inet?Math.min(S.wan.upl,R.down*.15):0)*j()]);H.shift();
+  const W=c.width,Hh=c.height,mx=Math.max(10,R.cap,...H.map(h=>h[0]));x.clearRect(0,0,W,Hh);x.strokeStyle='#8892a655';x.fillStyle='#8892a6';x.font='12px sans-serif';
+  for(let g=0;g<=4;g++){const y=Hh-10-(Hh-20)*g/4;x.beginPath();x.moveTo(36,y);x.lineTo(W,y);x.stroke();x.fillText(Math.round(mx*g/4),2,y+4)}
+  [[0,'#13795b'],[1,'#1f5fd6']].forEach(([k,col])=>{x.beginPath();x.strokeStyle=col;x.lineWidth=2.5;H.forEach((h,i)=>{const px=36+(W-36)*i/59,py=Hh-10-(Hh-20)*h[k]/mx;i?x.lineTo(px,py):x.moveTo(px,py)});x.stroke()});
+  const u=document.getElementById('up');if(u)u.textContent=uptime();const q=document.getElementById('cons');if(q)q.textContent=R.down.toFixed(0)};
+ tick();timer=setInterval(tick,1000)}
+/* ---- Wi-Fi ---- */
+function wifi(){const w=S.wifi,ch=CH[w.band](w.cc),bands=['2.4','5'].concat(C6.includes(w.cc)?['6']:[]),dbm=10*Math.log10(w.pmax*w.pow/100||1);
+ return `<h2>Configuración Wi-Fi</h2><div class="grid"><div class="c">${inp('wifi.on','Radio Wi-Fi activada',{type:'check'})}${inp('wifi.ssid','SSID')}${inp('wifi.hidden','Ocultar SSID',{type:'check'})}
+ ${inp('wifi.cc','País',{opts:['ES','US','DE','FR','JP']})}${inp('wifi.band','Banda (GHz)',{opts:bands})}<p class="m">6 GHz solo si el país lo permite (modelo educativo simplificado).</p>
+ ${inp('wifi.mode','Modo inalámbrico',{opts:MODES[w.band].map(m=>[m,MN[m]])})}${inp('wifi.auto','Canal automático',{type:'check'})}${inp('wifi.ch','Canal',{opts:ch,n:1})}
+ ${inp('wifi.bw','Ancho de canal (MHz)',{opts:BW[w.band].filter(b=>bwOk(b,w.band,w.mode)),n:1})}${inp('wifi.max','Máximo de clientes',{type:'number',min:1,max:128,n:1})}</div>
+ <div class="c"><h3>Potencia</h3>${inp('wifi.pow','Potencia de transmisión (1-100 %)',{type:'range',min:1,max:100,n:1})}${inp('wifi.pmax','Potencia máxima (mW)',{type:'number',min:1,max:1000,n:1})}
+ <p><b>${w.pow} %</b> ≈ <b>${dbm.toFixed(1)} dBm</b> (estimación). Alcance orientativo: ~${Math.round((w.band=='2.4'?35:w.band=='5'?20:14)*Math.sqrt(w.pow/100))} m en interior; menos potencia reduce la cobertura.</p>
+ <h3>Teoría rápida</h3><p class="m">En 2,4 GHz solo 1, 6 y 11 no se solapan (20 MHz). Más ancho de canal = más velocidad pero más ruido y menos canales libres. 5/6 GHz: más ancho de banda, menos alcance.</p></div>
+ <div class="c"><h3>Red de invitados</h3>${inp('wifi.guest','Activar red de invitados',{type:'check'})}${w.guest?inp('wifi.gssid','SSID invitados')+inp('wifi.gpass','Contraseña invitados',{type:'password'})+inp('wifi.gmax','Clientes máx.',{type:'number',min:1,max:32,n:1})+inp('wifi.giso','Aislar clientes',{type:'check'})+inp('wifi.glan','Bloquear acceso a la LAN',{type:'check'}):''}</div></div>`}
+/* ---- Seguridad ---- */
+function strength(p){let s=0;if(p.length>=8)s++;if(p.length>=12)s++;if(/[a-z]/.test(p)&&/[A-Z]/.test(p))s++;if(/\d/.test(p))s++;if(/[^\w]/.test(p))s++;return s}
+function seg(){const p=S.sec.pass,s=strength(p);return `<h2>Seguridad inalámbrica</h2><div class="grid"><div class="c">${inp('sec.mode','Modo de seguridad',{opts:[['open','Abierta (insegura)'],['wpa2','WPA2-Personal AES'],['wpa3','WPA3-Personal'],['mix','Transición WPA2/WPA3'],['wpa2e','WPA2-Enterprise (educativo)'],['wpa3e','WPA3-Enterprise (educativo)']]})}
+ ${S.sec.mode!='open'?`<label for="pw">Contraseña</label><input id="pw" type="password" value="${esc(p)}" onchange="setv('sec.pass',this.value,'s')"><label><input type="checkbox" onchange="pw.type=this.checked?'text':'password'"> Mostrar contraseña</label>
+ <div class="bar" role="img" aria-label="Fortaleza ${s} de 5"><i style="width:${s*20}%;background:${s<3?'#b3261e':s<4?'#9a5b00':'#13795b'}"></i></div><span class="m">Fortaleza: ${['Muy débil','Débil','Débil','Aceptable','Fuerte','Muy fuerte'][s]}</span>
+ ${inp('sec.minlen','Longitud mínima',{type:'number',min:8,max:63,n:1})}${inp('sec.rekey','Renovación de clave (s)',{type:'number',min:60,max:86400,n:1})}`:''}
+ ${inp('sec.iso','Aislamiento entre clientes',{type:'check'})}${inp('sec.wps','WPS',{type:'check'})}</div>
+ <div class="c"><h3>Estado</h3>${probs()}<p class="m">WPA2 usa AES-CCMP con PSK; WPA3 usa SAE, resistente a ataques de diccionario offline. Las redes abiertas no cifran: cualquiera puede capturar el tráfico. WEP y TKIP no se ofrecen por ser inseguros. Las contraseñas nunca se guardan en el registro.</p></div></div>`}
+/* ---- LAN ---- */
+function lan(){const l=S.lan,ok=vIP(l.ip)&&vMask(l.mask);let c='';
+ if(ok){const n=net(l.ip,l.mask),b=bc(l.ip,l.mask);c=`<div class="kv"><span>Red</span><span>${n2ip(n)}/${cidr(l.mask)}</span><span>Broadcast</span><span>${n2ip(b)}</span><span>Hosts</span><span>${Math.max(0,b-n-1)}</span><span>Rango útil</span><span>${n2ip(n+1)} – ${n2ip(b-1)}</span></div>`}
+ return `<h2>Red LAN</h2><div class="grid"><div class="c">${inp('lan.ip','IP LAN / administración')}${inp('lan.mask','Máscara de subred')}${inp('lan.dns1','DNS preferido')}${inp('lan.dns2','DNS alternativo')}</div><div class="c"><h3>Cálculo de subred</h3>${c||'<p class="ER">IP o máscara no válidas.</p>'}<h3>Comprobaciones</h3>${probs()}
+ <div class="row"><button class="g" onclick="setLan('10.0.0.1','255.255.255.0')">Usar 10.0.0.1/24</button><button class="g" onclick="setLan('192.168.1.1','255.255.255.0')">192.168.1.1/24</button></div></div></div>`}
+function setLan(ip,m){const old=S.lan.ip;S.lan.ip=ip;S.lan.mask=m;const b=ip.split('.').slice(0,3).join('.');S.dhcp.start=b+'.100';S.dhcp.end=b+'.200';S.dhcp.gw=ip;S.dhcp.dns=ip;S.nat.forEach(r=>r.ip=b+'.'+r.ip.split('.')[3]);S.dev.forEach(d=>d.sip='');L('LAN','INFO','LAN cambiada a '+ip+'; DHCP y rutas actualizados');save();render()}
+/* ---- DHCP ---- */
+function dhcp(){const d=S.dhcp;return `<h2>Servidor DHCP</h2><div class="grid"><div class="c">${inp('dhcp.on','DHCP activado',{type:'check'})}${inp('dhcp.start','IP inicial')}${inp('dhcp.end','IP final')}${inp('dhcp.lease','Concesión (s)',{type:'number',min:60,max:604800,n:1})}${inp('dhcp.gw','Puerta de enlace')}${inp('dhcp.dns','DNS distribuido')}<h3>Estado</h3>${probs()}</div>
+ <div class="c"><h3>Concesiones activas</h3>${tbl(['Nombre','MAC','IP','Tipo','Restante',''],R.devs.map((o,i)=>[esc(o.d.n),o.d.mac,o.ip||'—',o.d.sip?'Estática/reserva':'Dinámica',o.ip&&!o.d.sip?Math.floor(d.lease*(.4+(i%3)*.2)/60)+' min':'—',o.ip&&!o.d.sip?`<button class="g" onclick="renew(${i})" aria-label="Renovar ${esc(o.d.n)}">Renovar</button>`:'']))}
+ <p class="m">Con DHCP apagado, solo los equipos con IP estática válida en la LAN se conectan. Puedes fijar IP estática en Control de acceso.</p></div></div>`}
+function renew(i){L('DHCP','INFO','Concesión renovada para '+S.dev[i].n);save();toast('Concesión renovada');render()}
+/* ---- WAN ---- */
+function wan(){const w=S.wan;return `<h2>Internet / WAN</h2><div class="grid"><div class="c">${inp('wan.mode','Tipo de conexión',{opts:[['dhcp','IP dinámica (DHCP)'],['static','IP estática'],['pppoe','PPPoE'],['off','Desconectada']]})}
+ ${w.mode=='static'?inp('wan.ip','IP WAN')+inp('wan.mask','Máscara')+inp('wan.gw','Puerta de enlace')+inp('wan.d1','DNS primario')+inp('wan.d2','DNS secundario'):''}${w.mode=='pppoe'?inp('wan.user','Usuario')+inp('wan.pass','Contraseña',{type:'password'}):''}
+ ${inp('wan.down','Bajada contratada (Mbps)',{type:'number',min:1,max:10000,n:1})}${inp('wan.upl','Subida contratada (Mbps)',{type:'number',min:1,max:10000,n:1})}
+ <p><button onclick="S.wan.up=!S.wan.up;S.wan.t0=Date.now();L('WAN',S.wan.up?'INFO':'WARN','WAN '+(S.wan.up?'conectada':'desconectada'));save();render()">${w.up?'Desconectar':'Conectar'} WAN</button></p></div>
+ <div class="c"><h3>Estado</h3><div class="kv"><span>Interfaz</span><span class="${R.wanUp?'OK':'ER'}">${R.wanUp?'Activa':'Caída'}</span><span>MAC WAN</span><span>02:1A:2B:00:00:02</span><span>IP</span><span>${R.wanUp?(w.mode=='static'?w.ip:'203.0.113.25'):'—'}</span><span>Gateway</span><span>${w.gw}</span><span>DNS</span><span>${w.d1}, ${w.d2}</span><span>Conectado desde</span><span>${R.wanUp?Math.floor((Date.now()-w.t0)/1000)+' s':'—'}</span></div>
+ <p class="m">Internet es simulado: no se hace ninguna conexión real. El proveedor DHCP/PPPoE se emula con valores ficticios.</p>${probs()}</div></div>`}
+/* ---- Rutas ---- */
+function rutas(){const all=routesAll(),q=window._rq;let res='';
+ if(q!=null){if(!vIP(q))res='<p class="ER">IP no válida.</p>';else{const b=lookup(q);res=b?`<p class="OK">Ruta elegida: ${b.r.dst}/${b.r.mask=='0.0.0.0'?0:cidr(b.r.mask)} vía ${b.r.gw} por ${b.r.iface}. Motivo: prefijo más largo coincidente (/${b.c}), métrica ${b.r.metric}.</p>`:'<p class="ER">Destino inalcanzable: ninguna ruta coincide.</p>'}}
+ return `<h2>Enrutamiento</h2><div class="c">${tbl(['Destino','Máscara','CIDR','Siguiente salto','Interfaz','Métrica','Tipo','Estado',''],all.map(r=>{const i=S.routes.indexOf(r);return [r.dst,r.mask,'/'+(r.mask=='0.0.0.0'?0:cidr(r.mask)),r.gw,r.iface,r.metric,r.type,(r.iface=='WAN'&&!R.wanUp)?'<span class="ER">Inactiva</span>':'<span class="OK">Activa</span>',i>=0?`<button class="d" onclick="S.routes.splice(${i},1);L('Rutas','INFO','Ruta eliminada');save();render()" aria-label="Eliminar ruta">Borrar</button>`:'']}))}</div>
+ <div class="c"><h3>Añadir ruta estática</h3><div class="row"><input id="rd" placeholder="Destino 10.1.0.0" aria-label="Destino"><input id="rm" placeholder="Máscara 255.255.0.0" aria-label="Máscara"><input id="rg" placeholder="Siguiente salto" aria-label="Siguiente salto"><input id="rmt" type="number" value="5" aria-label="Métrica"><button onclick="addRoute()">Añadir</button></div></div>
+ <div class="c"><h3>Probar destino</h3><div class="row"><input id="rq" placeholder="8.8.8.8" value="${q||''}" aria-label="IP destino"><button onclick="window._rq=rq.value;render()">Buscar ruta</button></div>${res}<p class="m">Enrutamiento decide por IP entre redes; un switch reenvía por MAC dentro de una red; NAT traduce direcciones privadas a la pública.</p></div>`}
+function addRoute(){const d=rd.value.trim(),m=rm.value.trim(),g=rg.value.trim();if(!vIP(d)||!vMask(m)||!vIP(g))return toast('Revisa destino, máscara y siguiente salto');
+ const ifc=inNet(g,S.lan.ip,S.lan.mask)?'LAN':'WAN';S.routes.push({dst:d,mask:m,gw:g,iface:ifc,metric:+rmt.value||1,type:'Estática'});L('Rutas','INFO','Ruta añadida '+d);save();render()}
+/* ---- NAT ---- */
+function nat(){return `<h2>NAT y puertos</h2><div class="c"><p class="m">IP pública simulada: ${R.wanUp?'203.0.113.25':'—'}. Las IP privadas de la LAN salen traducidas a la pública con puertos distintos.</p>${tbl(['Servicio','IP interna','Externo','Interno','Proto','Activa','Aviso',''],S.nat.map((r,i)=>[esc(r.name),r.ip,r.ext,r.int,r.proto,`<input type="checkbox" ${r.on?'checked':''} onchange="S.nat[${i}].on=this.checked;save();render()" aria-label="Activar regla ${esc(r.name)}">`,S.nat.some((o,j)=>j!=i&&o.on&&r.on&&o.ext==r.ext&&(o.proto==r.proto||o.proto=='TCP/UDP'||r.proto=='TCP/UDP'))?'<span class="WA">Conflicto de puerto</span>':!inNet(r.ip,S.lan.ip,S.lan.mask)?'<span class="ER">IP fuera de la LAN</span>':'',`<button class="d" onclick="S.nat.splice(${i},1);save();render()">Borrar</button>`]))}</div>
+ <div class="c"><h3>Nueva regla</h3><div class="row"><input id="nn" placeholder="Servicio (HTTPS)" aria-label="Servicio"><input id="ni" placeholder="IP interna" aria-label="IP interna"><input id="ne" placeholder="Puerto ext." aria-label="Puerto externo"><input id="nt" placeholder="Puerto int." aria-label="Puerto interno"><select id="np" aria-label="Protocolo"><option>TCP</option><option>UDP</option><option>TCP/UDP</option></select><button onclick="addNat()">Añadir</button></div><p class="m">Ejemplos: HTTP 80, HTTPS 443, SSH 22.</p></div>
+ <div class="c"><h3>Traducciones activas (simuladas)</h3>${tbl(['Interna','Pública'],R.devs.filter(o=>o.on).map((o,i)=>[o.ip+':'+(40000+i*7),(R.wanUp?'203.0.113.25':'—')+':'+(50000+i*13)]))}</div>`}
+function addNat(){if(!nn.value.trim()||!vIP(ni.value)||!vPort(ne.value)||!vPort(nt.value))return toast('Regla incompleta o puerto fuera de 1-65535');S.nat.push({name:nn.value.trim(),ip:ni.value,ext:+ne.value,int:+nt.value,proto:np.value,on:true});L('NAT','INFO','Regla creada: '+nn.value);save();render()}
+/* ---- Acceso ---- */
+function acc(){return `<h2>Control de acceso</h2><div class="c">${tbl(['Nombre','Tipo','MAC','IP estática','Banda','Estado','Bloqueo'],R.devs.map((o,i)=>[`<input value="${esc(o.d.n)}" aria-label="Nombre" onchange="S.dev[${i}].n=this.value;save();render()" style="width:150px">`,o.d.t,o.d.mac,`<input value="${o.d.sip}" placeholder="auto" aria-label="IP estática" onchange="setSip(${i},this.value)" style="width:130px">`,o.d.link=='wifi'?o.d.bands.join('/')+' GHz':'Cable',o.on?'<span class="OK">Conectado'+(o.band?' · '+sig(o.rssi):'')+'</span>':'<span class="ER">'+o.why+'</span>',`<button class="${o.d.blocked?'':'g'}" onclick="S.dev[${i}].blocked=!S.dev[${i}].blocked;L('Acceso','WARN','${esc(o.d.n)} '+(S.dev[${i}].blocked?'bloqueado':'desbloqueado'));save();render()">${o.d.blocked?'Desbloquear':'Bloquear'}</button>`]))}</div>`}
+function setSip(i,v){if(v&&(!vIP(v)||!inNet(v,S.lan.ip,S.lan.mask)))return toast('IP no válida para la subred LAN'),render();S.dev[i].sip=v;save();render()}
+/* ---- QoS ---- */
+function qos(){return `<h2>QoS y ancho de banda</h2><div class="grid"><div class="c">${inp('qos.on','QoS activado',{type:'check'})}${inp('qos.down','Descarga total (Mbps)',{type:'number',min:1,max:10000,n:1})}${inp('qos.up','Subida total (Mbps)',{type:'number',min:1,max:10000,n:1})}<p class="m">Capacidad efectiva: ${R.cap} Mbps (mínimo entre WAN y QoS). Sirviendo ${R.down.toFixed(1)} Mbps.</p></div>
+ <div class="c"><h3>Reparto</h3>${R.devs.filter(o=>o.on).map(o=>`<div>${esc(o.d.n)} <span class="m">${(o.got||0).toFixed(1)} / ${(o.dem||0)} Mbps</span><div class="bar"><i style="width:${R.cap?(o.got||0)/R.cap*100:0}%"></i></div></div>`).join('')||'<p class="m">Sin dispositivos activos o sin Internet.</p>'}</div></div>
+ <div class="c">${tbl(['Dispositivo','Prioridad','Límite (Mbps, 0 = sin límite)'],S.dev.map((d,i)=>[esc(d.n),`<select aria-label="Prioridad ${esc(d.n)}" onchange="S.dev[${i}].prio=this.value;save();render()">${['high','normal','low'].map(p=>`<option value="${p}" ${d.prio==p?'selected':''}>${{high:'Alta',normal:'Normal',low:'Baja'}[p]}</option>`).join('')}</select>`,`<input type="number" min="0" value="${d.lim}" aria-label="Límite ${esc(d.n)}" onchange="S.dev[${i}].lim=+this.value;save();render()" style="width:90px">`]))}</div>`}
+/* ---- Admin ---- */
+function adm(){return `<h2>Administración</h2><div class="grid"><div class="c">${inp('name','Nombre del dispositivo')}<div class="kv"><span>Modelo</span><span>${S.model}</span><span>Firmware</span><span>LAB-1.0.3 (ficticio)</span><span>Hora simulada</span><span>${new Date().toLocaleString()}</span><span>Uptime</span><span>${uptime()}</span></div></div>
+ <div class="c"><div class="row"><button onclick="save();toast('Configuración guardada')">Guardar</button><button class="g" onclick="exp()">Exportar JSON</button><label class="g" style="font-weight:400;margin:0;border:1px solid var(--bd);border-radius:6px;padding:6px 12px;cursor:pointer">Importar<input type="file" accept=".json" hidden onchange="imp(this)"></label><button class="g" onclick="reboot()">Reiniciar</button><button class="d" onclick="factory()">Valores de fábrica</button></div><p class="m">La exportación no incluye contraseñas.</p></div>${admPass()}</div>`}
+function exp(){const c=JSON.parse(JSON.stringify(S));c.sec.pass='';c.wifi.gpass='';c.wan.pass='';c.log=[];delete c.adm;const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(c,null,1)],{type:'application/json'}));a.download='wifi_router_lab_config.json';a.click();toast('Configuración exportada')}
+function imp(f){const r=new FileReader();r.onload=()=>{try{const c=JSON.parse(r.result);
+ if(c.v!==1||!c.wifi||!c.lan||!c.dhcp||!c.wan||!c.sec||!Array.isArray(c.dev)||!Array.isArray(c.routes)||!vIP(c.lan.ip)||!vMask(c.lan.mask)||!c.dev.every(d=>d.n&&d.mac&&Array.isArray(d.bands)))throw 0;
+ const keep=S.sec.pass,ka=S.adm;S=Object.assign(DEF(),c);S.adm=ka;if(!S.cov||!Array.isArray(S.cov.obs)||typeof S.cov.pos!=='object'||!S.cov.pos)S.cov=DEF().cov;S.log=[];S.nat=c.nat||[];if(!S.sec.pass)S.sec.pass=keep;L('Sistema','INFO','Configuración importada');save();toast('Configuración importada');render()}catch(e){toast('Archivo rechazado: configuración no válida')}};r.readAsText(f.files[0])}
+function reboot(){const m=document.getElementById('md');document.getElementById('mdc').innerHTML='<h3>Reiniciando…</h3><p><span class="spin">⟳</span> Funciones desactivadas temporalmente.</p>';m.style.display='flex';L('Sistema','WARN','Reinicio del router');setTimeout(()=>{S.up0=Date.now();S.wan.t0=Date.now();save();closeM();toast('Router reiniciado (configuración conservada)');render()},2500)}
+/* ---- Diagnóstico ---- */
+function diag(){const o=window._ping||'',lan=S.lan;return `<h2>Diagnóstico</h2><div class="grid"><div class="c"><h3>Ping / traceroute</h3><div class="row"><input id="pg" placeholder="IPv4 destino" value="${window._pt||''}" aria-label="IP destino"><button onclick="ping()">Ping</button><button class="g" onclick="trace()">Traceroute</button></div><pre id="po" style="white-space:pre-wrap">${o}</pre></div>
+ <div class="c"><h3>Interfaces</h3>${tbl(['Interfaz','Estado','IP','Velocidad'],[['LAN','Activa',lan.ip,'1 Gbps'],['WAN',R.wanUp?'Activa':'Caída',R.wanUp?'203.0.113.25':'—',S.wan.down+' Mbps'],['Radio '+S.wifi.band+' GHz',S.wifi.on?'Activa (canal '+S.wifi.ch+')':'Apagada','—',theo()+' Mbps']])}</div>
+ <div class="c"><h3>Escáner LAN (simulado)</h3>${tbl(['IP','MAC','Nombre'],R.devs.filter(x=>x.on).map(x=>[x.ip,x.d.mac,esc(x.d.n)]))}</div></div>`}
+function reach(t){if(!vIP(t))return {e:'IP no válida'};const lanDev=R.devs.find(o=>o.ip===t);if(t===S.lan.ip)return{ok:1,rtt:1,h:['router']};
+ if(inNet(t,S.lan.ip,S.lan.mask))return lanDev&&lanDev.on?{ok:1,rtt:lanDev.d.link=='wifi'?4:1,h:[S.lan.ip,t]}:{e:'Host de destino inalcanzable'};
+ const b=lookup(t);if(!b)return{e:'Red de destino inalcanzable (sin ruta)'};if(b.r.iface=='WAN'&&!R.inet)return{e:'Sin conectividad WAN'};return{ok:1,rtt:18,h:[S.lan.ip,S.wan.gw,'198.51.100.1',t]}}
+function ping(){const t=pg.value.trim();window._pt=t;const r=reach(t);let o='PING '+t+'\n';
+ if(r.e)o+='Enviados 4, recibidos 0, perdidos 4 (100 %)\n'+r.e;else{const v=[0,1,2,3].map(()=>r.rtt+Math.random()*r.rtt*.4);o+=v.map((x,i)=>`${i+1}: ${x.toFixed(1)} ms`).join('\n')+`\nEnviados 4, recibidos 4, perdidos 0\nmín ${Math.min(...v).toFixed(1)} / media ${(v.reduce((a,b)=>a+b)/4).toFixed(1)} / máx ${Math.max(...v).toFixed(1)} ms`}
+ window._ping=o;L('Diagnóstico',r.e?'WARN':'INFO','Ping a '+t);render()}
+function trace(){const t=pg.value.trim();window._pt=t;const r=reach(t);window._ping='Traceroute a '+t+'\n'+(r.e?r.e:r.h.map((h,i)=>(i+1)+'  '+h+'  '+((i+1)*r.rtt/r.h.length).toFixed(1)+' ms').join('\n'));render()}
+/* ---- Log ---- */
+function log(){const f=window._lf||'';const rows=S.log.filter(e=>!f||e.lvl==f);return `<h2>Registro de eventos</h2><div class="c"><div class="row"><select aria-label="Filtrar gravedad" onchange="window._lf=this.value;render()"><option value="">Todos</option>${['INFO','WARN','ERROR'].map(x=>`<option ${f==x?'selected':''}>${x}</option>`).join('')}</select><button class="g" onclick="S.log=[];save();render()">Limpiar</button><button class="g" onclick="expLog()">Exportar .txt</button></div>${tbl(['Hora','Categoría','Nivel','Mensaje'],rows.map(e=>[e.t,e.cat,e.lvl,esc(e.msg)]))}</div>`}
+function expLog(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([S.log.map(e=>`${e.t} [${e.lvl}] ${e.cat}: ${e.msg}`).join('\n')],{type:'text/plain'}));a.download='registro.txt';a.click()}
+/* ---- Ayuda ---- */
+function ayuda(){const T=[
+['1. Qué es un router inalámbrico','Equipo que conecta tu red local (LAN) con otra red, normalmente Internet (WAN), y además ofrece Wi-Fi, DHCP, NAT y cortafuegos básico.','Ejemplo: tu router de casa une el móvil, el portátil y la fibra del operador.','panel'],
+['2. Router, switch y punto de acceso','Router: decide por dirección IP entre redes. Switch: reenvía tramas por dirección MAC dentro de una misma red. Punto de acceso: convierte la red cableada en Wi-Fi. Un router doméstico integra los tres.','Ejemplo: PC-AULA-01 va por cable (switch); MOVIL-01 por Wi-Fi (punto de acceso).','panel'],
+['3. Funcionamiento de las redes Wi-Fi','Los equipos comparten un medio por radio y esperan turno (CSMA/CA) para no transmitir a la vez. Cuantos más clientes y más redes vecinas en el mismo canal, más esperas y menos velocidad real.','Ejemplo: con 32 clientes en un canal saturado, cada uno obtiene una fracción del caudal.','wifi'],
+['4. Bandas de 2,4, 5 y 6 GHz','2,4 GHz: más alcance y mejor atraviesa paredes, pero pocos canales y mucha interferencia. 5 GHz: más velocidad y más canales, menos alcance. 6 GHz: canales libres de equipos antiguos (Wi-Fi 6E/7), alcance aún menor y no disponible en todos los países.','Ejemplo: en Configuración Wi-Fi pasa a 5 GHz y verás que IMPRESORA-WIFI (solo 2,4 GHz) se desconecta.','wifi'],
+['5. Estándares IEEE 802.11','b (11 Mbps), g (54), n/Wi-Fi 4, ac/Wi-Fi 5 (solo 5 GHz), ax/Wi-Fi 6 y 6E, be/Wi-Fi 7. Cada estándar admite ciertas bandas y anchos de canal; los equipos antiguos obligan a usar modos de compatibilidad.','Ejemplo: 802.11ac no aparece en 2,4 GHz porque no existe en esa banda.','wifi'],
+['6. SSID y BSSID','El SSID es el nombre visible de la red. El BSSID es la MAC de la radio del punto de acceso e identifica de forma única cada emisor. Ocultar el SSID no es una medida de seguridad real: los equipos siguen emitiéndolo al conectarse.','Ejemplo: cambia el SSID y comprueba el registro de eventos.','wifi'],
+['7. Canales y ancho de canal','En 2,4 GHz los canales están separados 5 MHz pero ocupan 20 MHz, así que solo 1, 6 y 11 no se solapan. Un ancho mayor (40, 80, 160, 320 MHz) multiplica la velocidad máxima, pero consume más espectro y capta más ruido. Elige el canal menos usado por las redes vecinas.','Ejemplo: prueba 40 MHz en 2,4 GHz y observa el aviso de solapamiento.','wifi'],
+['8. Potencia de transmisión y dBm','dBm = 10·log10(mW). 100 mW son 20 dBm; cada 3 dB la potencia se duplica. Más potencia amplía la cobertura del router, pero el móvil no puede responder con la misma potencia, así que no siempre mejora la conexión.','Ejemplo: baja la potencia al 10 % y mira cómo cae la señal de cada dispositivo.','wifi'],
+['9. Dirección IP y máscara de subred','La IP identifica un equipo y la máscara indica qué parte es de red y cuál de host. /24 (255.255.255.0) deja 254 hosts. Dos equipos solo se hablan directamente si están en la misma subred.','Ejemplo: usa la calculadora de LAN con 192.168.1.1/24 y luego con /26.','lan'],
+['10. DHCP','Servicio que entrega IP, máscara, puerta de enlace y DNS a los clientes por un tiempo (concesión). El rango debe estar dentro de la subred y no incluir la IP de red, la de broadcast ni la del router.','Ejemplo: apaga DHCP y verás que los equipos sin IP estática pierden la conexión.','dhcp'],
+['11. DNS','Traduce nombres (como www.ejemplo.es) a direcciones IP. Si el DNS falla, puedes hacer ping a una IP pero no navegar por nombre.','Ejemplo: revisa los DNS en LAN y en WAN.','lan'],
+['12. Puerta de enlace','Es la dirección del router dentro de la LAN: a ella envían los equipos todo lo que no es de su subred. Si es incorrecta, funciona la red local pero no Internet.','Ejemplo: la puerta de enlace DHCP debe coincidir con la IP LAN.','dhcp'],
+['13. WAN y LAN','LAN: red interna con direcciones privadas. WAN: lado del proveedor, con IP pública. Las subredes de ambos lados no pueden solaparse.','Ejemplo: en WAN estática usa la misma red que la LAN y verás el conflicto.','wan'],
+['14. NAT','El router sustituye la IP privada del cliente por su IP pública y recuerda la traducción por puerto. Desde fuera no se alcanza un equipo interno salvo que exista una redirección de puertos.','Ejemplo: crea una regla HTTPS 443 hacia un equipo interno.','nat'],
+['15. Enrutamiento','Cada paquete se envía por la ruta cuyo prefijo coincide con más bits (prefijo más largo); si empatan, gana la métrica menor. La ruta 0.0.0.0/0 es la predeterminada.','Ejemplo: borra la ruta predeterminada y haz ping a 8.8.8.8.','rutas'],
+['16. WPA2 y WPA3','WPA2-Personal usa clave compartida y cifrado AES-CCMP; una clave débil se puede adivinar capturando el saludo inicial. WPA3 usa SAE, que impide ese ataque offline y protege mejor. Enterprise autentica a cada usuario con un servidor RADIUS.','Ejemplo: prueba WPA3 y fíjate en la compatibilidad con equipos antiguos (modo transición).','seg'],
+['17. QoS','Cuando el enlace se satura, la calidad de servicio reparte el caudal según prioridades: las videollamadas y los juegos toleran mal el retardo; las descargas, sí.','Ejemplo: baja el ancho de banda total y pon SMART-TV en prioridad baja.','qos'],
+['18. Interferencias y cobertura','La señal cae con la distancia y la frecuencia, y las paredes de hormigón o metal la atenúan mucho. Los hornos microondas, el Bluetooth y los vecinos interfieren en 2,4 GHz.','Ejemplo: compara la señal de un mismo equipo en 2,4 y 5 GHz.','cob'],
+['19. Seguridad de las redes inalámbricas','Usa WPA2/WPA3, claves largas, desactiva WPS, cambia la contraseña de administración, aísla la red de invitados y mantén el firmware actualizado. Una red abierta permite espiar el tráfico no cifrado.','Ejemplo: activa WPS o una clave corta y lee las advertencias.','seg'],
+['20. Diagnóstico de problemas habituales','Procedimiento: 1) ¿tiene IP el cliente? 2) ¿responde el router? 3) ¿responde una IP de Internet? 4) ¿resuelve nombres? Cada respuesta negativa señala dónde mirar: Wi-Fi, DHCP, WAN, rutas o DNS.','Ejemplo: desconecta la WAN y haz ping a 8.8.8.8, luego a 192.168.1.1.','diag']];
+const E=[['Configurar una red doméstica','Pon un SSID propio, WPA2 con clave fuerte y revisa que el panel quede en OPERATIVO.','wifi'],['Crear una red de invitados','Actívala con SSID y clave propios, aislamiento y bloqueo de acceso a la LAN.','wifi'],['Cambiar el canal Wi-Fi','Elige 1, 6 u 11 en 2,4 GHz y explica por qué.','wifi'],['Crear un rango DHCP','Define 192.168.1.50 a 192.168.1.80 y comprueba las IP de los clientes.','dhcp'],['Resolver un conflicto de subredes','En WAN estática usa 192.168.1.50/24 y corrígelo cambiando la LAN a 10.0.0.1/24.','wan'],['Configurar una ruta estática','Añade 10.1.0.0/255.255.0.0 por 192.168.1.2 y pruébala en la herramienta de rutas.','rutas'],['Mejorar la cobertura','Sube la potencia, mueve el router y cambia de banda para ver qué dispositivos mejoran y cuáles no.','cob']];
+return `<h2>Ayuda y teoría</h2><p class="m">Cada apartado se relaciona con los controles del simulador. Pulsa «Ir a la sección» para probarlo.</p>${T.map(t=>`<details class="c"><summary><b>${t[0]}</b></summary><p>${t[1]}</p><p class="m">${t[2]}</p><button class="g" onclick="go('${t[3]}')">Ir a la sección</button></details>`).join('')}<div class="c"><h3>Ejercicios</h3>${E.map((e,i)=>`<p><b>${i+1}. ${e[0]}.</b> ${e[1]} <button class="g" onclick="go('${e[2]}')">Ir</button></p>`).join('')}</div>`}
+/* ===== Contraseña de administrador (protección educativa, solo en el navegador) ===== */
+let AUTH=false;try{AUTH=sessionStorage.getItem('wrl_auth')=='1'}catch(e){}
+function showLogin(){const need=S.adm.req&&!AUTH;document.getElementById('lg').style.display=need?'flex':'none';
+ document.querySelector('.wrap').inert=need;document.querySelector('header').inert=need;
+ if(need){document.getElementById('lh').textContent=S.adm.def?'Contraseña inicial: admin':'';document.getElementById('lm').textContent='';setTimeout(()=>document.getElementById('lp').focus(),50)}}
+function doLogin(){const lp=document.getElementById('lp'),lm=document.getElementById('lm');
+ if(Date.now()<S.adm.lock){lm.textContent='Demasiados intentos. Espera '+Math.ceil((S.adm.lock-Date.now())/1000)+' s.';return}
+ if(h53(lp.value)===S.adm.h){AUTH=true;try{sessionStorage.setItem('wrl_auth','1')}catch(e){}S.adm.fails=0;lp.value='';L('Acceso','INFO','Inicio de sesión de administrador');save();showLogin();render()}
+ else{S.adm.fails++;L('Acceso','WARN','Intento de acceso fallido');lp.value='';if(S.adm.fails>=5){S.adm.lock=Date.now()+30000;S.adm.fails=0;lm.textContent='Demasiados intentos. Acceso bloqueado 30 s.'}else lm.textContent='Contraseña incorrecta ('+S.adm.fails+'/5).';save()}}
+function logout(){AUTH=false;try{sessionStorage.removeItem('wrl_auth')}catch(e){}L('Acceso','INFO','Sesión cerrada');save();if(!S.adm.req)toast('El acceso sin contraseña está activado');showLogin()}
+function admPass(){return `<div class="c"><h3>Contraseña de administrador</h3>${S.adm.def?'<p class="WA"><b>Usas la contraseña por defecto. Cámbiala.</b></p>':''}
+ <label for="ap0">Contraseña actual</label><input id="ap0" type="password" autocomplete="current-password"><label for="ap1">Nueva contraseña (mínimo 8)</label><input id="ap1" type="password" autocomplete="new-password"><label for="ap2">Repetir nueva contraseña</label><input id="ap2" type="password" autocomplete="new-password">
+ <p><button onclick="changePass()">Cambiar contraseña</button></p><label><input type="checkbox" ${S.adm.req?'checked':''} onchange="S.adm.req=this.checked;L('Seguridad','WARN','Contraseña al abrir '+(this.checked?'activada':'desactivada'));save();render()"> Pedir contraseña al abrir el panel</label>
+ <p class="m">Protección educativa: se comprueba en el navegador y no sustituye a la seguridad real de un router.</p></div>`}
+function changePass(){const c=ap0.value,n=ap1.value;let e='';if(h53(c)!==S.adm.h)e='La contraseña actual no es correcta.';else if(n.length<8)e='La nueva contraseña necesita al menos 8 caracteres.';else if(n===c||n.toLowerCase()=='admin')e='Elige una contraseña distinta de la actual y de «admin».';else if(n!==ap2.value)e='Las contraseñas nuevas no coinciden.';
+ if(e)return toast(e);S.adm.h=h53(n);S.adm.def=false;L('Seguridad','INFO','Contraseña de administrador modificada');save();toast('Contraseña cambiada');render()}
+/* ===== Cobertura Wi-Fi ===== */
+const MAT={Tabique:3,Cristal:2,Ladrillo:7,'Hormigón':12,Metal:20},MC={Tabique:'#b9a37a',Cristal:'#7fc6e0',Ladrillo:'#b5654a',Hormigón:'#7d8594',Metal:'#38404f'};
+const DPOS=[[250,420],[330,120],[560,150],[620,380],[720,440],[690,250]];
+function posOf(i){return S.cov.pos[S.dev[i].mac]||DPOS[i%6]}
+function segRect(x1,y1,x2,y2,r){let t0=0,t1=1;const dx=x2-x1,dy=y2-y1;
+ for(const [p,q] of [[-dx,x1-r.x],[dx,r.x+r.w-x1],[-dy,y1-r.y],[dy,r.y+r.h-y1]]){if(p===0){if(q<0)return false}else{const t=q/p;if(p<0){if(t>t1)return false;if(t>t0)t0=t}else{if(t<t0)return false;if(t<t1)t1=t}}}return true}
+function covLoss(x,y,band){const[rx,ry]=S.cov.router,d=Math.max(1,Math.hypot(x-rx,y-ry)*.02),f={'2.4':2437,'5':5500,'6':6500}[band]||2437;let a=0,n=0;
+ S.cov.obs.forEach(o=>{if(segRect(rx,ry,x,y,o)){a+=o.db;n++}});return{d,a,n,pl:20*Math.log10(f)-27.55+30*Math.log10(d)+a}}
+function rssiXY(x,y,band){const w=S.wifi;return Math.round(10*Math.log10(Math.max(.01,w.pmax*w.pow/100))-covLoss(x,y,band).pl)}
+function rssiDev(d,band){const p=posOf(S.dev.indexOf(d));return rssiXY(p[0],p[1],band)}
+function qual(r){return r>-55?['Excelente','#13795b']:r>-65?['Buena','#5aa02c']:r>-75?['Aceptable','#c99700']:r>-85?['Débil','#e0701a']:['Sin conexión','#b3261e']}
+const heat=r=>r>-55?'rgba(19,121,91,.5)':r>-65?'rgba(90,160,44,.45)':r>-75?'rgba(217,164,0,.45)':r>-85?'rgba(224,112,26,.45)':'rgba(120,130,150,.22)';
+function cob(){const c=S.cov,w=S.wifi,so=window._so,o=c.obs[so],bands=['2.4','5'].concat(C6.includes(w.cc)?['6']:[]);
+ const rows=S.dev.map((d,i)=>{const p=posOf(i),l=covLoss(p[0],p[1],w.band),r=rssiXY(p[0],p[1],w.band),q=qual(r),wf=d.link=='wifi';return[esc(d.n),wf?'Wi-Fi':'Cable',l.d.toFixed(1)+' m',l.n,l.a+' dB',wf&&w.on?r+' dBm':'—',wf&&w.on?`<b style="color:${q[1]}">${q[0]}</b>`:'—']});
+ const mo=k=>Object.keys(MAT).map(m=>`<option ${m==k?'selected':''}>${m}</option>`).join('');
+ return `<h2>Cobertura Wi-Fi</h2><div class="c"><canvas id="cvp" width="800" height="500" style="height:auto;aspect-ratio:8/5;touch-action:none;cursor:grab" role="img" aria-label="Plano de cobertura con router, dispositivos y obstáculos"></canvas>
+ <p class="m">Arrastra el router, los dispositivos y los obstáculos. Pulsa un obstáculo para editarlo. Escala: 50 px = 1 m.</p>
+ <div class="row">${[['Excelente','#13795b'],['Buena','#5aa02c'],['Aceptable','#c99700'],['Débil','#e0701a'],['Sin conexión','#78828f']].map(x=>`<span><b style="color:${x[1]}">■</b> ${x[0]}</span>`).join('')}</div></div>
+ <div class="grid"><div class="c">${w.on?'':'<p class="WA">La radio está apagada: no hay cobertura.</p>'}${inp('wifi.pow','Potencia de transmisión (%)',{type:'range',min:1,max:100,n:1})}<p>${w.pow} % ≈ ${(10*Math.log10(Math.max(.01,w.pmax*w.pow/100))).toFixed(1)} dBm</p>${inp('wifi.band','Banda (GHz)',{opts:bands})}
+ <h3>Obstáculos (${c.obs.length})</h3><div class="row"><select id="om" aria-label="Material">${mo('Tabique')}</select><button onclick="addObs()">Añadir</button></div>
+ ${o?`<h3>Obstáculo seleccionado</h3><label for="os">Material</label><select id="os" onchange="selMat(this.value)">${mo(o.m)}</select><label for="od">Atenuación (dB)</label><input id="od" type="number" min="0" max="60" value="${o.db}" onchange="setObs('db',this.value)"><label for="ow">Ancho (px)</label><input id="ow" type="number" min="4" max="500" value="${o.w}" onchange="setObs('w',this.value)"><label for="oh">Alto (px)</label><input id="oh" type="number" min="4" max="500" value="${o.h}" onchange="setObs('h',this.value)"><p><button class="d" onclick="delObs()">Eliminar</button></p>`:'<p class="m">Ningún obstáculo seleccionado.</p>'}</div>
+ <div class="c"><h3>Señal estimada</h3>${tbl(['Dispositivo','Tipo','Distancia','Obstáculos','Atenuación','Señal','Calidad'],rows)}</div></div>
+ <div class="c"><h3>Limitaciones del modelo</h3><p class="m">Se usa pérdida en espacio libre a 1 m más 30·log10(distancia) para interior, y se suma la atenuación de cada obstáculo cruzado por la línea recta router-dispositivo. No considera antenas, reflexiones, multitrayecto, interferencias ni la altura. La cobertura real puede diferir bastante.</p></div>`}
+function addObs(){const m=document.getElementById('om').value;S.cov.obs.push({x:300,y:200,w:100,h:10,db:MAT[m],m});window._so=S.cov.obs.length-1;L('Cobertura','INFO','Obstáculo añadido: '+m);save();render()}
+function selMat(m){const o=S.cov.obs[window._so];if(!o)return;o.m=m;o.db=MAT[m];save();render()}
+function setObs(k,v){const o=S.cov.obs[window._so];if(!o)return;v=+v;if(!isFinite(v))return;o[k]=k=='db'?Math.min(60,Math.max(0,v)):Math.min(500,Math.max(4,v));save();render()}
+function delObs(){S.cov.obs.splice(window._so,1);window._so=null;L('Cobertura','INFO','Obstáculo eliminado');save();render()}
+function drawCov(g){const w=S.wifi,W=800,Hh=500;g.clearRect(0,0,W,Hh);g.fillStyle=S.dark?'#0f182d':'#f7f9fd';g.fillRect(0,0,W,Hh);
+ if(w.on)for(let x=0;x<W;x+=20)for(let y=0;y<Hh;y+=20){g.fillStyle=heat(rssiXY(x+10,y+10,w.band));g.fillRect(x,y,20,20)}
+ S.cov.obs.forEach((o,i)=>{g.fillStyle=MC[o.m]||'#555';g.fillRect(o.x,o.y,o.w,o.h);if(i===window._so){g.strokeStyle='#1f5fd6';g.lineWidth=3;g.strokeRect(o.x-2,o.y-2,o.w+4,o.h+4)}});
+ const[rx,ry]=S.cov.router;S.dev.forEach((d,i)=>{const p=posOf(i),r=rssiXY(p[0],p[1],w.band),wf=d.link=='wifi';
+  if(wf&&w.on){g.strokeStyle=qual(r)[1];g.setLineDash([5,5]);g.lineWidth=1.5;g.beginPath();g.moveTo(rx,ry);g.lineTo(p[0],p[1]);g.stroke();g.setLineDash([])}
+  g.fillStyle=wf?'#14213a':'#4a5568';g.beginPath();g.arc(p[0],p[1],11,0,7);g.fill();g.fillStyle=S.dark?'#e8eefb':'#14213a';g.font='12px sans-serif';g.textAlign='center';g.fillText(d.n.slice(0,12),p[0],p[1]+27);if(wf&&w.on)g.fillText(r+' dBm',p[0],p[1]+40)});
+ g.fillStyle='#1f5fd6';g.beginPath();g.arc(rx,ry,15,0,7);g.fill();g.fillStyle='#fff';g.font='bold 11px sans-serif';g.textAlign='center';g.fillText('R',rx,ry+4);
+ g.fillStyle=S.dark?'#e8eefb':'#14213a';g.fillRect(20,478,250,3);g.fillText('5 m',145,472)}
+function initCov(){const cv=document.getElementById('cvp');if(!cv)return;const g=cv.getContext('2d');let dr=null;drawCov(g);
+ const pt=e=>{const r=cv.getBoundingClientRect();return[(e.clientX-r.left)*800/r.width,(e.clientY-r.top)*500/r.height]};
+ const hit=(x,y)=>{const[rx,ry]=S.cov.router;if(Math.hypot(x-rx,y-ry)<20)return{k:'r'};for(let i=S.dev.length-1;i>=0;i--){const p=posOf(i);if(Math.hypot(x-p[0],y-p[1])<16)return{k:'d',i}}
+  for(let i=S.cov.obs.length-1;i>=0;i--){const o=S.cov.obs[i];if(x>=o.x-4&&x<=o.x+o.w+4&&y>=o.y-4&&y<=o.y+o.h+4)return{k:'o',i}}return null};
+ cv.onpointerdown=e=>{const[x,y]=pt(e),h=hit(x,y);if(!h)return;cv.setPointerCapture(e.pointerId);const b=h.k=='r'?S.cov.router:h.k=='d'?posOf(h.i):[S.cov.obs[h.i].x,S.cov.obs[h.i].y];dr={h,ox:x-b[0],oy:y-b[1],moved:false};if(h.k=='o'){window._so=h.i}};
+ cv.onpointermove=e=>{if(!dr)return;const[x,y]=pt(e);dr.moved=true;const nx=Math.min(790,Math.max(10,x-dr.ox)),ny=Math.min(490,Math.max(10,y-dr.oy));
+  if(dr.h.k=='r')S.cov.router=[nx,ny];else if(dr.h.k=='d')S.cov.pos[S.dev[dr.h.i].mac]=[nx,ny];else{const o=S.cov.obs[dr.h.i];o.x=Math.min(800-o.w,Math.max(0,x-dr.ox));o.y=Math.min(500-o.h,Math.max(0,y-dr.oy))}
+  requestAnimationFrame(()=>drawCov(g))};
+ cv.onpointerup=()=>{if(!dr)return;dr=null;save();render()}}
+document.getElementById('lp').addEventListener('keydown',e=>{if(e.key=='Enter')doLogin()});
+document.getElementById('md').addEventListener('click',e=>{if(e.target.id=='md')closeM()});
+document.addEventListener('keydown',e=>{if(e.key=='Escape')closeM()});
+if(!S.log.length)L('Sistema','INFO','Inicio del router');
+sanitizeWifi();save();showLogin();render();
+</script></body></html>
