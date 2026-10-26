@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NETTEST RJ45 - Simulador de Comprobador de Redes Ethernet</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            bg: '#080d1a',
+                            panel: '#0e172a',
+                            border: '#1e293b',
+                            card: '#13203e',
+                            yellow: '#ffb703',
+                            yellowHover: '#fb8500',
+                            accent: '#00b4d8',
+                            darkYellow: '#d48806',
+                            green: '#2ec4b6',
+                            red: '#e63946'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Glow effects for LEDs */
+        .led-off {
+            background-color: #1a2332;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.6);
+            border: 1px solid #2d3748;
+        }
+        .led-green {
+            background-color: #10b981;
+            box-shadow: 0 0 10px #10b981, 0 0 20px #10b981, inset 0 1px 2px #ecfdf5;
+        }
+        .led-red {
+            background-color: #ef4444;
+            box-shadow: 0 0 10px #ef4444, 0 0 20px #ef4444, inset 0 1px 2px #fef2f2;
+        }
+        .led-yellow {
+            background-color: #f59e0b;
+            box-shadow: 0 0 10px #f59e0b, 0 0 20px #f59e0b, inset 0 1px 2px #fffbeb;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b1329;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+
+        .wire-stripe {
+            background-image: linear-gradient(135deg, rgba(255,255,255,0.7) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.7) 50%, rgba(255,255,255,0.7) 75%, transparent 75%, transparent);
+            background-size: 8px 8px;
+        }
+    </style>
+</head>
+<body class="bg-brand-bg text-slate-100 font-sans min-h-screen flex flex-col justify-between select-none">
+
+    <!-- HEADER / BRANDING -->
+    <header class="bg-brand-panel border-b border-slate-800 px-4 py-3 shadow-lg">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <!-- Left Branding -->
+            <div class="flex items-center space-x-3">
+                <div class="bg-red-700 text-white p-2 rounded-lg flex items-center justify-center font-black text-xs tracking-wider">
+                    <i class="fa-solid fa-graduation-cap text-lg mr-1.5"></i>
+                    <span>salesians<br><span class="text-amber-300 font-semibold text-[10px]">ALCOI - JOAN XXIII</span></span>
+                </div>
+                <div class="border-l border-slate-700 pl-3">
+                    <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Cicles formatius</p>
+                    <p class="text-xs text-slate-300 font-medium">Dpt. de Telecomunicacions</p>
+                </div>
+            </div>
+
+            <!-- Center Title -->
+            <div class="flex items-center space-x-3 text-center">
+                <i class="fa-solid fa-ethernet text-brand-yellow text-3xl"></i>
+                <div>
+                    <h1 class="text-2xl font-black tracking-wider text-brand-yellow">NETTEST RJ45</h1>
+                    <p class="text-xs text-slate-400 font-medium">Simulador de comprobador de cables de red Ethernet</p>
+                </div>
+            </div>
+
+            <!-- Right Info Tag -->
+            <div class="hidden lg:flex flex-col items-end">
+                <div class="bg-gradient-to-r from-amber-500 to-brand-yellow text-slate-950 px-3 py-1 rounded-md text-xs font-bold shadow-md">
+                    TIA/EIA-568A &nbsp;|&nbsp; TIA/EIA-568B
+                </div>
+                <p class="text-[11px] text-slate-400 mt-1 font-medium">Aprende • Poncha • Verifica • Diagnostica</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN SIMULATOR CONTAINER -->
+    <main class="max-w-7xl w-full mx-auto p-3 sm:p-4 grid grid-cols-1 lg:grid-cols-12 gap-4 flex-grow">
+
+        <!-- LEFT PANEL: CONFIGURACIÓN DEL CABLE -->
+        <section class="lg:col-span-4 bg-brand-panel border border-slate-800 rounded-xl p-4 flex flex-col justify-between shadow-xl">
+            <div>
+                <!-- Panel Header -->
+                <div class="flex items-center space-x-2 border-b border-slate-800 pb-2 mb-4">
+                    <i class="fa-solid fa-sliders text-brand-yellow text-lg"></i>
+                    <h2 class="font-bold text-slate-200 text-base">Configuración del cable</h2>
+                </div>
+
+                <!-- Connectors Selectors Grid -->
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <!-- Connector A -->
+                    <div class="bg-brand-card p-3 rounded-lg border border-slate-800">
+                        <label class="block text-xs font-semibold text-slate-300 mb-2">Conector A</label>
+                        <select id="presetA" class="w-full bg-slate-900 border border-slate-700 rounded text-xs p-1.5 text-slate-200 focus:outline-none focus:border-brand-yellow">
+                            <option value="568B">TIA/EIA-568B</option>
+                            <option value="568A">TIA/EIA-568A</option>
+                            <option value="CUT_3">Fallo: Hilo 3 Cortado</option>
+                            <option value="SHORT_12">Fallo: Corto 1 y 2</option>
+                            <option value="SWAP_12">Fallo: Inversión 1-2</option>
+                        </select>
+                        <!-- Connector Graphic Pin visualizer -->
+                        <div class="mt-3 bg-slate-900/80 p-2 rounded border border-slate-800 flex flex-col items-center">
+                            <div class="w-full h-12 bg-slate-950 rounded border border-slate-700 p-1 flex justify-between items-end" id="connectorA-visual">
+                                <!-- Wires dynamic HTML -->
+                            </div>
+                            <div class="flex justify-between w-full text-[9px] text-slate-400 mt-1 px-0.5 font-mono">
+                                <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span>
+                            </div>
+                        </div>
+                        <!-- Cable Pins List -->
+                        <div id="listA" class="mt-2 space-y-1 text-[11px]">
+                            <!-- Pin list generated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Connector B -->
+                    <div class="bg-brand-card p-3 rounded-lg border border-slate-800">
+                        <label class="block text-xs font-semibold text-slate-300 mb-2">Conector B</label>
+                        <select id="presetB" class="w-full bg-slate-900 border border-slate-700 rounded text-xs p-1.5 text-slate-200 focus:outline-none focus:border-brand-yellow">
+                            <option value="568B">TIA/EIA-568B</option>
+                            <option value="568A">TIA/EIA-568A</option>
+                            <option value="CUT_3">Fallo: Hilo 3 Cortado</option>
+                            <option value="SHORT_12">Fallo: Corto 1 y 2</option>
+                            <option value="SWAP_12">Fallo: Inversión 1-2</option>
+                        </select>
+                        <!-- Connector Graphic Pin visualizer -->
+                        <div class="mt-3 bg-slate-900/80 p-2 rounded border border-slate-800 flex flex-col items-center">
+                            <div class="w-full h-12 bg-slate-950 rounded border border-slate-700 p-1 flex justify-between items-end" id="connectorB-visual">
+                                <!-- Wires dynamic HTML -->
+                            </div>
+                            <div class="flex justify-between w-full text-[9px] text-slate-400 mt-1 px-0.5 font-mono">
+                                <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span>
+                            </div>
+                        </div>
+                        <!-- Cable Pins List -->
+                        <div id="listB" class="mt-2 space-y-1 text-[11px]">
+                            <!-- Pin list generated by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cable Quick Type Presets -->
+                <div class="bg-brand-card p-3 rounded-lg border border-slate-800 mb-4">
+                    <span class="text-xs font-semibold text-slate-300 block mb-2">Tipo de cable (Accesos rápidos)</span>
+                    <div class="space-y-2">
+                        <button onclick="setQuickPreset('straight')" class="w-full text-left px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded text-xs flex items-center space-x-2 transition">
+                            <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
+                            <span class="text-slate-200 font-medium">Directo (Straight-Through 568B)</span>
+                        </button>
+                        <button onclick="setQuickPreset('crossover')" class="w-full text-left px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded text-xs flex items-center space-x-2 transition">
+                            <span class="w-3 h-3 rounded-full bg-sky-500 inline-block"></span>
+                            <span class="text-slate-200 font-medium">Cruzado (Crossover 568A - 568B)</span>
+                        </button>
+                        <button onclick="setQuickPreset('fault')" class="w-full text-left px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded text-xs flex items-center space-x-2 transition">
+                            <span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span>
+                            <span class="text-slate-200 font-medium">Cable con Fallo (Abierto/Corto)</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Distance and Length Parameters -->
+            <div class="bg-brand-card p-3 rounded-lg border border-slate-800 space-y-3">
+                <div class="flex items-center justify-between">
+                    <label class="text-xs font-medium text-slate-300 flex items-center space-x-2">
+                        <i class="fa-solid fa-arrows-left-right text-brand-yellow"></i>
+                        <span>Longitud del cable (m)</span>
+                    </label>
+                    <input type="number" id="cableLength" value="10" min="1" max="100" class="w-16 bg-slate-900 border border-slate-700 rounded text-xs p-1 text-center text-slate-200 font-bold focus:outline-none">
+                </div>
+                <div class="flex items-center justify-between">
+                    <label class="text-xs font-medium text-slate-300 flex items-center space-x-2">
+                        <i class="fa-solid fa-bullseye text-brand-yellow"></i>
+                        <span>Distancia al fallo (m)</span>
+                    </label>
+                    <input type="number" id="faultDistance" value="5" min="0" max="100" class="w-16 bg-slate-900 border border-slate-700 rounded text-xs p-1 text-center text-slate-200 font-bold focus:outline-none">
+                </div>
+            </div>
+        </section>
+
+        <!-- CENTER PANEL: SIMULADOR DE COMPROBADOR (TESTER GRAPHIC & CONTROLS) -->
+        <section class="lg:col-span-4 bg-brand-panel border border-slate-800 rounded-xl p-4 flex flex-col justify-between items-center shadow-xl relative overflow-hidden">
+            <!-- Header -->
+            <div class="w-full flex items-center space-x-2 border-b border-slate-800 pb-2 mb-2">
+                <i class="fa-solid fa-display text-brand-yellow text-lg"></i>
+                <h2 class="font-bold text-slate-200 text-base">Simulador de comprobador</h2>
+            </div>
+
+            <!-- Physical Tester Renders Container -->
+            <div class="flex justify-center items-center space-x-4 my-auto py-2">
+                
+                <!-- MAIN WIRE TRACKER UNIT -->
+                <div class="w-36 sm:w-40 bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600 rounded-3xl p-3 shadow-2xl border-2 border-amber-300 flex flex-col items-center relative text-slate-900">
+                    <div class="w-full text-center font-black tracking-wider text-xs border-b border-amber-600/40 pb-1">MAIN</div>
+                    
+                    <!-- LED Display Area -->
+                    <div class="bg-slate-950 rounded-xl p-2.5 my-3 w-full border border-amber-700/50 space-y-1.5 shadow-inner">
+                        <!-- LED Rows 1 to 8 + Ground -->
+                        <div class="flex items-center justify-between px-2 text-[10px] text-slate-300 font-mono">
+                            <span>1</span><div id="main-led-1" class="w-3.5 h-3.5 rounded-full led-off"></div>
+                        </div>
+                        <div class="flex items-center justify-between px-2 text-[10px] text-slate-300 font-mono">
+                            <span>2</span><div id="main-led-2" class="w-3.5 h-3.5 rounded-full led-off"></div>
+                        </div>
+                        <div class="flex items-center justify-between px-2 text-[10px] text-slate-300 font-mono">
+                            <span>3</span><div id="main-led-3" class="w-3.5 h-3.5 rounded-full led-off"></div>
+                        </div>
+                        <div class="flex items-center justify-between px-2 text-[10px] text-slate-300 font-mono">
+                            <span>4</span><div id="main-led-4" class="w-3.5 h-3.5 rounded-full led-off"></div>
+                        </div>
+                        <div class="flex items-center justify-between px-2 text-[10px] text-slate-300 font-mono">
+                            <span>5</span><div id="main-led-5" class="w-3.5 h-3.5 rounded-full led-off"></div>
+                        </div>
+                        <div class="flex items-center justify-between px-2 text-[10px] text-slate-300 font-mono">
+                            <span>6</span><div id="main-led-6" class="w-3.5 h-3.5 rounded-full led-off"></div>
+                        </div>
+                        <div class="flex items-center justify-between px-2 text-[10px] text-slate-300 font-mono">
+                            <span>7</span><div id="main-led-7" class="w-3.5 h-3.5 rounded-full led-off"></div>
+                        </div>
+                        <div class="flex items-center justify-between px-2 text-[10px] text-slate-300 font-mono">
+                            <span>8</span><div id="main-led-8" class="w-3.5 h-3.5 rounded-full led-off"></div>
+                        </div>
+                        <div class="flex items-center justify-between px-2 text-[10px] text-slate-300 font-mono">
+                            <span>G</span><div id="main-led-G" class="w-3.5 h-3.5 rounded-full led-off"></div>
+                        </div>
+                    </div>
+
+                    <!-- Power switch physical mock -->
+                    <div class="w-7 h-12 bg-amber-700 rounded-md p-1 border border-amber-800 shadow-inner flex flex-col justify-between items-center my-1">
+                        <div class="w-5 h-5 bg-amber-300 rounded shadow-md border border-amber-400"></div>
+                    </div>
+
+                    <div class="text-[9px] font-black tracking-widest text-slate-900 mt-2">WIRE TRACKER</div>
+
+                    <!-- RJ45 Port Ports Base -->
+                    <div class="flex space-x-1 mt-2">
+                        <div class="w-8 h-6 bg-slate-900 rounded-t-sm border border-slate-700"></div>
+                        <div class="w-8 h-6 bg-slate-900 rounded-t-sm border border-slate-700"></div>
+                    </div>
+                </div>
+
+                <!-- REMOTE UNIT -->
+                <div class="w-28 sm:w-32 bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600 rounded-3xl p-3 shadow-2xl border-2 border-amber-300 flex flex-col items-center relative text-slate-900">
+                    <!-- Top probe head -->
+                    <div class="w-6 h-4 bg-slate-800 rounded-t-full mb-1"></div>
+                    
+                    <div class="w-full text-center font-black tracking-wider text-[11px] border-b border-amber-600/40 pb-1">REMOTE</div>
+                    <div class="text-[8px] font-bold text-slate-800 my-1">PUSH TO TEST</div>
+
+                    <!-- LED Display Area -->
+                    <div class="bg-slate-950 rounded-xl p-2.5 my-2 w-full border border-amber-700/50 space-y-1.5 shadow-inner">
+                        <div class="flex items-center justify-between px-1 text-[10px] text-slate-300 font-mono">
+                            <span>1</span><div id="remote-led-1" class="w-3.5 h-3.5 rounded-full led-off"></div>
+                        </div>
+                        <div class="flex items-center justify-between px-1 text-[10px] text-slate-300 font-mono">
+                            <span>2</span><div id="remote-led-2" class="w-3.5 h-3.5 rounded-full led-off"></div>
+                        </div>
+                        <div class="flex items-center justify-between px-1 text-[10px] text-slate-300 font-mono">
+                            <span>3</span><div id="remote-led-3" class="w-3.5 h-3.5 rounded-full led-off"></div>
+                        </div>
+                        <div class="flex items-center justify-between px-1 text-[10px] text-slate-300 font-mono">
+                            <span>4</span><div id="remote-led-4" class="w-3.5 h-3.5 rounded-full led-off"></div>
+                        </div>
+                        <div class="flex items-center justify-between px-1 text-[10px] text-slate-300 font-mono">
+                            <span>5</span><div id="remote-led-5" class="w-3.5 h-3.5 rounded-full led-off"></div>
+                        </div>
+                        <div class="flex items-center justify-between px-1 text-[10px] text-slate-300 font-mono">
+                            <span>6</span><div id="remote-led-6" class="w-3.5 h-3.5 rounded-full led-off"></div>
+                        </div>
+                        <div class="flex items-center justify-between px-1 text-[10px] text-slate-300 font-mono">
+                            <span>7</span><div id="remote-led-7" class="w-3.5 h-3.5 rounded-full led-off"></div>
+                        </div>
+                        <div class="flex items-center justify-between px-1 text-[10px] text-slate-300 font-mono">
+                            <span>8</span><div id="remote-led-8" class="w-3.5 h-3.5 rounded-full led-off"></div>
+                        </div>
+                        <div class="flex items-center justify-between px-1 text-[10px] text-slate-300 font-mono">
+                            <span>G</span><div id="remote-led-G" class="w-3.5 h-3.5 rounded-full led-off"></div>
+                        </div>
+                    </div>
+
+                    <div class="text-[8px] font-black tracking-widest text-slate-900 mt-2">WIRE TRACKER</div>
+
+                    <!-- RJ45 Port Base -->
+                    <div class="w-8 h-6 bg-slate-900 rounded-t-sm border border-slate-700 mt-2"></div>
+                </div>
+
+            </div>
+
+            <!-- Controls Panel -->
+            <div class="w-full space-y-3 pt-2">
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="btnTestAuto" onclick="toggleAutoTest()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-3 rounded-xl shadow-lg flex items-center justify-center space-x-2 transition text-xs sm:text-sm">
+                        <i id="iconTestAuto" class="fa-solid fa-play"></i>
+                        <span id="labelTestAuto">TEST AUTO</span>
+                    </button>
+                    
+                    <div class="flex space-x-1">
+                        <button id="btnStep" onclick="stepTest()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-2.5 px-2 rounded-xl border border-slate-700 shadow-lg flex items-center justify-center space-x-1.5 transition text-xs">
+                            <i id="iconStep" class="fa-solid fa-forward-step text-brand-yellow"></i>
+                            <span id="labelStep">PASO A PASO</span>
+                        </button>
+                        <button id="btnResetStep" onclick="exitStepMode()" class="hidden bg-rose-950/80 hover:bg-rose-900 border border-rose-700 text-rose-300 font-bold px-2.5 rounded-xl text-xs flex items-center justify-center transition" title="Salir del modo paso a paso">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Sweep Speed Switch -->
+                <div class="bg-slate-900 p-1.5 rounded-xl border border-slate-800 flex items-center justify-between">
+                    <span class="text-xs text-slate-400 font-medium px-2">Velocidad del barrido</span>
+                    <div class="flex space-x-1">
+                        <button id="speedSlow" onclick="setSpeed('slow')" class="px-3 py-1 rounded-lg text-xs font-bold transition text-slate-400">Slow</button>
+                        <button id="speedFast" onclick="setSpeed('fast')" class="px-3 py-1 bg-brand-yellow text-slate-950 rounded-lg text-xs font-bold shadow transition">Fast</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- RIGHT PANEL: RESULTADOS, DIAGNÓSTICO Y MAPEO -->
+        <section class="lg:col-span-4 bg-brand-panel border border-slate-800 rounded-xl p-4 flex flex-col justify-between shadow-xl space-y-4">
+            <div>
+                <!-- Panel Header -->
+                <div class="flex items-center space-x-2 border-b border-slate-800 pb-2 mb-3">
+                    <i class="fa-solid fa-chart-line text-brand-yellow text-lg"></i>
+                    <h2 class="font-bold text-slate-200 text-base">Resultados y diagnóstico</h2>
+                </div>
+
+                <!-- Diagnostic Result Banner -->
+                <div id="resultBanner" class="bg-emerald-900/40 border border-emerald-500/60 rounded-xl p-3.5 flex items-start justify-between shadow-inner">
+                    <div class="space-y-1">
+                        <h3 id="resultTitle" class="text-xl font-black text-emerald-400 tracking-wide">PASS - Straight</h3>
+                        <p id="resultType" class="text-xs text-slate-200">Tipo de cable: <span class="font-semibold text-white">Directo (568B - 568B)</span></p>
+                        <p id="resultLength" class="text-xs text-slate-300">Longitud estimada: <span class="font-mono font-bold text-white">10 m</span></p>
+                        <p id="resultFault" class="text-xs text-slate-400">Distancia al fallo: <span class="font-mono text-slate-300">---</span></p>
+                    </div>
+                    <div id="resultBadge" class="w-9 h-9 bg-emerald-500 rounded-full flex items-center justify-center text-slate-950 font-extrabold text-xl shadow-lg">
+                        <i class="fa-solid fa-check"></i>
+                    </div>
+                </div>
+
+                <!-- Wiremap (Mapeo de pines) -->
+                <div class="mt-4 bg-brand-card p-3 rounded-xl border border-slate-800">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold text-slate-300 flex items-center space-x-1.5">
+                            <i class="fa-solid fa-diagram-project text-brand-yellow"></i>
+                            <span>Mapeo de pines (Wiremap)</span>
+                        </span>
+                    </div>
+
+                    <!-- Interactive Diagram -->
+                    <div class="grid grid-cols-12 gap-1 text-[11px] font-mono items-center py-1">
+                        <div class="col-span-2 text-slate-400 font-bold text-center">Pin A</div>
+                        <div class="col-span-8 text-slate-400 font-bold text-center">Conexión</div>
+                        <div class="col-span-2 text-slate-400 font-bold text-center">Pin B</div>
+                    </div>
+
+                    <!-- Dynamic Pin Mapping Lines -->
+                    <div id="wiremapContainer" class="space-y-1.5 py-1">
+                        <!-- Rendered dynamically -->
+                    </div>
+                </div>
+
+                <!-- Analysis Panel -->
+                <div class="mt-3 bg-brand-card p-3 rounded-xl border border-slate-800 space-y-2">
+                    <div class="flex items-center space-x-2 text-brand-yellow font-bold text-xs">
+                        <i class="fa-regular fa-lightbulb"></i>
+                        <span>Análisis</span>
+                    </div>
+                    <p id="analysisText" class="text-xs text-slate-300 leading-relaxed">
+                        El cableado es correcto y sigue el estándar TIA/EIA-568B. No se detectan errores en los pares. La conexión es válida para Fast Ethernet (100Mbps) y Gigabit Ethernet (1000Mbps).
+                    </p>
+                </div>
+            </div>
+
+            <!-- Tabbed Details (Explicación / Aplicaciones / TDR) -->
+            <div class="bg-brand-card rounded-xl border border-slate-800 overflow-hidden">
+                <div class="flex border-b border-slate-800 bg-slate-900/50">
+                    <button onclick="switchTab('explicacion')" id="tabBtn-explicacion" class="flex-1 py-2 text-[11px] font-bold text-brand-yellow border-b-2 border-brand-yellow flex items-center justify-center space-x-1">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>Explicación</span>
+                    </button>
+                    <button onclick="switchTab('aplicaciones')" id="tabBtn-aplicaciones" class="flex-1 py-2 text-[11px] font-medium text-slate-400 hover:text-slate-200 flex items-center justify-center space-x-1">
+                        <i class="fa-solid fa-network-wired"></i>
+                        <span>Aplicaciones</span>
+                    </button>
+                    <button onclick="switchTab('tdr')" id="tabBtn-tdr" class="flex-1 py-2 text-[11px] font-medium text-slate-400 hover:text-slate-200 flex items-center justify-center space-x-1">
+                        <i class="fa-solid fa-wave-square"></i>
+                        <span>TDR / Distancia</span>
+                    </button>
+                </div>
+
+                <div class="p-3 text-xs text-slate-300 min-h-[70px]">
+                    <div id="tabContent-explicacion" class="space-y-1">
+                        <div class="flex items-start space-x-2">
+                            <i class="fa-solid fa-circle-check text-emerald-400 mt-0.5"></i>
+                            <p id="tabDetailText">Un cable directo 568B-568B mantiene el mismo orden de pines en ambos extremos. Los pares de transmisión y recepción están correctamente configurados.</p>
+                        </div>
+                    </div>
+                    <div id="tabContent-aplicaciones" class="hidden space-y-1">
+                        <p class="font-semibold text-slate-200">Usos recomendados:</p>
+                        <p id="tabAppText">• Conexión Switch a PC / Servidor<br>• Conexión Router a Switch<br>• Enlace de roseta de red a latiguillo de usuario</p>
+                    </div>
+                    <div id="tabContent-tdr" class="hidden space-y-1">
+                        <p class="font-semibold text-slate-200">Reflectometría (TDR):</p>
+                        <p id="tabTdrText">Impedancia normal de 100 Ω. No se detectan reflexiones anómalas por discontinuidad ni rupturas físicas en la tirada.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- BOTTOM BAR: MODO DESAFÍO / RESOLVER AVERÍA & FOOTER -->
+    <footer class="bg-brand-panel border-t border-slate-800 px-4 py-3 shadow-2xl">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
+            <!-- Left Challenge Mode Toggle -->
+            <div class="flex items-center space-x-3 w-full md:w-auto">
+                <button onclick="toggleChallengeMode()" id="btnChallenge" class="bg-gradient-to-r from-amber-600 to-brand-yellow hover:from-amber-500 hover:to-amber-400 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center justify-between md:justify-start space-x-2 shadow-md transition w-full md:w-auto">
+                    <span class="flex items-center space-x-2">
+                        <i class="fa-solid fa-graduation-cap text-base"></i>
+                        <span id="labelChallenge">Modo Desafío / Resolver Avería</span>
+                    </span>
+                    <i class="fa-solid fa-chevron-right ml-2"></i>
+                </button>
+
+                <div id="challengeInfo" class="hidden flex items-center space-x-3 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl text-xs">
+                    <span class="text-slate-400 flex items-center space-x-1">
+                        <i class="fa-solid fa-cube text-amber-400"></i>
+                        <span id="challengeName" class="font-medium text-slate-200">Cable con avería #1</span>
+                    </span>
+                    <span class="text-amber-400 font-bold flex items-center space-x-1 border-l border-slate-700 pl-3">
+                        <i class="fa-solid fa-star"></i>
+                        <span>Puntuación: <span id="scoreText">0/0</span></span>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Right Reset & Copyright -->
+            <div class="flex items-center space-x-4 w-full md:w-auto justify-between md:justify-end">
+                <button onclick="resetSimulator()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center space-x-1.5 transition">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                    <span>Reiniciar</span>
+                </button>
+                <div class="text-[11px] text-slate-400 text-right">
+                    <span>Simulación local, sin conexión ni hardware real.</span>
+                    <span class="block text-slate-400 font-mono">E.Serra EPSJ23</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // Color standards definitions
+        const WIRE_COLORS = {
+            '568B': [
+                { name: 'Blanco/Naranja', bg: '#f97316', stripe: true },
+                { name: 'Naranja', bg: '#ea580c', stripe: false },
+                { name: 'Blanco/Verde', bg: '#22c55e', stripe: true },
+                { name: 'Azul', bg: '#3b82f6', stripe: false },
+                { name: 'Blanco/Azul', bg: '#60a5fa', stripe: true },
+                { name: 'Verde', bg: '#16a34a', stripe: false },
+                { name: 'Blanco/Marrón', bg: '#a16207', stripe: true },
+                { name: 'Marrón', bg: '#854d0e', stripe: false }
+            ],
+            '568A': [
+                { name: 'Blanco/Verde', bg: '#22c55e', stripe: true },
+                { name: 'Verde', bg: '#16a34a', stripe: false },
+                { name: 'Blanco/Naranja', bg: '#f97316', stripe: true },
+                { name: 'Azul', bg: '#3b82f6', stripe: false },
+                { name: 'Blanco/Azul', bg: '#60a5fa', stripe: true },
+                { name: 'Naranja', bg: '#ea580c', stripe: false },
+                { name: 'Blanco/Marrón', bg: '#a16207', stripe: true },
+                { name: 'Marrón', bg: '#854d0e', stripe: false }
+            ]
+        };
+
+        // Current state variables
+        let state = {
+            presetA: '568B',
+            presetB: '568B',
+            cableLength: 10,
+            faultDistance: 5,
+            autoTesting: false,
+            stepMode: false,
+            currentStep: 0,
+            speed: 'fast',
+            intervalId: null
+        };
+
+        // DOM elements cache
+        const dom = {
+            presetA: document.getElementById('presetA'),
+            presetB: document.getElementById('presetB'),
+            connectorAVisual: document.getElementById('connectorA-visual'),
+            connectorBVisual: document.getElementById('connectorB-visual'),
+            listA: document.getElementById('listA'),
+            listB: document.getElementById('listB'),
+            cableLength: document.getElementById('cableLength'),
+            faultDistance: document.getElementById('faultDistance'),
+            wiremapContainer: document.getElementById('wiremapContainer'),
+            resultBanner: document.getElementById('resultBanner'),
+            resultTitle: document.getElementById('resultTitle'),
+            resultType: document.getElementById('resultType'),
+            resultLength: document.getElementById('resultLength'),
+            resultFault: document.getElementById('resultFault'),
+            resultBadge: document.getElementById('resultBadge'),
+            analysisText: document.getElementById('analysisText'),
+            tabDetailText: document.getElementById('tabDetailText'),
+            tabAppText: document.getElementById('tabAppText'),
+            tabTdrText: document.getElementById('tabTdrText'),
+            btnTestAuto: document.getElementById('btnTestAuto'),
+            iconTestAuto: document.getElementById('iconTestAuto'),
+            labelTestAuto: document.getElementById('labelTestAuto'),
+            btnStep: document.getElementById('btnStep'),
+            iconStep: document.getElementById('iconStep'),
+            labelStep: document.getElementById('labelStep'),
+            btnResetStep: document.getElementById('btnResetStep'),
+            speedSlow: document.getElementById('speedSlow'),
+            speedFast: document.getElementById('speedFast')
+        };
+
+        // Initialize App
+        window.onload = function() {
+            initEventListeners();
+            updateSimulator();
+        };
+
+        function initEventListeners() {
+            dom.presetA.addEventListener('change', (e) => {
+                state.presetA = e.target.value;
+                resetTestState();
+                updateSimulator();
+            });
+
+            dom.presetB.addEventListener('change', (e) => {
+                state.presetB = e.target.value;
+                resetTestState();
+                updateSimulator();
+            });
+
+            dom.cableLength.addEventListener('input', (e) => {
+                state.cableLength = parseInt(e.target.value) || 0;
+                updateSimulator();
+            });
+
+            dom.faultDistance.addEventListener('input', (e) => {
+                state.faultDistance = parseInt(e.target.value) || 0;
+                updateSimulator();
+            });
+        }
+
+        // Set quick preset configurations
+        function setQuickPreset(type) {
+            resetTestState();
+            if (type === 'straight') {
+                state.presetA = '568B';
+                state.presetB = '568B';
+            } else if (type === 'crossover') {
+                state.presetA = '568A';
+                state.presetB = '568B';
+            } else if (type === 'fault') {
+                state.presetA = '568B';
+                state.presetB = 'CUT_3';
+            }
+            dom.presetA.value = state.presetA;
+            dom.presetB.value = state.presetB;
+            updateSimulator();
+        }
+
+        // Compute pin mapping based on presets
+        function getPinMapping() {
+            let mapping = [];
+            let pinsA = getPinsForPreset(state.presetA);
+            let pinsB = getPinsForPreset(state.presetB);
+
+            for (let i = 1; i <= 8; i++) {
+                let pinBTarget = i;
+                let status = 'ok'; // ok, cut, short, swapped
+
+                // Logic for presets
+                if (state.presetA === '568A' && state.presetB === '568B') {
+                    if (i === 1) pinBTarget = 3;
+                    else if (i === 2) pinBTarget = 6;
+                    else if (i === 3) pinBTarget = 1;
+                    else if (i === 6) pinBTarget = 2;
+                } else if (state.presetB === 'CUT_3') {
+                    if (i === 3) status = 'cut';
+                } else if (state.presetB === 'SHORT_12') {
+                    if (i === 1 || i === 2) status = 'short';
+                } else if (state.presetB === 'SWAP_12') {
+                    if (i === 1) pinBTarget = 2;
+                    else if (i === 2) pinBTarget = 1;
+                }
+
+                mapping.push({
+                    pinA: i,
+                    pinB: pinBTarget,
+                    colorA: pinsA[i - 1],
+                    colorB: pinsB[pinBTarget - 1] || pinsB[i - 1],
+                    status: status
+                });
+            }
+
+            // Add Ground Pin
+            mapping.push({
+                pinA: 'G',
+                pinB: 'G',
+                colorA: { name: 'Malla / G', bg: '#64748b', stripe: false },
+                colorB: { name: 'Malla / G', bg: '#64748b', stripe: false },
+                status: 'ok'
+            });
+
+            return mapping;
+        }
+
+        function getPinsForPreset(preset) {
+            if (preset === '568A') return WIRE_COLORS['568A'];
+            if (preset === '568B') return WIRE_COLORS['568B'];
+            return WIRE_COLORS['568B'];
+        }
+
+        // Render connectors and lists with active step highlight
+        function renderConnectors() {
+            const pinsA = getPinsForPreset(state.presetA);
+            const pinsB = getPinsForPreset(state.presetB);
+            const activePin = getActivePinValue();
+
+            // Render Connector A Visual Wires
+            dom.connectorAVisual.innerHTML = pinsA.map((wire, idx) => {
+                const isPinActive = activePin === (idx + 1);
+                return `
+                <div class="w-2 h-full rounded-t ${wire.stripe ? 'wire-stripe' : ''} transition-all duration-200 ${isPinActive ? 'ring-2 ring-amber-300 scale-110 z-10' : ''}" style="background-color: ${wire.bg};"></div>
+            `;
+            }).join('');
+
+            // Render Connector B Visual Wires
+            dom.connectorBVisual.innerHTML = pinsB.map((wire, idx) => {
+                const isPinActive = activePin === (idx + 1);
+                return `
+                <div class="w-2 h-full rounded-t ${wire.stripe ? 'wire-stripe' : ''} transition-all duration-200 ${isPinActive ? 'ring-2 ring-amber-300 scale-110 z-10' : ''}" style="background-color: ${wire.bg};"></div>
+            `;
+            }).join('');
+
+            // Render Text Lists
+            dom.listA.innerHTML = pinsA.map((wire, idx) => {
+                const isPinActive = activePin === (idx + 1);
+                return `
+                <div class="flex items-center justify-between text-[10px] px-1 py-0.5 rounded transition ${isPinActive ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40' : 'text-slate-300'}">
+                    <span class="font-mono ${isPinActive ? 'text-amber-300' : 'text-slate-400'} font-bold">${idx + 1}</span>
+                    <span class="truncate ml-1" title="${wire.name}">${wire.name}</span>
+                    <span class="w-2.5 h-2.5 rounded-full inline-block ml-1 border border-slate-700" style="background-color:${wire.bg}"></span>
+                </div>
+            `;
+            }).join('');
+
+            dom.listB.innerHTML = pinsB.map((wire, idx) => {
+                const isPinActive = activePin === (idx + 1);
+                return `
+                <div class="flex items-center justify-between text-[10px] px-1 py-0.5 rounded transition ${isPinActive ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40' : 'text-slate-300'}">
+                    <span class="font-mono ${isPinActive ? 'text-amber-300' : 'text-slate-400'} font-bold">${idx + 1}</span>
+                    <span class="truncate ml-1" title="${wire.name}">${wire.name}</span>
+                    <span class="w-2.5 h-2.5 rounded-full inline-block ml-1 border border-slate-700" style="background-color:${wire.bg}"></span>
+                </div>
+            `;
+            }).join('');
+        }
+
+        function getActivePinValue() {
+            if (state.currentStep === 0) return null;
+            return state.currentStep === 9 ? 'G' : state.currentStep;
+        }
+
+        // Render Pin Wiremap Diagram
+        function renderWiremap(mapping) {
+            const activePin = getActivePinValue();
+
+            dom.wiremapContainer.innerHTML = mapping.map((m) => {
+                let lineBg = 'bg-amber-400';
+                let alertBadge = '';
+                const isActive = activePin === m.pinA;
+
+                if (m.status === 'cut') {
+                    lineBg = 'bg-rose-500';
+                    alertBadge = '<span class="text-[9px] text-rose-400 font-bold">ABIERTO</span>';
+                } else if (m.status === 'short') {
+                    lineBg = 'bg-rose-600';
+                    alertBadge = '<span class="text-[9px] text-rose-400 font-bold">CORTO</span>';
+                } else if (m.pinA !== m.pinB) {
+                    lineBg = 'bg-sky-400';
+                }
+
+                return `
+                <div class="grid grid-cols-12 gap-1 items-center p-1.5 rounded-lg border transition-all duration-200 ${isActive ? 'bg-amber-500/20 border-amber-400/80 shadow-md ring-1 ring-amber-400/50' : 'bg-slate-900/60 border-slate-800'}">
+                    <!-- Pin A -->
+                    <div class="col-span-3 flex items-center space-x-1.5">
+                        <span class="w-4 h-4 rounded ${isActive ? 'bg-amber-400 text-slate-950 font-black' : 'bg-slate-800 text-slate-300'} flex items-center justify-center font-bold font-mono text-[10px]">${m.pinA}</span>
+                        <div class="w-3 h-3 rounded-full border border-slate-700 ${m.colorA.stripe ? 'wire-stripe' : ''}" style="background-color:${m.colorA.bg}"></div>
+                    </div>
+
+                    <!-- Connection Line -->
+                    <div class="col-span-6 flex flex-col items-center justify-center relative">
+                        <div class="w-full ${isActive ? 'h-1.5 shadow-sm' : 'h-1'} ${lineBg} rounded-full transition-all"></div>
+                        ${alertBadge}
+                    </div>
+
+                    <!-- Pin B -->
+                    <div class="col-span-3 flex items-center justify-end space-x-1.5">
+                        <div class="w-3 h-3 rounded-full border border-slate-700 ${m.colorB.stripe ? 'wire-stripe' : ''}" style="background-color:${m.colorB.bg}"></div>
+                        <span class="w-4 h-4 rounded ${isActive ? 'bg-amber-400 text-slate-950 font-black' : 'bg-slate-800 text-slate-300'} flex items-center justify-center font-bold font-mono text-[10px]">${m.pinB}</span>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        // Main Evaluation Logic
+        function evaluateDiagnostics(mapping) {
+            const hasCut = mapping.some(m => m.status === 'cut');
+            const hasShort = mapping.some(m => m.status === 'short');
+            const isCrossover = (state.presetA === '568A' && state.presetB === '568B') || (state.presetA === '568B' && state.presetB === '568A');
+            const isSwapped = mapping.some(m => m.pinA !== m.pinB && !isCrossover);
+            const isPerfectStraight = state.presetA === state.presetB && !hasCut && !hasShort;
+
+            // UI Elements Update
+            if (isPerfectStraight) {
+                dom.resultBanner.className = "bg-emerald-950/60 border border-emerald-500/60 rounded-xl p-3.5 flex items-start justify-between shadow-inner";
+                dom.resultTitle.className = "text-xl font-black text-emerald-400 tracking-wide";
+                dom.resultTitle.textContent = "PASS - Straight";
+                dom.resultType.innerHTML = `Tipo de cable: <span class="font-semibold text-white">Directo (${state.presetA} - ${state.presetB})</span>`;
+                dom.resultFault.innerHTML = `Distancia al fallo: <span class="font-mono text-slate-300">---</span>`;
+                dom.resultBadge.className = "w-9 h-9 bg-emerald-500 text-slate-950 rounded-full flex items-center justify-center font-extrabold text-xl shadow-lg";
+                dom.resultBadge.innerHTML = '<i class="fa-solid fa-check"></i>';
+
+                dom.analysisText.textContent = "El cableado es completamente correcto y cumple la norma TIA/EIA-568. Apto para Fast Ethernet (100Mbps) y Gigabit Ethernet (1000Mbps / 1Gbps).";
+                dom.tabDetailText.textContent = `Un cable directo ${state.presetA}-${state.presetB} mantiene idéntica distribución de pines en ambos conectores. Los pares de transmisión (TX) y recepción (RX) se alinean perfectamente.`;
+                dom.tabAppText.innerHTML = "• Conexión de PC/Host a Switch o Hub<br>• Conexión de Router a Switch de red<br>• Conexiones en patch panels y latiguillos de usuario";
+                dom.tabTdrText.textContent = "Reflectometría limpia. Impedancia característica de 100 Ω mantenida. No existen reflexiones por ruptura ni empalmes defectuosos.";
+
+            } else if (isCrossover) {
+                dom.resultBanner.className = "bg-sky-950/60 border border-sky-500/60 rounded-xl p-3.5 flex items-start justify-between shadow-inner";
+                dom.resultTitle.className = "text-xl font-black text-sky-400 tracking-wide";
+                dom.resultTitle.textContent = "PASS - Crossover";
+                dom.resultType.innerHTML = `Tipo de cable: <span class="font-semibold text-white">Cruzado (568A - 568B)</span>`;
+                dom.resultFault.innerHTML = `Distancia al fallo: <span class="font-mono text-slate-300">---</span>`;
+                dom.resultBadge.className = "w-9 h-9 bg-sky-500 text-slate-950 rounded-full flex items-center justify-center font-extrabold text-xl shadow-lg";
+                dom.resultBadge.innerHTML = '<i class="fa-solid fa-arrow-left-right"></i>';
+
+                dom.analysisText.textContent = "Cable cruzado estándar detectado. Los pares 1-2 se cruzan con 3-6. Válido para interconectar dispositivos del mismo tipo en redes antiguas.";
+                dom.tabDetailText.textContent = "Los pines 1 y 2 (TX) del extremo A se conectan a los pines 3 y 6 (RX) del extremo B, permitiendo comunicación bidireccional directa sin switch.";
+                dom.tabAppText.innerHTML = "• Conexión directa PC a PC<br>• Conexión Switch a Switch (sin Auto-MDIX)<br>• Conexión Router a Router";
+                dom.tabTdrText.textContent = "Continuidad correcta en todos los conductores. Cruzamiento de pares dentro de parámetros norma TIA/EIA.";
+
+            } else {
+                // FAIL STATES
+                dom.resultBanner.className = "bg-rose-950/60 border border-rose-500/60 rounded-xl p-3.5 flex items-start justify-between shadow-inner";
+                dom.resultTitle.className = "text-xl font-black text-rose-400 tracking-wide";
+                dom.resultBadge.className = "w-9 h-9 bg-rose-600 text-white rounded-full flex items-center justify-center font-extrabold text-xl shadow-lg";
+                dom.resultBadge.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+                dom.resultFault.innerHTML = `Distancia al fallo: <span class="font-mono font-bold text-rose-300">${state.faultDistance} m</span>`;
+
+                if (hasCut) {
+                    dom.resultTitle.textContent = "FAIL - Open Circuit";
+                    dom.resultType.innerHTML = `Tipo de cable: <span class="font-semibold text-rose-300">Cable Abierto / Hilo Cortado</span>`;
+                    dom.analysisText.textContent = `Se detecta interrupción de continuidad (hilo abierto) en el Pin 3 a los ${state.faultDistance} metros. El cable no soportará Fast Ethernet ni Gigabit de forma estable.`;
+                    dom.tabDetailText.textContent = `Pin 3 desconectado. Provoca fallo de enlace en 100BASE-TX y 1000BASE-T al romper el par de recepción RX.`;
+                } else if (hasShort) {
+                    dom.resultTitle.textContent = "FAIL - Short Circuit";
+                    dom.resultType.innerHTML = `Tipo de cable: <span class="font-semibold text-rose-300">Cortocircuito en conductores</span>`;
+                    dom.analysisText.textContent = `Cortocircuito detectado entre los pines 1 y 2 a los ${state.faultDistance} m. Riesgo de degradación de señal o fallo de puerto.`;
+                    dom.tabDetailText.textContent = "Los hilos 1 y 2 están haciendo contacto eléctrico debido a un crimpado defectuoso o aprisionamiento del cable.";
+                } else if (isSwapped) {
+                    dom.resultTitle.textContent = "FAIL - Miswire / Reversed";
+                    dom.resultType.innerHTML = `Tipo de cable: <span class="font-semibold text-rose-300">Par Invertido / Mal Crimpado</span>`;
+                    dom.analysisText.textContent = "Error de crimpado. El orden de pines no coincide con ningún estándar conocido (Miswire).";
+                    dom.tabDetailText.textContent = "Los conductores han sido insertados en posiciones erróneas en el conector RJ45 de uno de los extremos.";
+                }
+
+                dom.tabAppText.innerHTML = "<span class='text-rose-400 font-bold'>NO RECOMENDADO</span><br>Se requiere re-crimpar los conectores RJ45 o sustituir el tramo de cable.";
+                dom.tabTdrText.textContent = `TDR indica una anomalía de impedancia brusca (desfase) localizada exactamente a los ${state.faultDistance} metros del extremo MAIN.`;
+            }
+
+            dom.resultLength.innerHTML = `Longitud estimada: <span class="font-mono font-bold text-white">${state.cableLength} m</span>`;
+        }
+
+        // Main Refresh Function
+        function updateSimulator() {
+            renderConnectors();
+            const mapping = getPinMapping();
+            renderWiremap(mapping);
+            evaluateDiagnostics(mapping);
+        }
+
+        // LED Sweeping & Animation Control
+        function clearLeds() {
+            for (let i = 1; i <= 8; i++) {
+                document.getElementById(`main-led-${i}`).className = 'w-3.5 h-3.5 rounded-full led-off';
+                document.getElementById(`remote-led-${i}`).className = 'w-3.5 h-3.5 rounded-full led-off';
+            }
+            document.getElementById(`main-led-G`).className = 'w-3.5 h-3.5 rounded-full led-off';
+            document.getElementById(`remote-led-G`).className = 'w-3.5 h-3.5 rounded-full led-off';
+        }
+
+        function lightLed(unit, pin, colorClass) {
+            const el = document.getElementById(`${unit}-led-${pin}`);
+            if (el) {
+                el.className = `w-3.5 h-3.5 rounded-full ${colorClass}`;
+            }
+        }
+
+        // --- STEP BY STEP ENGINE ---
+        function stepTest() {
+            // Stop auto testing if running
+            if (state.autoTesting) {
+                stopAutoTest();
+            }
+
+            state.stepMode = true;
+            dom.btnResetStep.classList.remove('hidden');
+
+            // Increment step (1 through 9, where 9 is G, then reset back to 0)
+            state.currentStep = state.currentStep + 1;
+            if (state.currentStep > 9) {
+                state.currentStep = 0;
+                state.stepMode = false;
+                dom.btnResetStep.classList.add('hidden');
+                dom.labelStep.textContent = 'PASO A PASO';
+                dom.iconStep.className = 'fa-solid fa-forward-step text-brand-yellow';
+                clearLeds();
+                updateSimulator();
+                return;
+            }
+
+            updateStepUI();
+            executeStepLogic();
+        }
+
+        function updateStepUI() {
+            const pinName = state.currentStep === 9 ? 'G' : `PIN ${state.currentStep}`;
+            dom.labelStep.textContent = `PASO ${state.currentStep}/9 (${pinName})`;
+            dom.iconStep.className = 'fa-solid fa-[1-9] text-brand-yellow';
+            dom.btnStep.className = 'flex-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold py-2.5 px-2 rounded-xl border border-amber-500/50 shadow-lg flex items-center justify-center space-x-1.5 transition text-xs';
+        }
+
+        function exitStepMode() {
+            state.stepMode = false;
+            state.currentStep = 0;
+            dom.btnResetStep.classList.add('hidden');
+            dom.labelStep.textContent = 'PASO A PASO';
+            dom.iconStep.className = 'fa-solid fa-forward-step text-brand-yellow';
+            dom.btnStep.className = 'flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-2.5 px-2 rounded-xl border border-slate-700 shadow-lg flex items-center justify-center space-x-1.5 transition text-xs';
+            clearLeds();
+            updateSimulator();
+        }
+
+        function executeStepLogic() {
+            clearLeds();
+            const stepPin = state.currentStep === 9 ? 'G' : state.currentStep;
+
+            const mapping = getPinMapping();
+            const mappedPin = mapping.find(m => m.pinA === stepPin || (stepPin === 'G' && m.pinA === 'G'));
+
+            if (!mappedPin) return;
+
+            // MAIN LED behavior
+            if (mappedPin.status === 'cut' || mappedPin.status === 'short') {
+                lightLed('main', stepPin, 'led-red');
+            } else {
+                lightLed('main', stepPin, 'led-green');
+            }
+
+            // REMOTE LED behavior
+            if (mappedPin.status === 'cut') {
+                lightLed('remote', stepPin, 'led-red');
+            } else if (mappedPin.status === 'short') {
+                lightLed('remote', mappedPin.pinB, 'led-red');
+                lightLed('remote', stepPin === 1 ? 2 : 1, 'led-red');
+            } else if (mappedPin.pinA !== mappedPin.pinB) {
+                lightLed('remote', mappedPin.pinB, 'led-red');
+            } else {
+                lightLed('remote', mappedPin.pinB, 'led-green');
+            }
+
+            // Refresh UI to highlight active step in wiremap/connectors
+            updateSimulator();
+        }
+
+        // --- AUTO TEST ENGINE ---
+        function toggleAutoTest() {
+            if (state.autoTesting) {
+                stopAutoTest();
+            } else {
+                startAutoTest();
+            }
+        }
+
+        function startAutoTest() {
+            if (state.stepMode) {
+                exitStepMode();
+            }
+
+            state.autoTesting = true;
+            dom.labelTestAuto.textContent = 'DETENER';
+            dom.iconTestAuto.className = 'fa-solid fa-square';
+            dom.btnTestAuto.className = 'bg-rose-600 hover:bg-rose-500 text-white font-bold py-2.5 px-3 rounded-xl shadow-lg flex items-center justify-center space-x-2 transition text-xs sm:text-sm';
+
+            const delay = state.speed === 'fast' ? 350 : 800;
+            state.intervalId = setInterval(() => {
+                state.currentStep = (state.currentStep % 9) + 1;
+                executeStepLogic();
+            }, delay);
+        }
+
+        function stopAutoTest() {
+            state.autoTesting = false;
+            if (state.intervalId) clearInterval(state.intervalId);
+            dom.labelTestAuto.textContent = 'TEST AUTO';
+            dom.iconTestAuto.className = 'fa-solid fa-play';
+            dom.btnTestAuto.className = 'bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-3 rounded-xl shadow-lg flex items-center justify-center space-x-2 transition text-xs sm:text-sm';
+            clearLeds();
+            state.currentStep = 0;
+            updateSimulator();
+        }
+
+        function resetTestState() {
+            if (state.autoTesting) stopAutoTest();
+            if (state.stepMode) exitStepMode();
+        }
+
+        function setSpeed(speed) {
+            state.speed = speed;
+            if (speed === 'slow') {
+                dom.speedSlow.className = 'px-3 py-1 bg-brand-yellow text-slate-950 rounded-lg text-xs font-bold shadow transition';
+                dom.speedFast.className = 'px-3 py-1 rounded-lg text-xs font-bold transition text-slate-400';
+            } else {
+                dom.speedFast.className = 'px-3 py-1 bg-brand-yellow text-slate-950 rounded-lg text-xs font-bold shadow transition';
+                dom.speedSlow.className = 'px-3 py-1 rounded-lg text-xs font-bold transition text-slate-400';
+            }
+
+            if (state.autoTesting) {
+                stopAutoTest();
+                startAutoTest();
+            }
+        }
+
+        // Tab Switcher
+        function switchTab(tabName) {
+            ['explicacion', 'aplicaciones', 'tdr'].forEach(t => {
+                document.getElementById(`tabContent-${t}`).classList.add('hidden');
+                const btn = document.getElementById(`tabBtn-${t}`);
+                btn.className = 'flex-1 py-2 text-[11px] font-medium text-slate-400 hover:text-slate-200 flex items-center justify-center space-x-1';
+            });
+
+            document.getElementById(`tabContent-${tabName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tabBtn-${tabName}`);
+            activeBtn.className = 'flex-1 py-2 text-[11px] font-bold text-brand-yellow border-b-2 border-brand-yellow flex items-center justify-center space-x-1';
+        }
+
+        function resetSimulator() {
+            resetTestState();
+            state.presetA = '568B';
+            state.presetB = '568B';
+            state.cableLength = 10;
+            state.faultDistance = 5;
+
+            dom.presetA.value = '568B';
+            dom.presetB.value = '568B';
+            dom.cableLength.value = 10;
+            dom.faultDistance = 5;
+
+            clearLeds();
+            updateSimulator();
+        }
+    </script>
+</body>
+</html>
