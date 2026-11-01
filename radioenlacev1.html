@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RADIOENLACE LAB · E.Serra 2026</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<style>
+:root{--bg:#f3f6f8;--pn:#fff;--tx:#14232e;--mu:#5d6f7c;--ac:#0a7ea4;--bd:#d3dde4;--ok:#1f9d55;--wa:#d99a00;--ko:#d23a3a}
+[data-theme=dark]{--bg:#0e1a22;--pn:#16262f;--tx:#e3edf2;--mu:#90a6b3;--ac:#3cc3ee;--bd:#2a3f4b}
+*{box-sizing:border-box}body{margin:0;font:15px/1.5 "Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--tx);display:flex;flex-direction:column;min-height:100vh}
+.band{background:#08202c;color:#e8f6fb;text-align:center;padding:.55rem;font-weight:600;letter-spacing:.04em}
+header{display:flex;align-items:center;gap:1rem;padding:.6rem 1rem;background:var(--pn);border-bottom:1px solid var(--bd)}
+header h1{font-size:1.15rem;margin:0;flex:1}button,select,input{font:inherit;color:var(--tx);background:var(--pn);border:1px solid var(--bd);border-radius:6px;padding:.35rem .5rem}
+button{cursor:pointer}button.p{background:var(--ac);color:#fff;border-color:var(--ac)}:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+.wrap{display:flex;flex:1}nav{width:190px;background:var(--pn);border-right:1px solid var(--bd);padding:.5rem}
+nav button{display:block;width:100%;text-align:left;margin:0 0 .3rem;border-color:transparent}nav button.on{background:var(--ac);color:#fff}
+main{flex:1;padding:1rem;min-width:0}section{display:none}section.on{display:block}
+.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:.7rem}
+.card{background:var(--pn);border:1px solid var(--bd);border-radius:8px;padding:.8rem;margin-bottom:.8rem}
+label{display:block;font-size:.85rem;color:var(--mu)}label input,label select{width:100%;margin-top:.15rem}
+#map{height:380px;border-radius:8px;border:1px solid var(--bd)}
+.res{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.5rem}.res div{background:var(--bg);border-radius:6px;padding:.4rem .6rem}.res b{display:block;font-size:1.15rem}.res span{font-size:.78rem;color:var(--mu)}
+#st{padding:.7rem;border-radius:8px;color:#fff;font-weight:600;margin-bottom:.8rem}
+table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid var(--bd);padding:.35rem;text-align:left;font-size:.88rem}
+.note{font-size:.82rem;color:var(--mu)}.pin{background:var(--ac);color:#fff;border-radius:50%;width:26px;height:26px;text-align:center;line-height:26px;font-weight:700;border:2px solid #fff}
+footer{margin-top:auto}@media(max-width:700px){.wrap{flex-direction:column}nav{width:auto;display:flex;flex-wrap:wrap;gap:.3rem}nav button{width:auto;margin:0}}
+</style></head><body>
+<div class="band">E.Serra 2026</div>
+<header><h1>📡 RADIOENLACE LAB <small class="note">diseño de radioenlaces WiFi PtP</small></h1>
+<button id="th" aria-label="Cambiar tema">🌓 Tema</button><button id="rs">Restablecer</button><button id="pdf" class="p">Exportar PDF</button></header>
+<div class="wrap"><nav id="nav"></nav><main>
+<div id="st">Calculando…</div>
+<div class="res" id="res"></div>
+<section id="s-map" class="on"><div class="card"><div class="g">
+<label>Buscar localidad<input id="q" placeholder="Ej. Alcoi"></label>
+<label>TX lat, lon (°)<input id="tx" value="38.6990, -0.4700"></label>
+<label>RX lat, lon (°)<input id="rx" value="38.7050, -0.4350"></label></div>
+<p><label style="display:inline"><input type="checkbox" id="cov" style="width:auto"> Mostrar cobertura (verde: margen ≥ 0 dB; amarillo: ≥ 10 dB)</label></p><p><button id="go" class="p">Buscar / aplicar coordenadas</button> <span class="note">Clic en el mapa: primer clic = TX, segundo = RX. Los marcadores se arrastran.</span></p>
+<div id="map"></div></div></section>
+<section id="s-tx"><div class="card"><h3>Transmisor</h3><div class="g" id="ftx"></div></div></section>
+<section id="s-rx"><div class="card"><h3>Receptor</h3><div class="g" id="frx"></div></div></section>
+<section id="s-pf"><div class="card"><div class="g"><label>Factor K<input id="K" type="number" step="0.01" value="1.33"></label>
+<label>Puntos del perfil<input id="np" type="number" value="60" min="10" max="100"></label></div>
+<p><button id="elev" class="p">Obtener elevaciones (OpenTopoData)</button> <span id="es" class="note"></span></p>
+<canvas id="ch" height="130"></canvas><div id="warn" class="note"></div></div></section>
+<section id="s-cat"><div class="card"><h3>Catálogo editable</h3>
+<p class="note">Valores orientativos: <b>verifica siempre en la ficha oficial</b> (mikrotik.com, ui.com) y edítalos aquí. Elige un equipo para cargarlo en TX o RX.</p>
+<table id="cat"></table></div></section>
+<section id="s-cmp"><div class="card"><h3>Comparador automático de equipos</h3><p class="note">Usa la distancia, frecuencia, pérdidas de cable y difracción actuales, con el mismo equipo en ambos extremos y su mejor sensibilidad. El alcance es en espacio libre.</p><div style="overflow-x:auto"><table id="cmpT"></table></div></div></section>
+<section id="s-pr"><div class="card"><h3>Prácticas</h3><ol>
+<li>Enlace de 2 km a 5 GHz: coloca TX y RX a 2 km y anota margen y FSPL.</li>
+<li>Compara 2,4 y 5 GHz: ¿cuántos dB de diferencia en FSPL a igual distancia?</li>
+<li>Sube la potencia 3 dB: ¿cómo cambia el margen?</li>
+<li>Duplica la ganancia de una antena (+3 dBi): ¿y el margen?</li>
+<li>Eleva las antenas hasta lograr 60 % de despejamiento de Fresnel.</li>
+</ol><p class="note">Solución 1 (ejemplo): FSPL = 32,44 + 20·log(5500) + 20·log(2) ≈ 113,2 dB.</p></div>
+<div class="card"><h3>Fórmulas</h3><p class="note">FSPL = 32,44 + 20log(f MHz) + 20log(d km) · Pr = Pt + Gt + Gr − Ltx − Lrx − FSPL · EIRP = Pt + Gt − Ltx · Margen = Pr − Sens. · F1 = 17,32·√(d1·d2/(f·D)) · Abultamiento = d1·d2/(12,74·K) · λ = c/f. Limitación: espacio libre; no modela lluvia, multitrayecto ni obstáculos no incluidos en el MDT. Los colores no garantizan funcionamiento real.</p></div></section>
+</main></div>
+<footer class="band">E.Serra 2026</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+/* ===== Catálogo (orientativo, editable) ===== */
+const CAT_OLD=[
+{n:'Genérico 5 GHz',f:5500,p:24,g:24,s:-90},
+{n:'MikroTik LHG 5',f:5500,p:24,g:24.5,s:-90},
+{n:'MikroTik SXTsq 5 ac',f:5500,p:24,g:16,s:-90},
+{n:'Ubiquiti LiteBeam 5AC',f:5500,p:23,g:23,s:-90},
+{n:'Ubiquiti NanoBeam 5AC',f:5500,p:24,g:16,s:-90},
+{n:'Ubiquiti PowerBeam 5AC',f:5500,p:25,g:25,s:-90}];
+/* ===== Catálogo con datos contrastados (tablas del fabricante reproducidas por distribuidores, nov-2026) ===== */
+const MK='Tabla TX/RX de MikroTik reproducida por distribuidores; contrastar con mikrotik.com',UB='Datasheet Ubiquiti airMAX ac reproducido por distribuidores; contrastar con ui.com';
+const CAT0=[
+{n:'Genérico (editable)',f:5500,p:24,g:24,s:-90,b:'—',src:'Valores por defecto, NO son de ficha'},
+{n:'MikroTik LHG 5 (RBLHG-5nD)',f:5500,b:'5 GHz 802.11a/n',p:25,g:24.5,s:-96,hb:7,m:[['MCS0',25,-96],['MCS7',19,-75]],src:MK},
+{n:'MikroTik LHG 5 ac',f:5500,b:'5150-5875 MHz 802.11ac',p:25,g:24.5,s:-96,m:[['MCS0',25,-96],['MCS7',20,-75],['MCS9',18,-70]],src:MK},
+{n:'MikroTik LHG XL 5 ac',f:5500,b:'5150-5875 MHz 802.11ac',p:25,g:27,s:-96,m:[['MCS0',25,-96],['MCS7',20,-75],['MCS9',18,-70]],src:MK},
+{n:'MikroTik LHG HP5 (RBLHG-5HPnD)',f:5500,b:'5 GHz 802.11a/n',p:28,g:24.5,s:-96,m:[['MCS0',28,-96],['MCS7',24,-75]],src:MK},
+{n:'MikroTik LHG XL HP5',f:5500,b:'5 GHz 802.11a/n',p:28,g:27,s:-96,m:[['MCS0',28,-96],['MCS7',24,-75]],src:MK},
+{n:'Ubiquiti LiteBeam 5AC Gen2',f:5500,b:'5150-5875 MHz airMAX ac',p:25,g:23,s:-96,m:[['1x BPSK 1/2',25,-96],['8x 256QAM 5/6',null,-65]],src:UB},
+{n:'Ubiquiti LiteBeam 5AC LR',f:5500,b:'5150-5875 MHz airMAX ac',p:25,g:26,s:-96,m:[['1x BPSK 1/2',25,-96]],src:UB}];
+let CAT=(()=>{try{const x=JSON.parse(localStorage.getItem('rl_cat')||'null');return x&&x[0]&&x[0].src?x:null}catch(e){return null}})()||CAT0;
+/* ===== Estado ===== */
+const D={tx:{f:5500,p:24,g:24,l:1,h:15,s:-90,bw:20},rx:{f:5500,p:24,g:24,l:1,h:15,s:-90,bw:20}};
+D.tx.hb=D.rx.hb=7;const F=[['f','Frecuencia (MHz)'],['p','Potencia (dBm)'],['g','Ganancia (dBi)'],['l','Pérdidas cable (dB)'],['h','Altura (m)'],['s','Sensibilidad (dBm)'],['bw','Ancho canal (MHz)'],['hb','Apertura del haz (°)']];
+let S=JSON.parse(JSON.stringify(D)),pos={tx:[38.699,-0.47],rx:[38.705,-0.435]},el=null,chart;
+const $=id=>document.getElementById(id);
+/* ===== Interfaz ===== */
+const tabs=[['map','Mapa'],['tx','Transmisor'],['rx','Receptor'],['pf','Perfil y Fresnel'],['cat','Catálogo'],['cmp','Comparador'],['pr','Prácticas']];
+$('nav').innerHTML=tabs.map(t=>`<button data-t="${t[0]}">${t[1]}</button>`).join('');
+$('nav').onclick=e=>{const t=e.target.dataset.t;if(!t)return;document.querySelectorAll('section').forEach(s=>s.classList.toggle('on',s.id=='s-'+t));
+document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t==t));if(t=='map')map.invalidateSize();if(t=='pf')draw()};
+$('nav').firstChild.classList.add('on');
+['tx','rx'].forEach(k=>{$('f'+k).innerHTML=F.map(x=>`<label>${x[1]}<input type="number" step="any" data-k="${k}" data-f="${x[0]}" value="${S[k][x[0]]}"></label>`).join('')+
+`<label>Equipo<select data-eq="${k}"><option value="">— catálogo —</option>${CAT.map((c,i)=>`<option value="${i}">${c.n}</option>`).join('')}</select></label>`});
+document.addEventListener('input',e=>{const d=e.target.dataset;if(d.f){const v=parseFloat(e.target.value);if(isFinite(v)&&(d.f!='f'||v>0)){S[d.k][d.f]=v;if(d.f=='f'&&d.k=='tx')S.rx.f=v;calc()}}});
+document.addEventListener('change',e=>{const k=e.target.dataset.eq;if(k&&e.target.value!==''){const c=CAT[e.target.value];Object.assign(S[k],{f:c.f,p:c.p,g:c.g,s:c.s});sync();calc()}});
+function sync(){document.querySelectorAll('[data-f]').forEach(i=>i.value=S[i.dataset.k][i.dataset.f])}
+$('th').onclick=()=>{const r=document.documentElement;r.dataset.theme=r.dataset.theme=='dark'?'':'dark';draw()};
+$('rs').onclick=()=>{S=JSON.parse(JSON.stringify(D));pos={tx:[38.699,-0.47],rx:[38.705,-0.435]};el=null;place();sync();calc()};
+$('cat').innerHTML='<tr><th>Equipo</th><th>MHz</th><th>Pot. dBm</th><th>Gan. dBi</th><th>Sens. dBm</th></tr>'+CAT.map((c,i)=>`<tr><td><input value="${c.n}" data-c="${i}" data-q="n"></td>`+['f','p','g','s'].map(q=>`<td><input type="number" step="any" style="width:80px" value="${c[q]}" data-c="${i}" data-q="${q}"></td>`).join('')+'</tr>').join('');
+$('cat').oninput=e=>{const d=e.target.dataset;if(d.c!==undefined){CAT[d.c][d.q]=d.q=='n'?e.target.value:parseFloat(e.target.value);try{localStorage.setItem('rl_cat',JSON.stringify(CAT))}catch(e){}}};
+/* ===== Mapa ===== */
+const map=L.map('map').setView(pos.tx,13);
+/* Carto sirve datos de OpenStreetMap y no bloquea páginas abiertas desde archivo (file://), a diferencia de tile.openstreetmap.org */
+/* Mapas base sin clave de API. Si uno falla, cambia con el selector de capas (arriba a la derecha). */
+const base={'OpenStreetMap Francia':L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png',{subdomains:'abc',crossOrigin:true,maxZoom:19,attribution:'© OpenStreetMap contributors, tiles OSM France'}),
+'Esri Calles':L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{crossOrigin:true,maxZoom:19,attribution:'Tiles © Esri'}),
+'Esri Satélite':L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{crossOrigin:true,maxZoom:19,attribution:'Tiles © Esri'})};
+let fb=false;base['OpenStreetMap Francia'].on('tileerror',()=>{if(!fb){fb=true;map.removeLayer(base['OpenStreetMap Francia']);base['Esri Calles'].addTo(map)}});
+base['OpenStreetMap Francia'].addTo(map);L.control.layers(base).addTo(map);
+const mk={},ic=t=>L.divIcon({className:'',html:`<div class="pin">${t}</div>`,iconSize:[26,26],iconAnchor:[13,13]});
+const line=L.polyline([],{color:'#d23a3a',dashArray:'6'}).addTo(map);
+['tx','rx'].forEach(k=>{mk[k]=L.marker(pos[k],{draggable:true,icon:ic(k=='tx'?'A':'B')}).addTo(map);
+mk[k].on('drag',()=>{const p=mk[k].getLatLng();pos[k]=[p.lat,p.lng];el=null;calc()})});
+let nextClick='tx';map.on('click',e=>{pos[nextClick]=[e.latlng.lat,e.latlng.lng];nextClick=nextClick=='tx'?'rx':'tx';el=null;place();calc()});
+function place(){['tx','rx'].forEach(k=>mk[k].setLatLng(pos[k]));$('tx').value=pos.tx.map(v=>v.toFixed(5)).join(', ');$('rx').value=pos.rx.map(v=>v.toFixed(5)).join(', ')}
+$('go').onclick=async()=>{const q=$('q').value.trim();
+try{if(q){const r=await(await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(q))).json();
+if(r[0]){pos.tx=[+r[0].lat,+r[0].lon];pos.rx=[pos.tx[0]+.005,pos.tx[1]+.02];map.setView(pos.tx,13);$('q').value=''}else alert('Localidad no encontrada')}
+else{const a=s=>s.split(',').map(Number);const t=a($('tx').value),r=a($('rx').value);if([...t,...r].some(isNaN)||t.length!=2||r.length!=2)return alert('Formato: lat, lon');pos.tx=t;pos.rx=r}
+el=null;place();calc()}catch(e){alert('Sin conexión con el servicio de búsqueda')}};
+/* ===== Motor RF ===== */
+const R=Math.PI/180;
+function geo(a,b){const dl=(b[1]-a[1])*R,p1=a[0]*R,p2=b[0]*R;
+const h=Math.sin((p2-p1)/2)**2+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2,d=2*6371*Math.asin(Math.sqrt(h));
+const az=(Math.atan2(Math.sin(dl)*Math.cos(p2),Math.cos(p1)*Math.sin(p2)-Math.sin(p1)*Math.cos(p2)*Math.cos(dl))/R+360)%360;return{d,az}}
+const K=()=>parseFloat($('K').value)||1.33,N=()=>Math.min(100,Math.max(10,+$('np').value||60));
+let M={};
+function calc(){const g=geo(pos.tx,pos.rx),d=Math.max(g.d,0.001),t=S.tx,r=S.rx,f=t.f;
+const fspl=32.44+20*Math.log10(f)+20*Math.log10(d),pr=t.p+t.g+r.g-t.l-r.l-fspl,eirp=t.p+t.g-t.l,mg=pr-r.s;
+const fg=f/1000,fmax=17.32*Math.sqrt((d/2)*(d/2)/(fg*d)),lam=299.792458/f;
+let clr=null,los=true,elv=0;
+if(el){const n=el.length,z0=el[0]+t.h,z1=el[n-1]+r.h;elv=Math.atan2(z1-z0,d*1000)/R;let m=1e9;
+for(let i=1;i<n-1;i++){const d1=d*i/(n-1),d2=d-d1,L=z0+(z1-z0)*i/(n-1),obs=el[i]+d1*d2/(12.74*K()),F1=17.32*Math.sqrt(d1*d2/(fg*d));
+m=Math.min(m,(L-obs)/F1);if(L<obs)los=false}clr=m*100}
+M={d,fspl,pr,eirp,mg,fmax,lam,clr,los,az:g.az,elv};
+const bad=mg<0||(clr!==null&&!los),warn=mg<10||(clr!==null&&clr<60);
+const c=bad?'--ko':warn?'--wa':'--ok';$('st').style.background=`var(${c})`;
+$('st').textContent=bad?'ROJO · Enlace no viable con los parámetros actuales':warn?'AMARILLO · Enlace posible con margen reducido o despejamiento insuficiente (<10 dB / <60 % Fresnel)':'VERDE · Técnicamente viable según estos criterios (no es garantía de funcionamiento real)';
+const x=(l,v,u)=>`<div><span>${l}</span><b>${v}</b>${u}</div>`;
+$('res').innerHTML=x('Distancia',d.toFixed(2),'km')+x('Frecuencia',fg.toFixed(3),'GHz')+x('Azimut A→B',g.az.toFixed(1),'°')+x('Elevación',el?elv.toFixed(2):'—','° (necesita perfil)')+x('FSPL',fspl.toFixed(1),'dB')+x('Pot. recibida',pr.toFixed(1),'dBm')+x('EIRP',eirp.toFixed(1),'dBm')+x('Sensibilidad',r.s,'dBm')+x('Margen',mg.toFixed(1),'dB')+x('F1 máx.',fmax.toFixed(1),'m')+x('Despejamiento',clr===null?'—':clr.toFixed(0),'% de F1 (60 % mín.)')+x('Visión directa',clr===null?'—':los?'Sí':'No','')+x('λ',(lam*100).toFixed(2),'cm');
+line.setLatLngs([pos.tx,pos.rx]);extra();draw()}
+/* ===== Perfil topográfico ===== */
+$('elev').onclick=async()=>{const n=N(),pts=[];for(let i=0;i<n;i++){const t=i/(n-1);pts.push((pos.tx[0]+(pos.rx[0]-pos.tx[0])*t).toFixed(6)+','+(pos.tx[1]+(pos.rx[1]-pos.tx[1])*t).toFixed(6))}
+$('es').textContent='Consultando…';
+const la=pts.map(p=>p.split(',')[0]).join(','),lo=pts.map(p=>p.split(',')[1]).join(',');
+const fuentes=[['OpenTopoData SRTM 90 m',async()=>{const r=await(await fetch('https://api.opentopodata.org/v1/srtm90m?locations='+pts.join('|'))).json();if(r.status!='OK')throw 0;return r.results.map(x=>x.elevation||0)}],
+['Open-Meteo (Copernicus DEM)',async()=>{const r=await(await fetch('https://api.open-meteo.com/v1/elevation?latitude='+la+'&longitude='+lo)).json();if(!r.elevation||r.elevation.length!=n)throw 0;return r.elevation}]];
+el=null;let ok='';
+for(const [nombre,fn] of fuentes){try{el=await fn();ok=nombre;break}catch(e){}}
+if(el){$('es').textContent='Elevaciones cargadas ('+ok+').';calc()}
+else{$('es').textContent='No se pudo contactar con ningún servicio de elevación. Causas habituales: la página está alojada en un entorno que bloquea conexiones externas (abre el index.html descargado), no hay internet o se ha superado el límite gratuito (1 petición/s). Se muestra terreno plano de referencia.';calc()}};
+function draw(){if(!window.Chart)return;const n=N(),d=M.d,t=S.tx,r=S.rx,e=el&&el.length==n?el:Array(n).fill(0);
+const z0=e[0]+t.h,z1=e[n-1]+r.h,X=[],T=[],L=[],U=[],B=[];
+for(let i=0;i<n;i++){const d1=d*i/(n-1),d2=d-d1,bl=d1*d2/(12.74*K()),los=z0+(z1-z0)*i/(n-1),F1=17.32*Math.sqrt(d1*d2/((S.tx.f/1000)*d));
+X.push(d1.toFixed(2));T.push(e[i]+bl);L.push(los);U.push(los-.6*F1);B.push(los+F1)}
+const dk=document.documentElement.dataset.theme=='dark',col=dk?'#e3edf2':'#14232e';
+const ds=[{label:'Terreno + curvatura (m)',data:T,fill:true,backgroundColor:'rgba(120,100,70,.45)',borderColor:'#7a6444',pointRadius:0},
+{label:'Línea de visión',data:L,borderColor:'#d23a3a',pointRadius:0,borderWidth:1.5},
+{label:'60 % F1',data:U,borderColor:'#1f9d55',borderDash:[5,4],pointRadius:0},
+{label:'F1 superior',data:B,borderColor:'#3cc3ee',borderDash:[2,3],pointRadius:0}];
+if(chart){chart.data.labels=X;chart.data.datasets=ds;chart.options.color=col;chart.update('none')}
+else chart=new Chart($('ch'),{type:'line',data:{labels:X,datasets:ds},options:{animation:false,color:col,scales:{x:{title:{display:true,text:'Distancia (km)'}},y:{title:{display:true,text:'Altitud (m)'}}}}});
+$('warn').textContent=!el?'Perfil de terreno plano: pulsa «Obtener elevaciones» para datos reales.':M.clr<60?(M.los?'⚠ Zona de Fresnel invadida (despejamiento '+M.clr.toFixed(0)+' %).':'⛔ Obstáculo que interrumpe la línea de visión.'):'Despejamiento de Fresnel suficiente.'}
+['K','np'].forEach(i=>$(i).oninput=()=>calc());
+/* ===== Captura del mapa para el PDF: compone los mosaicos cargados + línea y marcadores ===== */
+/* ===== Extras: MCS, obstáculos, difracción, disponibilidad, cobertura, comparador ===== */
+['tx','rx'].forEach(k=>$('f'+k).insertAdjacentHTML('beforeend',`<label>Modulación (MCS) del catálogo<select data-mc='${k}'><option value=''>— elige equipo primero —</option></select></label>`));
+$('K').parentElement.parentElement.insertAdjacentHTML('beforeend',`<label>Terreno (Vigants-Barnett a)<select id='ca'><option value='4'>Llano / agua (4)</option><option value='1' selected>Medio (1)</option><option value='0.25'>Montañoso (0,25)</option></select></label><label>Clima (b)<select id='cb'><option value='0.5'>Cálido y húmedo (0,5)</option><option value='0.25' selected>Normal (0,25)</option><option value='0.125'>Montañoso seco (0,125)</option></select></label>`);
+$('warn').insertAdjacentHTML('afterend',`<p id='obs' class='note'></p>`);
+['ca','cb','cov'].forEach(i=>$(i).onchange=()=>calc());
+document.addEventListener('change',e=>{const d=e.target.dataset;
+if(d.eq!==undefined){const k=d.eq,c=CAT[e.target.value],sel=document.querySelector(`[data-mc=${k}]`);S[k].ci=e.target.value;if(c&&c.hb)S[k].hb=c.hb;
+sel.innerHTML='<option value="">Mejor sensibilidad</option>'+(c&&c.m?c.m.map((x,i)=>`<option value='${i}'>${x[0]} · TX ${x[1]??'—'} / RX ${x[2]} dBm</option>`).join(''):'');sync();calc()}
+if(d.mc!==undefined&&e.target.value!==''){const m=CAT[S[d.mc].ci].m[e.target.value];if(d.mc=='tx'&&m[1]!=null)S.tx.p=m[1];if(d.mc=='rx')S.rx.s=m[2];sync();calc()}});
+$('s-cat').insertAdjacentHTML('beforeend',`<div class='card'><h3>Datos contrastados por modelo</h3><div style='overflow-x:auto'><table id='cat2'></table></div><p class='note'>Solo figuran los modelos cuyas cifras se han podido contrastar. Pendientes de verificar y no incluidos: NanoBeam, PowerBeam, NanoStation, airFiber, Rocket Prism, SXTsq, DISC Lite5, NetMetal y Cube 60G. Añádelos en la tabla editable con los datos de su ficha oficial.</p></div>`);
+$('cat2').innerHTML='<tr><th>Modelo</th><th>Banda</th><th>Gan. dBi</th><th>Pot. máx. dBm</th><th>MCS: TX / RX (dBm)</th><th>Fuente</th></tr>'+CAT.filter(c=>c.m).map(c=>`<tr><td>${c.n}</td><td>${c.b}</td><td>${c.g}</td><td>${c.p}</td><td>${c.m.map(x=>x[0]+': '+(x[1]??'—')+' / '+x[2]).join('<br>')}</td><td class='note'>${c.src}</td></tr>`).join('');
+function dest(p,az,dk){const a=az*R,la=p[0]*R,lo=p[1]*R,dr=dk/6371,la2=Math.asin(Math.sin(la)*Math.cos(dr)+Math.cos(la)*Math.sin(dr)*Math.cos(a)),lo2=lo+Math.atan2(Math.sin(a)*Math.sin(dr)*Math.cos(la),Math.cos(dr)-Math.sin(la)*Math.sin(la2));return[la2/R,lo2/R]}
+const cg=L.layerGroup().addTo(map);
+function sector(dk,col,fo){const hb=Math.max(1,S.tx.hb||7),pts=[pos.tx];for(let i=0;i<=24;i++)pts.push(dest(pos.tx,M.az-hb/2+hb*i/24,dk));return L.polygon(pts,{color:col,weight:1,fillOpacity:fo})}
+function extra(){const m=M,t=S.tx,r=S.rx,d=m.d,fg=t.f/1000,J=v=>v>-0.78?6.9+20*Math.log10(Math.sqrt((v-.1)**2+1)+v-.1):0;
+let dif=0,txt='Carga el perfil (Obtener elevaciones) para analizar obstáculos.';
+if(el){const n=el.length,z0=el[0]+t.h,z1=el[n-1]+r.h,ob=[];
+for(let i=1;i<n-1;i++){const d1=d*i/(n-1),d2=d-d1,L0=z0+(z1-z0)*i/(n-1),hh=el[i]+d1*d2/(12.74*K())-L0,F1=17.32*Math.sqrt(d1*d2/(fg*d)),v=hh*Math.sqrt(2*d/(m.lam*d1*d2*1000));if(hh>-0.6*F1)ob.push({km:d1,hh,v})}
+ob.sort((a,b)=>b.v-a.v);
+if(ob.length){dif=J(ob[0].v);txt='Obstáculos dentro del 60 % de F1: '+ob.length+' puntos. Principal a '+ob[0].km.toFixed(2)+' km, '+Math.abs(ob[0].hh).toFixed(1)+' m '+(ob[0].hh>=0?'por encima':'por debajo')+' de la línea de visión (v = '+ob[0].v.toFixed(2)+'). Pérdida por difracción (filo) ≈ '+dif.toFixed(1)+' dB.'}else txt='Sin obstáculos dentro del 60 % de la primera zona de Fresnel.'}
+const mgE=m.mg-dif,a=+$('ca').value,b=+$('cb').value,pu=mgE<0?1:Math.min(1,6e-7*a*b*fg*d**3*10**(-mgE/10)),dmax=10**((t.p+t.g+r.g-t.l-r.l-r.s-32.44-20*Math.log10(t.f))/20);
+Object.assign(m,{dif,mgE,pu,av:(1-pu)*100,dmax,obsTxt:txt});$('obs').textContent=txt;
+const X=(l,v,u)=>`<div><span>${l}</span><b>${v}</b>${u}</div>`;
+$('res').insertAdjacentHTML('beforeend',X('Difracción',dif.toFixed(1),'dB')+X('Margen efectivo',mgE.toFixed(1),'dB')+X('Disponibilidad',(m.av).toFixed(m.av>99.99?4:3),'% (multitrayecto)')+X('Indisponibilidad',(pu*525600).toFixed(1),'min/año')+X('Alcance máx.',dmax.toFixed(1),'km (espacio libre, 0 dB)'));
+if(mgE<0&&m.mg>=0){$('st').style.background='var(--ko)';$('st').textContent='ROJO · Margen negativo tras la pérdida por difracción'}
+m.cmp=CAT.map(c=>{const pr=c.p+2*c.g-t.l-r.l-m.fspl-dif;return{n:c.n,g:c.g,p:c.p,eirp:c.p+c.g-t.l,pr,mg:pr-c.s,dm:10**((c.p+2*c.g-t.l-r.l-c.s-32.44-20*Math.log10(t.f))/20)}}).sort((a,b)=>b.mg-a.mg);
+$('cmpT').innerHTML='<tr><th>Equipo (ambos extremos)</th><th>Gan. dBi</th><th>Pot. dBm</th><th>EIRP dBm</th><th>Pr dBm</th><th>Margen dB</th><th>Alcance km</th></tr>'+m.cmp.map(c=>`<tr><td>${c.n}</td><td>${c.g}</td><td>${c.p}</td><td>${c.eirp.toFixed(1)}</td><td>${c.pr.toFixed(1)}</td><td style='font-weight:700;color:var(${c.mg<0?'--ko':c.mg<10?'--wa':'--ok'})'>${c.mg.toFixed(1)}</td><td>${c.dm.toFixed(1)}</td></tr>`).join('');
+cg.clearLayers();if($('cov').checked&&isFinite(dmax)){cg.addLayer(L.circle(pos.tx,{radius:dmax*1000,color:'#888',weight:1,dashArray:'4',fill:false}));cg.addLayer(sector(dmax,'#1f9d55',.2));cg.addLayer(sector(dmax*.316,'#d99a00',.4))}}
+async function mapImg(){
+const sec=$('s-map'),was=sec.classList.contains('on'),pc=map.getCenter(),pz=map.getZoom();
+sec.classList.add('on');map.invalidateSize();
+map.fitBounds(L.latLngBounds(pos.tx,pos.rx).pad(.35),{animate:false});
+await new Promise(res=>{const t=setTimeout(res,2500);map.eachLayer(l=>{if(l instanceof L.TileLayer)l.once('load',()=>{clearTimeout(t);setTimeout(res,250)})})});
+const mr=$('map').getBoundingClientRect(),W=Math.round(mr.width),Hh=Math.round(mr.height);
+const build=tiles=>{const c=document.createElement('canvas');c.width=W;c.height=Hh;const x=c.getContext('2d');x.fillStyle='#dfe7ec';x.fillRect(0,0,W,Hh);
+if(tiles)document.querySelectorAll('#map img.leaflet-tile-loaded').forEach(i=>{const r=i.getBoundingClientRect();x.drawImage(i,r.left-mr.left,r.top-mr.top,r.width,r.height)});
+if($('cov').checked&&M.dmax){const hb=Math.max(1,S.tx.hb||7),o=map.latLngToContainerPoint(pos.tx);[[M.dmax,'rgba(31,157,85,.3)'],[M.dmax*.316,'rgba(217,154,0,.45)']].forEach(([dk,cl])=>{x.fillStyle=cl;x.beginPath();x.moveTo(o.x,o.y);for(let i=0;i<=24;i++){const p=map.latLngToContainerPoint(dest(pos.tx,M.az-hb/2+hb*i/24,dk));x.lineTo(p.x,p.y)}x.closePath();x.fill()})}
+const a=map.latLngToContainerPoint(pos.tx),b=map.latLngToContainerPoint(pos.rx);
+x.strokeStyle='#d23a3a';x.lineWidth=3;x.setLineDash([8,6]);x.beginPath();x.moveTo(a.x,a.y);x.lineTo(b.x,b.y);x.stroke();x.setLineDash([]);
+[[a,'A'],[b,'B']].forEach(([p,t])=>{x.fillStyle='#0a7ea4';x.strokeStyle='#fff';x.lineWidth=3;x.beginPath();x.arc(p.x,p.y,14,0,7);x.fill();x.stroke();x.fillStyle='#fff';x.font='bold 15px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(t,p.x,p.y+1)});
+x.fillStyle='rgba(255,255,255,.8)';x.fillRect(0,Hh-16,W,16);x.fillStyle='#333';x.font='11px sans-serif';x.textAlign='left';x.fillText(tiles?'Mapa: OpenStreetMap contributors / Esri':'Esquema sin cartografia',4,Hh-8);return c};
+let out;try{out={url:build(true).toDataURL('image/png'),tiles:true}}catch(e){out={url:build(false).toDataURL('image/png'),tiles:false}}
+map.setView(pc,pz,{animate:false});if(!was)sec.classList.remove('on');
+return Object.assign(out,{w:W,h:Hh})}
+/* ===== Informe PDF (jsPDF) ===== */
+$('pdf').onclick=async()=>{
+if(!window.jspdf)return alert('No se pudo cargar jsPDF (sin conexión). Reintenta con internet.');
+let nom='Radioenlace A-B';try{nom=prompt('Nombre del proyecto',nom)||nom}catch(e){}
+const doc=new window.jspdf.jsPDF({unit:'mm',format:'a4'}),W=210;let y=20;
+const chk=h=>{if(y+h>280){doc.addPage();y=20}};
+const H=t=>{chk(12);y+=3;doc.setFont('helvetica','bold').setFontSize(12).setTextColor(10,126,164);doc.text(t,15,y);y+=6;doc.setTextColor(20,35,46)};
+const P=(t,b)=>{doc.setFont('helvetica',b?'bold':'normal').setFontSize(10);doc.splitTextToSize(t,180).forEach(l=>{chk(5);doc.text(l,15,y);y+=5})};
+const m=M,t=S.tx,r=S.rx,f2=(v,n=1)=>Number(v).toFixed(n);
+doc.setFont('helvetica','bold').setFontSize(18).setTextColor(20,35,46);doc.text('Informe de radioenlace',15,y);y+=8;
+P('Proyecto: '+nom,true);P('Fecha: '+new Date().toLocaleDateString('es-ES'));
+H('Emplazamientos');
+P('A (TX): '+pos.tx.map(v=>f2(v,5)).join(', ')+' (lat, lon, grados)');
+P('B (RX): '+pos.rx.map(v=>f2(v,5)).join(', ')+' (lat, lon, grados)');
+P('Distancia: '+f2(m.d,2)+' km  |  Azimut A->B: '+f2(m.az)+' grados'+(el?'  |  Elevacion: '+f2(m.elv,2)+' grados':''));
+try{const mi=await mapImg();const hm=Math.min(85,180*mi.h/mi.w);chk(hm+12);H('Mapa de emplazamientos');doc.addImage(mi.url,'PNG',15,y,180,hm);y+=hm+2;if(!mi.tiles)P('(Esquema sin cartografia: el navegador no permitio capturar los mosaicos del mapa.)')}catch(e){}
+H('Parametros de transmision (A)');
+P('Frecuencia '+t.f+' MHz, potencia '+t.p+' dBm, ganancia '+t.g+' dBi, perdidas '+t.l+' dB, altura '+t.h+' m, canal '+t.bw+' MHz.');
+H('Parametros de recepcion (B)');
+P('Ganancia '+r.g+' dBi, perdidas '+r.l+' dB, altura '+r.h+' m, sensibilidad '+r.s+' dBm, canal '+r.bw+' MHz.');
+H('Calculos y resultados');
+[['FSPL = 32,44 + 20log(f MHz) + 20log(d km)',f2(m.fspl)+' dB'],['Potencia recibida Pr = Pt+Gt+Gr-Ltx-Lrx-FSPL',f2(m.pr)+' dBm'],['EIRP = Pt+Gt-Ltx',f2(m.eirp)+' dBm'],['Margen = Pr - sensibilidad',f2(m.mg)+' dB'],['Radio maximo 1a zona de Fresnel',f2(m.fmax)+' m'],['Despejamiento de Fresnel',m.clr===null?'sin perfil cargado':f2(m.clr,0)+' % (minimo recomendado 60 %)'],['Vision directa',m.clr===null?'sin perfil cargado':m.los?'Si':'No'],['Longitud de onda',f2(m.lam*100,2)+' cm'],['Factor K',f2(K(),2)],['Perdida por difraccion (filo)',f2(m.dif)+' dB'],['Margen efectivo',f2(m.mgE)+' dB'],['Disponibilidad estimada (multitrayecto, Vigants-Barnett)',f2(m.av,3)+' %  ('+f2(m.pu*525600)+' min/ano)'],['Alcance maximo (espacio libre, margen 0 dB)',f2(m.dmax)+' km']].forEach(a=>P(a[0]+': '+a[1]));
+H('Diagnostico tecnico');
+const bad=m.mg<0||(m.clr!==null&&!m.los),warn=m.mg<10||(m.clr!==null&&m.clr<60);
+P(bad?'ROJO: enlace no viable con los parametros actuales.':warn?'AMARILLO: enlace posible, con margen reducido o despejamiento insuficiente.':'VERDE: enlace tecnicamente viable segun los criterios configurados.');
+H('Recomendaciones');
+const rec=[];if(m.mg<10)rec.push('Aumentar el margen (>=10 dB): antenas de mayor ganancia, mas potencia dentro de la normativa o menor distancia.');
+if(m.clr===null)rec.push('Cargar el perfil topografico para evaluar obstaculos y Fresnel.');
+else if(!m.los)rec.push('Hay un obstaculo en la linea de vision: elevar las antenas o cambiar de emplazamiento.');
+else if(m.clr<60)rec.push('Elevar las antenas hasta lograr al menos 60 % de despejamiento de la 1a zona de Fresnel.');
+if(!rec.length)rec.push('Mantener un margen de desvanecimiento y verificar el enlace con una prueba real.');
+rec.forEach(x=>P('- '+x));
+H('Analisis de obstaculos');P(m.obsTxt.replace(/≈/g,'aprox.').replace(/≥/g,'>='));
+H('Comparador de equipos (mismo equipo en ambos extremos)');(m.cmp||[]).slice(0,6).forEach(c=>P(c.n+': margen '+f2(c.mg)+' dB, Pr '+f2(c.pr)+' dBm, alcance '+f2(c.dm)+' km'));
+const pf=$('s-pf'),was=pf.classList.contains('on');pf.classList.add('on');draw();
+if(chart){chart.resize();const c=chart.canvas,h=Math.min(90,180*c.height/c.width);chk(h+14);H('Perfil topografico y zona de Fresnel');
+try{doc.addImage(chart.toBase64Image('image/png',1),'PNG',15,y,180,h);y+=h+3}catch(e){P('(No se pudo incluir el grafico)')}}
+if(!was)pf.classList.remove('on');
+H('Limitaciones');
+P('Modelo de espacio libre con curvatura terrestre. No incluye lluvia, multitrayecto, vegetacion ni edificios ausentes del modelo digital de terreno. Los estados verde/amarillo/rojo no garantizan el funcionamiento real. Datos de equipos orientativos: verificar en fichas oficiales.');
+const n=doc.getNumberOfPages();for(let i=1;i<=n;i++){doc.setPage(i);doc.setFillColor(8,32,44);doc.rect(0,0,W,10,'F');doc.rect(0,287,W,10,'F');
+doc.setFont('helvetica','bold').setFontSize(10).setTextColor(255,255,255);doc.text('E.Serra 2026',W/2,6.5,{align:'center'});doc.text('E.Serra 2026  -  pagina '+i+'/'+n,W/2,293.5,{align:'center'})}
+doc.save('radioenlace-lab.pdf')};
+place();calc();
+</script></body></html>
